@@ -500,7 +500,7 @@ function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpp
  peer.on('connection',c=>{setupPeer(c);});}
 function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players=[makePlayer('Host',0xffffff,true),makePlayer(name,0xff5ab4)];
  const peer=new Peer();G.online.peer=peer;overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Connecting…</p>`);
- peer.on('open',()=>{setupPeer(peer.connect('tinytee-'+code,{reliable:true}));});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Could not join: '+err.type;});}
+ peer.on('open',()=>{setupPeer(peer.connect('tinytee-'+code,{reliable:true}));setTimeout(()=>{if(!(G.online.conn&&G.online.conn.open)){const e=$('pst');if(e)e.innerHTML='Still connecting… Some school/work Wi-Fi blocks direct play. Try a home network, or play 2 Players on one screen. <br><button class="big" onclick="location.href=location.pathname">Back to menu</button>';}},20000);});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Could not join: '+err.type;});}
 
 // ===== menu =====
 const room=new URLSearchParams(location.search).get('room');
