@@ -467,7 +467,7 @@ function doShot(s){const p=P();p.club=s.club;const e=s.e;p.last.copy(p.pos);p.st
 const FR={green:.95,fringe:1.8,fairway:2.1,tee:2.1,rough:5,sand:10,ice:.6};
 const BOUNCE={green:.3,fringe:.3,fairway:.35,tee:.35,rough:.18,sand:.04,ice:.4};
 function grad(x,z){const e=.5;return[(hgt(x+e,z)-hgt(x-e,z))/(2*e),(hgt(x,z+e)-hgt(x,z-e))/(2*e)];}
-function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;
+function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30){pos.y=hgt(pos.x,pos.z)+R;return stopBall();}
  if(b.air){v.y-=GRAV*dt;const hf=clamp(pos.y-hgt(pos.x,pos.z),0,30)/30+.3;v.x+=G.windV.x*.12*hf*dt;v.z+=G.windV.y*.12*hf*dt;v.multiplyScalar(1-.04*dt);
   {const hs=Math.hypot(v.x,v.z);if(hs>1&&b.sx){const k=b.sx*3.5*dt;v.x+=-v.z/hs*k;v.z+=v.x/hs*k;}}
   pos.addScaledVector(v,dt);
@@ -488,7 +488,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;
   const nvx=v.x+ax*dt,nvz=v.z+az*dt;if(sp>1e-3&&(nvx*v.x+nvz*v.z)<0&&Math.hypot(ax+v.x/sp*fr,az+v.z/sp*fr)<fr){v.x=0;v.z=0;}else{v.x=nvx;v.z=nvz;}
   pos.x+=v.x*dt;pos.z+=v.z*dt;pos.y=hgt(pos.x,pos.z)+R;bossHit(b);
   // cup
-  if(dc<.32&&sp<5.5){if(G.boss&&G.boss.hp>0){if(!b.blk){b.blk=1;float('🛡️ The boss blocks the cup!');v.x*=-.5;v.z*=-.5;}}else return holed();}
+  if(dc<.32&&sp<5.5){if(G.boss&&G.boss.hp>0){if(!b.blk){b.blk=1;float('🛡️ The boss blocks the cup!');}v.x*=-.5;v.z*=-.5;if(sp<.3){const a=Math.atan2(pos.x-H.gx,pos.z-H.gz);pos.x=H.gx+Math.sin(a)*.5;pos.z=H.gz+Math.cos(a)*.5;v.x=v.z=0;}}else return holed();}
   if(Math.hypot(v.x,v.z)<.06&&Math.hypot(gx,gz)*GRAV*.6<fr+.01)return stopBall();}
  if(Math.abs(pos.x)>HX||pos.z>H.zmax||pos.z<H.zmin)return penalty('🚧 Out of bounds! +1');
  // tokens
@@ -499,8 +499,11 @@ function dealDamage(base,b){const B=G.boss;if(!B||B.hp<=0||b.hitBoss)return;b.hi
  splash(new THREE.Vector3(B.x,hgt(B.x,B.z)+2,B.z),b.e.el?ELEMS[b.e.el].col:0xffffff,40);bossFlash=.5;
  float(`💥 ${dmg} damage!${m>1?'<br>SUPER EFFECTIVE! '+ELEMS[b.e.el].ic:m<1?'<br>Not very effective…':''}`);
  if(B.hp<=0)setTimeout(()=>{say(`🏆 ${B.name} defeated!`,2500);bossDefeated();},900);}
-function bossHit(b){const B=G.boss;if(!B||B.hp<=0)return;const pos=b.p.pos;const by=hgt(B.x,B.z)+1.8;const d=Math.hypot(pos.x-B.x,pos.y-by,pos.z-B.z);
- if(d<2.1){if(!b.bonk){b.bonk=1;float(G.boss.ic+' Boing! Reach the green to battle!');}const n=new THREE.Vector3(pos.x-B.x,pos.y-by,pos.z-B.z).normalize();const vn=b.v.dot(n);if(vn<0)b.v.addScaledVector(n,-1.6*vn);b.v.multiplyScalar(.5);b.air=true;}}
+function bossHit(b){const B=G.boss;if(!B||B.hp<=0)return;const pos=b.p.pos;const gy=hgt(B.x,B.z);if(pos.y-gy>3.8)return;
+ const dx=pos.x-B.x,dz=pos.z-B.z,d=Math.hypot(dx,dz),R0=1.7;if(d>=R0)return;
+ if(!b.bonk){b.bonk=1;float(G.boss.ic+' Boing! Reach the green to battle!');}
+ const nx=d>1e-3?dx/d:0,nz=d>1e-3?dz/d:1;pos.x=B.x+nx*(R0+.02);pos.z=B.z+nz*(R0+.02);if(!b.air)pos.y=hgt(pos.x,pos.z)+R;
+ const vn=b.v.x*nx+b.v.z*nz;if(vn<0){b.v.x-=1.5*vn*nx;b.v.z-=1.5*vn*nz;}b.v.x*=.6;b.v.z*=.6;b.bonks=(b.bonks||0)+1;if(b.bonks>40){b.v.set(0,0,0);b.air=false;}}
 function bossSplash(b){return;const B=G.boss;if(!B||B.hp<=0)return;const d=Math.hypot(b.p.pos.x-B.x,b.p.pos.z-B.z);if(d<35)dealDamage(6+20*(1-d/35),b);}
 function bossDefeated(){const B=G.boss;G.players.forEach(p=>{if(!p.prof.unlocked.includes(B.perk))p.prof.unlocked.push(B.perk);p.prof.tokens+=25;});persist();
  if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">Everyone earns <b>+25 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
@@ -571,7 +574,7 @@ function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players
 
 // ===== boss melee arena =====
 const CLUB_DMG=[14,12,10,8,6],CLUB_CD=[.95,.85,.7,.55,.45],CLUB_RANGE=[3.6,3.4,3.1,2.9,2.8];
-const arenaGroup=new THREE.Group();scene.add(arenaGroup);
+const PROJ_G=new THREE.SphereGeometry(.45,14,10),RING_G=new THREE.RingGeometry(1.2,1.6,24);const arenaGroup=new THREE.Group();scene.add(arenaGroup);
 function arenaIntro(p){G.mode='arenaIntro';const B=G.boss;
  if(p.remote){overlay(`<h1>${B.ic} ${p.name} is battling ${B.name}!</h1><p style="font-size:24px">Cheer them on! 📣</p>`);G.arenaWaiting=p;return;}
  const tag=el=>!el?'':B.weak.includes(el)?' <b style="color:#ffe14d">2× 💥</b>':B.resist.includes(el)?' <b style="color:#9cf">½ 🛡️</b>':'';
@@ -620,8 +623,8 @@ function arenaTick(dt,t){const A=G.arena,B=G.boss;A.clock+=dt;
  else if(A.state==='stomp'){const k=1-A.st/1.1;A.tele.scale.setScalar(.2+k*4.8);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),0xffffff,40);if(bd<5)arenaHurt(18);teleEnd(A);}}
  else if(A.state==='charge'){if(!A.cdir)A.cdir=bt.clone();A.tele.position.copy(A.bpos).addScaledVector(A.cdir,6.5);A.tele.position.y=A.bpos.y+.06;A.tele.rotation.y=Math.atan2(A.cdir.x,A.cdir.z);
   if(A.st<=0){A.dash=(A.dash||0)+dt;A.bpos.addScaledVector(A.cdir,16*dt);if(bd<2.4){arenaHurt(20);A.pos.addScaledVector(A.cdir,2);}if(A.dash>.75){A.dash=0;A.cdir=null;teleEnd(A);}}}
- else if(A.state==='throw'){if(A.st<=0){for(let k=-1;k<=1;k++){const tgt=A.pos.clone().addScaledVector(right,k*2.2);const m=new THREE.Mesh(new THREE.SphereGeometry(.45,14,10),new THREE.MeshStandardMaterial({color:B.col,emissive:0x331111}));
-   m.castShadow=true;arenaGroup.add(m);const mk=new THREE.Mesh(new THREE.RingGeometry(1.2,1.6,24),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.7,side:THREE.DoubleSide}));mk.rotation.x=-Math.PI/2;mk.position.set(tgt.x,hgt(tgt.x,tgt.z)+.08,tgt.z);arenaGroup.add(mk);
+ else if(A.state==='throw'){if(A.st<=0){for(let k=-1;k<=1;k++){const tgt=A.pos.clone().addScaledVector(right,k*2.2);const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:B.col,emissive:0x331111}));
+   m.castShadow=true;arenaGroup.add(m);const mk=new THREE.Mesh(RING_G,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.7,side:THREE.DoubleSide}));mk.rotation.x=-Math.PI/2;mk.position.set(tgt.x,hgt(tgt.x,tgt.z)+.08,tgt.z);arenaGroup.add(mk);
    A.proj.push({m,mk,from:A.bpos.clone().setY(A.bpos.y+2.5),to:tgt,t:0});}teleEnd(A);}}
  for(let k=A.proj.length-1;k>=0;k--){const q=A.proj[k];q.t+=dt/1.1;const pos=q.from.clone().lerp(q.to,q.t);pos.y=lerp(q.from.y,hgt(q.to.x,q.to.z),q.t)+Math.sin(q.t*Math.PI)*5;q.m.position.copy(pos);
   if(q.t>=1){if(Math.hypot(A.pos.x-q.to.x,A.pos.z-q.to.z)<1.7)arenaHurt(12);splash(q.to.clone().setY(q.m.position.y),B.col,15);arenaGroup.remove(q.m,q.mk);A.proj.splice(k,1);if(!G.arena)return;}}
@@ -666,10 +669,23 @@ window.go=(m,cont)=>{const n1=($('n1').value||'Player 1').slice(0,14),n2=$('n2')
  else if(m==='host')hostOnline(n1);else if(m==='join')joinOnline(n1,room);};
 G.dbg=()=>({gv:golfer.visible,gp:golfer.position.toArray().map(v=>+v.toFixed(1)),cam:camera.position.toArray().map(v=>+v.toFixed(1)),ap:G.arena&&G.arena.pos.toArray().map(v=>+v.toFixed(1)),bp:G.arena&&G.arena.bpos.toArray().map(v=>+v.toFixed(1)),arms:golfer.userData.arms.children.length});G.doShot=(c,pw)=>{const p=P();doShot({aim:0,power:pw,club:c,dev:0,e:eff(p.prof,c),spin:p.spin});};G.arenaStep=(n,dt)=>{for(let k=0;k<n&&G.arena;k++)arenaTick(dt,k*dt);};G.sim=()=>{let n=0;while(ball&&n<20000){stepBall(1/120);n++;}return n;};G.startHole=startHole;G.makePlayer=makePlayer;
 
+// ===== global error recovery =====
+G.errors=[];
+function recover(msg){try{G.errors.push(String(msg));console.warn('Recovered from error:',msg);
+ if(G.arena){try{arenaCleanup();}catch(e){}}
+ if(G.oopsShown)return;G.oopsShown=true;
+ const ov=document.getElementById('ov'),c=document.getElementById('ovc');if(!ov||!c)return;
+ c.innerHTML='<h1>🙈 Oops!</h1><p style="font-size:24px">Something went a little wonky, but your game is safe.</p><button class="big" id="oopsBtn">Keep Playing ▶️</button>';ov.style.display='flex';G.ovOpen=true;
+ document.getElementById('oopsBtn').onclick=()=>{G.oopsShown=false;ov.style.display='none';G.ovOpen=false;G.afterOv=null;try{safeResume();}catch(e){location.reload();}};}catch(e){}}
+function safeResume(){if(!H||!G.players.length){menu();return;}ball=null;G.swing=null;charging=false;gs=null;
+ const live=G.players.filter(q=>!q.done);if(!live.length){finishHole();return;}if(P().done){G.turn=G.players.indexOf(live[0]);}
+ G.mode='aim';autoClub();updUI();}
+addEventListener('error',e=>recover(e.message||e.error));addEventListener('unhandledrejection',e=>recover(e.reason));
 // ===== loop =====
 const clock=new THREE.Clock();let swingT=0;
 const camPos=new THREE.Vector3(0,5,10),camLook=new THREE.Vector3();
-function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+function tick(){requestAnimationFrame(tick);try{tickInner();}catch(e){recover(e&&e.stack||e);}}
+function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  if(H){const p=P();
   if(G.mode==='aim'&&myTurn()){if(keys.ArrowLeft)p.aim-=dt*.9;if(keys.ArrowRight)p.aim+=dt*.9;}
   if(G.mode==='power'){power+=pdir*dt*.75;if(power>=1){power=1;pdir=-1;}if(power<=0){power=0;pdir=1;}$('pfill').style.height=(power*100)+'%';}
