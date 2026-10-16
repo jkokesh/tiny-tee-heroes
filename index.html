@@ -19,11 +19,10 @@ canvas#c{display:block;width:100%;height:100%}
 .club.e-magnet{box-shadow:0 0 18px 4px #c6f}.club.e-bubble{box-shadow:0 0 18px 4px #7df}.club.e-spikes{box-shadow:0 0 14px 4px #bbb}
 @keyframes bob{to{transform:translateY(-5px) rotate(10deg)}}@keyframes flick{to{box-shadow:0 0 26px 8px #ffb300}}
 @keyframes zap{0%,100%{box-shadow:0 0 6px 2px #ff0}50%{box-shadow:0 0 28px 10px #fff36b}}
-#swing{position:absolute;right:20px;bottom:20px;width:150px;height:150px;border-radius:50%;background:radial-gradient(#ff7,#f90);border:6px solid #fff;color:#640;font-size:28px;font-weight:900;cursor:pointer;box-shadow:0 6px 0 #a50}
-#power{position:absolute;right:190px;bottom:20px;width:34px;height:220px;border:4px solid #fff;border-radius:16px;background:rgba(0,0,0,.4);overflow:hidden}
+#power{position:absolute;left:18px;bottom:108px;width:34px;height:220px;border:4px solid #fff;border-radius:16px;background:rgba(0,0,0,.4);overflow:hidden}
 #pfill{position:absolute;bottom:0;width:100%;height:0;background:linear-gradient(0deg,#3f3,#ff3,#f33)}
-#pmark{position:absolute;left:-4px;right:-4px;bottom:90.9%;height:4px;background:#fff;box-shadow:0 0 4px #000}#pmark::after{content:"100%";position:absolute;right:38px;top:-9px;font-size:13px;font-weight:bold;color:#fff;text-shadow:1px 1px 2px #000}
-#ppct{position:absolute;right:178px;bottom:250px;width:60px;text-align:center;font-size:20px;font-weight:bold;text-shadow:1px 1px 3px #000}
+#pmark{position:absolute;left:-4px;right:-4px;bottom:90.9%;height:4px;background:#fff;box-shadow:0 0 4px #000}#pmark::after{content:"100%";position:absolute;left:38px;top:-9px;font-size:13px;font-weight:bold;color:#fff;text-shadow:1px 1px 2px #000}
+#ppct{position:absolute;left:6px;bottom:338px;width:60px;text-align:center;font-size:20px;font-weight:bold;text-shadow:1px 1px 3px #000}
 #carry{bottom:132px;left:50%;transform:translateX(-50%);font-size:19px;padding:6px 16px;white-space:nowrap;display:none}
 #msg{position:absolute;top:30%;width:100%;text-align:center;font-size:64px;font-weight:900;color:#fff;text-shadow:0 0 12px #f80,4px 4px 0 #a40;pointer-events:none;transition:opacity .4s;opacity:0}
 #bossbar{position:absolute;top:200px;left:50%;transform:translateX(-50%);width:420px;display:none;text-align:center;font-size:22px;font-weight:bold}
@@ -53,12 +52,12 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 <div id="clubs" class="panel"></div>
 <div id="power"><div id="pfill"></div><div id="pmark"></div></div><div id="ppct"></div>
 <div id="carry" class="panel"></div>
-<button id="swing">HOLD<br>to SWING</button>
+
 <div id="msg"></div>
 <canvas id="gest" style="position:absolute;inset:0;pointer-events:none"></canvas>
-<div id="spinBox" class="panel" style="right:12px;bottom:190px;text-align:center;padding:6px 10px"><div style="font-size:15px">Ball spin (tap!)</div><canvas id="spinBall" width="96" height="96" style="cursor:pointer"></canvas><div id="spinLab" style="font-size:14px"></div></div>
+<div id="spinBox" class="panel" style="right:12px;bottom:20px;text-align:center;padding:6px 10px"><div style="font-size:15px">Ball spin (tap!)</div><canvas id="spinBall" width="96" height="96" style="cursor:pointer"></canvas><div id="spinLab" style="font-size:14px"></div></div>
 <button id="aimL" class="aimb" style="left:16px">◀</button><button id="aimR" class="aimb" style="left:96px">▶</button>
-<div id="hint" style="position:absolute;bottom:140px;left:16px;font-size:16px;text-shadow:1px 1px 2px #000">Drag ⬇️ then flick ⬆️ on the course to swing!</div>
+<div id="hint" style="position:absolute;bottom:185px;left:72px;font-size:16px;text-shadow:1px 1px 2px #000">Drag ⬇️ then flick ⬆️ on the course to swing!</div>
 <div id="pbar" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:380px;display:none;text-align:center;font-size:20px;font-weight:bold"><div id="pname"></div><div class="bar" style="height:22px;border:3px solid #fff;border-radius:12px;background:#033;overflow:hidden"><div id="pfill2" style="height:100%;width:100%;background:linear-gradient(#6f6,#1a1)"></div></div></div>
 <div id="arenaUI" style="display:none"><div style="position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:70px 70px 70px;gap:6px">
 <span></span><button class="ab" id="aU">▲</button><span></span><button class="ab" id="aLf">◀</button><button class="ab" id="aD">▼</button><button class="ab" id="aRt">▶</button></div>
@@ -124,8 +123,9 @@ function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el=prof.equip[c.id]||nul
  // progression: 10 levels per stat. Power & spin start at 60% and reach 100% (the old base values) at level 10.
  let dist=c.dist*(.6+.04*l.power)*(el==='fire'?1.12:1);let acc=c.acc+(1-c.acc)*.08*l.acc;if(el==='lightning')acc+=(1-acc)*.6;
  return{dist,acc:Math.min(acc,.995),spin:c.spin,spinMul:.6+.04*l.spin,loft:c.loft,el,power:l.power};}
-const MAXLV=10,UPBASE=[2,3,4,5,7,9,11,14,17,21],CLUBMULT={driver:1.3,wood:1.15,iron:1,wedge:.9,putter:.75};
-const upCost=(club,lv)=>Math.max(1,Math.round(UPBASE[lv]*CLUBMULT[club]));
+// cost to buy level lv+1 (same for every club & stat): 2,5,9,15,22,31,42,55,70,88 — 339 tokens to max one stat
+const MAXLV=10,UPBASE=[2,5,9,15,22,31,42,55,70,88];
+const upCost=(club,lv)=>UPBASE[lv];
 
 // ===== game state =====
 const G={hole:0,players:[],turn:0,mode:'menu',online:null,localIdx:null,boss:null,windV:new THREE.Vector2()};
@@ -406,7 +406,7 @@ function updUI(){const p=P();if(!p||!H)return;const pr=p.prof;const d=Math.hypot
   const cv=document.createElement('canvas');cv.width=60;cv.height=60;clubIcon(cv,ci,e.el);d.appendChild(cv);d.insertAdjacentHTML('beforeend',`${c.name}<br><small>${Math.round(fullCarry(e))}m</small>${e.el?'<span class="badge">'+ELEMS[e.el].ic+'</span>':''}`);
   d.onclick=()=>{if(myTurn()&&G.mode==='aim'){p.club=ci;updUI();}};cl.appendChild(d);});
  if(G.players.length>1){$('turn').style.display='block';$('turn').innerHTML=G.players.map((q,k)=>`${k===G.turn?'👉':''} <span style="color:#${q.col.toString(16).padStart(6,'0')}">●</span> ${q.name}: ${q.scores.reduce((a,b)=>a+b,0)+q.strokes}${q.remote?' 🌐':''}`).join('<br>');}
- $('swing').disabled=!myTurn();$('swing').innerHTML=myTurn()?'HOLD<br>to SWING':'Wait…';
+ 
  updClubFx();}
 const lieName=s=>({tee:'Tee 🟦',fairway:'Fairway 😀',rough:'Rough 🌿',sand:'Sand 🏖️',green:'Green ⛳',fringe:'Fringe',water:'Water 💦'})[s];
 function autoClub(){const p=P();const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);const s=surfInfo(H,p.pos.x,p.pos.z);
@@ -433,16 +433,15 @@ function drawMini(){const cv=$('mini'),x=cv.getContext('2d');if(!H||!H.canvas)re
 
 // ===== input =====
 const keys={};let power=0,pdir=1,charging=false;
-addEventListener('keydown',e=>{keys[e.key]=true;if(G.ovOpen)return;if(e.key===' '){e.preventDefault();startCharge();}
+addEventListener('keydown',e=>{keys[e.key]=true;if(G.ovOpen)return;if(e.key===' '&&!G.arena)e.preventDefault();// Space no longer swings: golf shots are drag-gesture only
  if(e.key>='1'&&e.key<='5'&&myTurn()&&G.mode==='aim'){P().club=+e.key-1;updUI();}});
-addEventListener('keyup',e=>{keys[e.key]=false;if(e.key===' ')release();});
-$('swing').addEventListener('pointerdown',e=>{e.preventDefault();startCharge();});addEventListener('pointerup',()=>release());
+addEventListener('keyup',e=>{keys[e.key]=false;});
 
 $('shopBtn').onclick=()=>openShop();$('cardBtn').onclick=()=>showCard(false);
 // gesture swing
 const gc=$('gest'),gx=gc.getContext('2d');function sizeG(){gc.width=innerWidth;gc.height=innerHeight;}addEventListener('resize',sizeG);sizeG();
 let gs=null;G.backAng=0;
-canvas.addEventListener('pointerdown',e=>{if(G.mode!=='aim'||!myTurn()||G.ovOpen)return;gs={x0:e.clientX,y0:e.clientY,maxY:e.clientY,maxX:e.clientX,phase:'back',pts:[[e.clientX,e.clientY,performance.now()]]};G.mode='gesture';});
+canvas.addEventListener('pointerdown',e=>{if(G.mode!=='aim'||!myTurn()||G.ovOpen||(e.pointerType==='mouse'&&e.button!==0))return;gs={x0:e.clientX,y0:e.clientY,maxY:e.clientY,maxX:e.clientX,phase:'back',pts:[[e.clientX,e.clientY,performance.now()]]};G.mode='gesture';});
 addEventListener('pointermove',e=>{if(!gs)return;const now=performance.now();gs.pts.push([e.clientX,e.clientY,now]);
  if(gs.phase==='back'){if(e.clientY>gs.maxY){gs.maxY=e.clientY;gs.maxX=e.clientX;gs.tTop=now;}if(gs.maxY-gs.y0>25&&e.clientY<gs.maxY-25){gs.phase='fwd';gs.tf=now;}}
  G.backAng=-clamp((gs.maxY-gs.y0)/200,0,1)*2.3;G.livePow=clamp((gs.maxY-gs.y0)/200,.05,MAXPOW);if(gs.phase==='fwd'&&e.clientY<gs.y0-40)finishGesture(e);});
@@ -479,7 +478,7 @@ function overDev(pw,e){return pw>1?(Math.random()<.5?-1:1)*(.3+Math.random()*.7)
 // ===== physics =====
 const GRAV=9.8,R=.13;let ball=null;
 const spinScale=e=>(.45+.55*e.spin)*(e.spinMul==null?1:e.spinMul);
-function launchVel(p,s){const e=s.e;const sy=(s.spin?s.spin.y:0)*spinScale(e);const lie=surfInfo(H,p.pos.x,p.pos.z);let dist=e.dist;if(lie==='rough')dist*=.85;if(lie==='sand'&&!(e.el==='bubble'))dist*=s.club===3?.85:.55;
+function launchVel(p,s){const e=s.e;const sy=(s.spin?s.spin.y:0)*spinScale(e);const lie=surfInfo(H,p.pos.x,p.pos.z);let dist=e.dist;if(lie==='rough')dist*=ROUGH_LAUNCH;if(lie==='sand'&&!(e.el==='bubble'))dist*=s.club===3?.85:.55;
  const a=s.aim+(s.dev||0);const pw=Math.min(MAXPOW,s.power);
  if(e.loft===0){const fr=lie==='green'?FR.green:FR[lie]||2;const vv=Math.sqrt(2*fr*dist*pw*1.05)*(1+.05*clamp(s.spin?s.spin.y:0,-1,1));return new THREE.Vector3(Math.sin(a)*vv,0,-Math.cos(a)*vv);}
  const th0=e.loft*Math.PI/180;const v0=Math.sqrt(dist*.86*GRAV/Math.sin(2*th0))*Math.sqrt(pw);const th=th0*(sy>0?1-.14*sy:1-.1*sy);return new THREE.Vector3(Math.sin(a)*v0*Math.cos(th),v0*Math.sin(th),-Math.cos(a)*v0*Math.cos(th));}
@@ -499,7 +498,9 @@ function doShot(s){const p=P();p.club=s.club;const e=s.e;p.last.copy(p.pos);p.st
  const v=launchVel(p,s);const w=s.wind?new THREE.Vector2(s.wind[0],s.wind[1]):G.windV.clone();
  const sp=s.spin||{x:0,y:0};ball={p,v,e,w,sx:e.loft?sp.x*spinScale(e):0,sy:e.loft?sp.y*spinScale(e):0,air:e.loft>0,bounced:0,usedBubble:false,hitBoss:false,t:0};swingT=.4;trailPts=[];
  updUI();}
-const FR={green:.95,fringe:1.8,fairway:2.1,tee:2.1,rough:5,sand:10,ice:.6};
+// rough: 50% more slowing than v5 (launch penalty 15%→22.5%, roll friction 5→7.5; landing-bounce speed loss unchanged at 40%)
+const ROUGH_LAUNCH=.775,ROUGH_FR=7.5,ROUGH_LAND=.6;
+const FR={green:.95,fringe:1.8,fairway:2.1,tee:2.1,rough:ROUGH_FR,sand:10,ice:.6};
 const BOUNCE={green:.3,fringe:.3,fairway:.35,tee:.35,rough:.18,sand:.04,ice:.4};
 function grad(x,z){const e=.5;return[(hgt(x+e,z)-hgt(x-e,z))/(2*e),(hgt(x,z+e)-hgt(x,z-e))/(2*e)];}
 function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30){pos.y=hgt(pos.x,pos.z)+R;return stopBall();}
@@ -517,7 +518,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
      if(b.sy<-.05&&firm){const zip=-b.sy*(s==='green'?2.7:s==='fringe'?2.3:1.7);const hs=Math.hypot(v.x,v.z)||1;v.x=-v.x/hs*zip;v.z=-v.z/hs*zip;v.y*=.35;b.zipped=1;if(zip>1)float('⏪ Backspin! Zip!');keep=1;}
      else if(b.sy<0)keep*=1+b.sy*.7;}
     else if(b.zipped)keep=.9;
-    v.x*=keep*(s==='rough'?.6:s==='sand'?.15:1);v.z*=keep*(s==='rough'?.6:s==='sand'?.15:1);if(s==='sand')splash(pos,0xe8d29a);}
+    v.x*=keep*(s==='rough'?ROUGH_LAND:s==='sand'?.15:1);v.z*=keep*(s==='rough'?ROUGH_LAND:s==='sand'?.15:1);if(s==='sand')splash(pos,0xe8d29a);}
    else{b.air=false;v.y=0;}}}
  else{let s=surfInfo(H,pos.x,pos.z);if(s==='water'&&e.el==='ice')s='ice';if(s==='water')return penalty('💦 Splash! +1');
   if(s==='sand'&&e.el==='bubble')s='fairway';
@@ -627,7 +628,7 @@ window.startArena=(ci)=>{closeOv();gs=null;gx.clearRect(0,0,gc.width,gc.height);
  const dir=new THREE.Vector3(p.pos.x-B.x,0,p.pos.z-B.z);if(dir.length()<1)dir.set(0,0,1);dir.normalize();
  const pp=c.clone().addScaledVector(dir,8);
  G.arena={ui:{},face:0,p,ci,e:eff(p.prof,ci),c,pos:pp,php:100,phpMax:100,bpos:c.clone(),cd:0,atk:0,dodge:0,dodgeCd:0,inv:0,block:false,state:'idle',st:1.5,tele:null,proj:[],burn:0,slow:0,hurt:0,mdir:new THREE.Vector3(),clock:0,face:0};
- G.mode='arena';$('arenaUI').style.display='block';$('clubs').style.display='none';$('swing').style.display='none';$('power').style.display='none';$('spinBox').style.display='none';$('aimL').style.display='none';$('aimR').style.display='none';$('windp').style.display='none';$('carry').style.display='none';
+ G.mode='arena';$('arenaUI').style.display='block';$('clubs').style.display='none';$('power').style.display='none';$('spinBox').style.display='none';$('aimL').style.display='none';$('aimR').style.display='none';$('windp').style.display='none';$('carry').style.display='none';
  $('pbar').style.display='block';$('hint').style.display='none';updArenaBars();updClubFx();say('⚔️ FIGHT!',1200);};
 function updArenaBars(){const A=G.arena;if(!A)return;$('pfill2').style.width=(100*A.php/A.phpMax)+'%';$('pname').textContent=`${A.p.name} ❤️`;updBoss();}
 function arenaHurt(d){const A=G.arena;if(A.inv>0||A.dodge>0)return;if(A.block){d*=A.e.el==='bubble'?0:.2;float(A.e.el==='bubble'?'🫧 Bubble shield!':'🛡️ Blocked!');}
@@ -635,77 +636,110 @@ function arenaHurt(d){const A=G.arena;if(A.inv>0||A.dodge>0)return;if(A.block){d
 function bossDmg(base,crit){const A=G.arena,B=G.boss;const m=mult(A.e.el);let d=base*m*(crit?1.5:1);d=Math.max(1,Math.round(d));B.hp=Math.max(0,B.hp-d);bossFlash=.4;
  splash(A.bpos.clone().setY(A.bpos.y+2),A.e.el?ELEMS[A.e.el].col:0xffffff,35);
  float(`💥 ${d}${crit?' CRIT!':''}${m>1?'<br>SUPER EFFECTIVE! '+ELEMS[A.e.el].ic:m<1?'<br>Resisted…':''}`);updBoss();if(B.hp<=0)arenaEnd(true);}
-function playerAttack(){const A=G.arena;if(!A||A.cd>0||A.dodge>0)return;A.cd=CLUB_CD[A.ci]*(1-.25*A.e.spin);A.atk=.35;A.hitDone=false;}
+function playerAttack(){const A=G.arena;if(!A)return;if(A.cd>0||A.dodge>0){A.buf=.25;return;}A.buf=0;A.cd=CLUB_CD[A.ci]*(1-.25*A.e.spin);A.atk=.35;A.hitDone=false;
+ // lock on: if the boss is within reach, turn to face it immediately so the swing connects
+ const dx=A.bpos.x-A.pos.x,dz=A.bpos.z-A.pos.z;if(Math.hypot(dx,dz)<CLUB_RANGE[A.ci]+4.5)A.face=Math.atan2(dx,dz);}
 function playerDodge(){const A=G.arena;if(!A||A.dodgeCd>0)return;A.dodge=.3;A.dodgeCd=.9;const d=A.mdir.lengthSq()>0?A.mdir.clone():new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0).normalize();A.ddir=d.normalize();}
-const ARENA_R=22;
-const _v1=new THREE.Vector3(),_v2=new THREE.Vector3();
+const ARENA_R=22,ASTEP=1/60,SEP=2.7;// SEP = min centre distance player<->boss (boss body r≈1.7 + player r≈.4 + margin)
+const _v1=new THREE.Vector3(),_v2=new THREE.Vector3(),_rp=new THREE.Vector3(),_rb=new THREE.Vector3();
 function kd(...c){return c.some(k=>keys[k]);}
-function arenaTick(dt,t){const A=G.arena,B=G.boss;A.clock+=dt;
- const toB=new THREE.Vector3().subVectors(A.bpos,A.pos).setY(0);const dist=toB.length();toB.normalize();
- // camera-relative movement
- const cf=new THREE.Vector3().subVectors(camLook,camPos).setY(0);if(cf.lengthSq()<1e-4)cf.copy(toB);cf.normalize();const cr=new THREE.Vector3(-cf.z,0,cf.x);
+const angDiff=(a,b)=>((b-a+Math.PI*3)%(Math.PI*2))-Math.PI;
+// fixed-step simulation + interpolated rendering (frame-rate independent, no jitter)
+function arenaTick(dt,t){const A=G.arena;A.acc=(A.acc||0)+dt;let n=0;
+ if(!A.prevP){A.prevP=A.pos.clone();A.prevB=A.bpos.clone();}
+ while(A.acc>=ASTEP&&n<10){A.prevP.copy(A.pos);A.prevB.copy(A.bpos);A.prevFace=A.face;A.prevBYaw=A.bYaw;arenaSim(ASTEP);A.acc-=ASTEP;n++;if(G.arena!==A)return;}
+ if(n>=10)A.acc=0;
+ arenaRender(Math.min(1,A.acc/ASTEP),dt,t);}
+function arenaSim(dt){const A=G.arena,B=G.boss;A.clock+=dt;
+ const toB=new THREE.Vector3().subVectors(A.bpos,A.pos).setY(0);let dist=toB.length();toB.normalize();
+ // camera-relative movement (uses the smoothed camera yaw so directions don't wobble)
+ const cy=A.camYaw!=null?A.camYaw:Math.atan2(-toB.x,-toB.z);const cf=new THREE.Vector3(-Math.sin(cy),0,-Math.cos(cy)),cr=new THREE.Vector3(-cf.z,0,cf.x);
  A.block=!!(kd('l','L','KeyL')||A.uiBlock||A.mouseBlock);const mv=new THREE.Vector3();
  if(kd('ArrowUp','KeyW')||A.ui.up)mv.add(cf);if(kd('ArrowDown','KeyS')||A.ui.down)mv.sub(cf);if(kd('ArrowLeft','KeyA')||A.ui.left)mv.sub(cr);if(kd('ArrowRight','KeyD')||A.ui.right)mv.add(cr);
  A.mdir.copy(mv.lengthSq()?mv.normalize():mv);
- if(A.dodge>0){A.dodge-=dt;A.pos.addScaledVector(A.ddir,14*dt);}else if(!A.block)A.pos.addScaledVector(A.mdir,6*dt*(A.atk>0?.4:1));
- if(new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0).length()<2.2)A.pos.addScaledVector(toB,-(2.2-dist));
- const off=new THREE.Vector3().subVectors(A.pos,A.c).setY(0);if(off.length()>ARENA_R)A.pos.copy(A.c).addScaledVector(off.normalize(),ARENA_R);
- A.pos.y=hgt(A.pos.x,A.pos.z);A.cd-=dt;A.dodgeCd-=dt;A.inv-=dt;A.hurt-=dt;
- // facing: toward movement, but snap toward boss when attacking/blocking or close
+ // smooth acceleration instead of instant start/stop
+ if(!A.vel)A.vel=new THREE.Vector3();const tv=_v1.copy(A.mdir).multiplyScalar(A.block?0:6*(A.atk>0?.4:1));A.vel.lerp(tv,1-Math.pow(.0005,dt));
+ if(A.dodge>0){A.dodge-=dt;A.pos.addScaledVector(A.ddir,14*dt);}else A.pos.addScaledVector(A.vel,dt);
+ if(A.kb&&A.kb.lengthSq()>1e-4){A.pos.addScaledVector(A.kb,dt);A.kb.multiplyScalar(Math.pow(.002,dt));}
+ A.cd-=dt;A.dodgeCd-=dt;A.inv-=dt;A.hurt-=dt;if(A.buf>0){A.buf-=dt;if(A.cd<=0&&A.dodge<=0)playerAttack();}
+ // facing toward boss when attacking/blocking/close, else toward movement
+ dist=Math.hypot(A.bpos.x-A.pos.x,A.bpos.z-A.pos.z);toB.set(A.bpos.x-A.pos.x,0,A.bpos.z-A.pos.z).normalize();
  let wantFace=A.face;if(A.atk>0||A.block||dist<CLUB_RANGE[A.ci]+2.5)wantFace=Math.atan2(toB.x,toB.z);else if(A.mdir.lengthSq())wantFace=Math.atan2(A.mdir.x,A.mdir.z);
- let df=((wantFace-A.face+Math.PI*3)%(Math.PI*2))-Math.PI;A.face+=df*Math.min(1,dt*12);
- const u=golfer.userData;golfer.visible=true;golfer.position.copy(A.pos);golfer.rotation.set(0,A.face,0);
- if(A.atk>0){A.atk-=dt;const k=1-A.atk/.35;u.arms.rotation.set(lerp(-2.6,1.0,k),0,0);u.torso.rotation.set(lerp(-.2,.4,k),0,0);
+ A.face+=angDiff(A.face,wantFace)*Math.min(1,dt*12);
+ if(A.atk>0){A.atk-=dt;const k=1-A.atk/.35;
   if(k>.5&&!A.hitDone){A.hitDone=true;const fdir=new THREE.Vector3(Math.sin(A.face),0,Math.cos(A.face));
-   if(dist<CLUB_RANGE[A.ci]+1.6&&fdir.dot(toB)>.35){const crit=Math.random()<A.e.acc*.3;bossDmg(CLUB_DMG[A.ci]*(1+.03*A.e.power)+(A.e.el==='spikes'?3:0),crit);
-    if(A.e.el==='fire')A.burn=1.5;if(A.e.el==='ice')A.slow=2;if(A.e.el==='lightning'&&Math.random()<.3)setTimeout(()=>G.arena&&bossDmg(5,false),250);if(A.e.el==='magnet'){A.php=Math.min(A.phpMax,A.php+1.5);updArenaBars();}}
+   if(dist<CLUB_RANGE[A.ci]+1.8&&fdir.dot(toB)>0){const crit=Math.random()<A.e.acc*.3;bossDmg(CLUB_DMG[A.ci]*(1+.03*A.e.power)+(A.e.el==='spikes'?3:0),crit);if(G.arena!==A)return;
+    if(A.e.el==='fire')A.burn=1.5;if(A.e.el==='ice')A.slow=2;if(A.e.el==='lightning'&&Math.random()<.3)setTimeout(()=>G.arena===A&&bossDmg(5,false),250);if(A.e.el==='magnet'){A.php=Math.min(A.phpMax,A.php+1.5);updArenaBars();}}
    else float('Whoosh! Get closer!');}}
- else if(A.block){u.arms.rotation.set(-1.4,0,0);u.torso.rotation.set(0,0,0);}else{const run=A.mdir.lengthSq()?Math.sin(t*12)*.25:0;u.arms.rotation.set(-.6+Math.sin(t*4)*.08+run,0,0);u.torso.rotation.set(.1+Math.abs(run)*.3,0,0);}
- if(A.dodge>0)golfer.rotateZ(Math.sin(A.dodge*20)*.5);if(A.hurt>0)golfer.rotateX(-.3);
  if(A.burn>0){A.burn-=dt;if(Math.floor((A.burn+dt)*2)!==Math.floor(A.burn*2)&&B.hp>0){B.hp=Math.max(0,B.hp-2);updBoss();splash(A.bpos.clone().setY(A.bpos.y+2.5),0xff6a00,10);if(B.hp<=0)return arenaEnd(true);}}
  // ---- boss AI: chase / circle / back off, then telegraphed attacks
- if(!G.arena)return;const rage=B.hp<B.hpMax*.4?1.5:1;const spd=(A.slow>0?.5:1)*rage;A.slow-=dt;A.st-=dt*spd;
+ const rage=B.hp<B.hpMax*.4?1.5:1;const spd=(A.slow>0?.5:1)*rage;A.slow-=dt;A.st-=dt*spd;
  const bt=new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0);const bd=bt.length();bt.normalize();const tang=new THREE.Vector3(-bt.z,0,bt.x).multiplyScalar(A.circ||1);
+ if(!A.bvel)A.bvel=new THREE.Vector3();const bv=_v2.set(0,0,0);
  if(A.state==='idle'){A.flip=(A.flip||0)-dt;if(A.flip<=0){A.flip=1.5+Math.random()*2;A.circ=Math.random()<.5?-1:1;}
-  if(bd>9){A.bpos.addScaledVector(bt,2.8*dt*spd);A.mode2='chase';}
-  else if(bd<3.5){A.bpos.addScaledVector(bt,-1.5*dt*spd);A.mode2='back';}
-  else{A.bpos.addScaledVector(tang,2.2*dt*spd).addScaledVector(bt,.5*dt*spd);A.mode2='circle';}
+  // blended steering (no hard mode switches → no stutter)
+  const chase=sstep(7,10,bd),back=1-sstep(3.2,4.2,bd),circ=Math.max(0,1-chase-back);
+  bv.addScaledVector(bt,2.8*chase-1.5*back+.5*circ).addScaledVector(tang,2.2*circ).multiplyScalar(spd);A.mode2=chase>.5?'chase':back>.5?'back':'circle';
+  A.bvel.lerp(bv,1-Math.pow(.01,dt));A.bpos.addScaledVector(A.bvel,dt);
   if(A.st<=0){const r=Math.random();A.state=bd<6?(r<.55?'stomp':r<.8?'throw':'charge'):(r<.5?'charge':r<.85?'throw':'stomp');if(A.state==='stomp'&&bd>7)A.state='charge';
-   A.st=A.state==='stomp'?1.1:A.state==='charge'?.9:1.0;teleStart(A);}}
- else if(A.state==='stomp'){const k=1-A.st/1.1;A.tele.scale.setScalar(.2+k*4.8);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),0xffffff,40);if(bd<5)arenaHurt(18);teleEnd(A);}}
+   A.st=A.state==='stomp'?1.1:A.state==='charge'?.9:1.0;A.chHit=false;teleStart(A);}}
+ else{A.bvel.multiplyScalar(Math.pow(.001,dt));A.bpos.addScaledVector(A.bvel,dt);}
+ if(A.state==='stomp'){const k=1-A.st/1.1;A.tele.scale.setScalar(.2+k*4.8);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),0xffffff,40);if(bd<5){arenaHurt(18);if(G.arena!==A)return;A.kb=bt.clone().multiplyScalar(9);}teleEnd(A);}}
  else if(A.state==='charge'){if(!A.cdir)A.cdir=bt.clone();A.tele.position.copy(A.bpos).addScaledVector(A.cdir,6.5);A.tele.position.y=A.bpos.y+.06;A.tele.rotation.y=Math.atan2(A.cdir.x,A.cdir.z);
-  if(A.st<=0){A.dash=(A.dash||0)+dt;A.bpos.addScaledVector(A.cdir,16*dt);if(bd<2.4){arenaHurt(20);A.pos.addScaledVector(A.cdir,2);}if(A.dash>.75){A.dash=0;A.cdir=null;teleEnd(A);}}}
+  if(A.st<=0){A.dash=(A.dash||0)+dt;A.bpos.addScaledVector(A.cdir,16*dt);
+   if(!A.chHit&&bd<SEP+.3){A.chHit=true;arenaHurt(20);if(G.arena!==A)return;const side=new THREE.Vector3(-A.cdir.z,0,A.cdir.x);if(side.dot(bt)<0)side.negate();A.kb=A.cdir.clone().multiplyScalar(6).addScaledVector(side,7);A.dash=.75;}
+   if(A.dash>=.75){A.dash=0;A.cdir=null;teleEnd(A);}}}
  else if(A.state==='throw'){if(A.st<=0){const sr=new THREE.Vector3(-bt.z,0,bt.x);for(let k=-1;k<=1;k++){const tgt=A.pos.clone().addScaledVector(sr,k*2.2);const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:B.col,emissive:0x331111}));
    m.castShadow=true;arenaGroup.add(m);const mk=new THREE.Mesh(RING_G,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.7,side:THREE.DoubleSide}));mk.rotation.x=-Math.PI/2;mk.position.set(tgt.x,hgt(tgt.x,tgt.z)+.08,tgt.z);arenaGroup.add(mk);
    A.proj.push({m,mk,from:A.bpos.clone().setY(A.bpos.y+2.5),to:tgt,t:0});}teleEnd(A);}}
  {const bo=new THREE.Vector3().subVectors(A.bpos,A.c).setY(0);if(bo.length()>ARENA_R-1)A.bpos.copy(A.c).addScaledVector(bo.normalize(),ARENA_R-1);}
- for(let k=A.proj.length-1;k>=0;k--){const q=A.proj[k];q.t+=dt/1.1;const pos=q.from.clone().lerp(q.to,q.t);pos.y=lerp(q.from.y,hgt(q.to.x,q.to.z),q.t)+Math.sin(q.t*Math.PI)*5;q.m.position.copy(pos);
-  if(q.t>=1){if(Math.hypot(A.pos.x-q.to.x,A.pos.z-q.to.z)<1.7)arenaHurt(12);splash(q.to.clone().setY(q.m.position.y),B.col,15);arenaGroup.remove(q.m,q.mk);A.proj.splice(k,1);if(!G.arena)return;}}
- A.bpos.y=hgt(A.bpos.x,A.bpos.z);
- if(bossMesh){bossMesh.position.copy(A.bpos);bossMesh.position.y=A.bpos.y+(A.state==='stomp'?Math.max(0,(A.st-.2))*2:Math.abs(Math.sin(t*(A.mode2==='chase'?6:3)))*.3);bossMesh.rotation.y=Math.atan2(A.pos.x-A.bpos.x,A.pos.z-A.bpos.z);}
- if(G.arena===A)arenaCamera(dt,t);
- sun.position.copy(A.pos).addScaledVector(sunDir,200);sun.target.position.copy(A.pos);}
-// third-person camera that always frames both the player and the boss
-function arenaCamera(dt,t){const A=G.arena;if(!A)return;const P0=A.pos,Bp=A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
- const want=Math.atan2(P0.x-Bp.x,P0.z-Bp.z);// camera sits on the player's side, looking past the player at the boss
- if(A.camYaw==null)A.camYaw=want;let dy=((want-A.camYaw+Math.PI*3)%(Math.PI*2))-Math.PI;A.camYaw+=dy*Math.min(1,dt*(sep<4?1.2:2.5));
- const focus=_v1.copy(P0).lerp(Bp,.42);focus.y=Math.max(P0.y,Bp.y)+1.3;
- let D=7+sep*.7,Hh=3.4+sep*.33;const pts=[[P0,.1],[P0,1.9],[Bp,.2],[Bp,4.2]];let tp=new THREE.Vector3();
- for(let it=0;it<8;it++){tp.set(focus.x+Math.sin(A.camYaw)*D,focus.y+Hh,focus.z+Math.cos(A.camYaw)*D);const gy=hgt(tp.x,tp.z)+1.5;if(tp.y<gy)tp.y=gy;
-  camera.position.copy(tp);camera.lookAt(focus);camera.updateMatrixWorld();let ok=true;
-  for(const [q,h] of pts){_v2.set(q.x,q.y+h,q.z).project(camera);if(_v2.z>1||Math.abs(_v2.x)>.78||_v2.y>.72||_v2.y<-.62){ok=false;break;}}
-  if(ok)break;D*=1.18;Hh*=1.1;}
- if(!A.snapped){A.snapped=1;camPos.copy(tp);camLook.copy(focus);}
- camPos.lerp(tp,1-Math.pow(.004,dt));camLook.lerp(focus,1-Math.pow(.002,dt));if(A.hurt>0)camPos.x+=Math.sin(t*80)*.08;camera.position.copy(camPos);camera.lookAt(camLook);
- // final guarantee: if lerp lag left the boss off-screen, snap to the framed target
- camera.updateMatrixWorld();_v2.set(Bp.x,Bp.y+2,Bp.z).project(camera);if(_v2.z>1||Math.abs(_v2.x)>.95||Math.abs(_v2.y)>.95){camPos.copy(tp);camLook.copy(focus);camera.position.copy(camPos);camera.lookAt(camLook);}
- A.bossOnScreen=true;}
+ // resolve overlap once, after everything moved (smooth push, no teleports)
+ {const ox=A.pos.x-A.bpos.x,oz=A.pos.z-A.bpos.z;const d=Math.hypot(ox,oz);if(d<SEP){const nx=d>1e-3?ox/d:Math.sin(A.face+Math.PI),nz=d>1e-3?oz/d:Math.cos(A.face+Math.PI);A.pos.x=A.bpos.x+nx*SEP;A.pos.z=A.bpos.z+nz*SEP;
+   const vn=A.vel.x*nx+A.vel.z*nz;if(vn<0){A.vel.x-=vn*nx;A.vel.z-=vn*nz;}}}
+ const off=new THREE.Vector3().subVectors(A.pos,A.c).setY(0);if(off.length()>ARENA_R)A.pos.copy(A.c).addScaledVector(off.normalize(),ARENA_R);
+ A.pos.y=hgt(A.pos.x,A.pos.z);A.bpos.y=hgt(A.bpos.x,A.bpos.z);
+ if(A.bYaw==null)A.bYaw=Math.atan2(A.pos.x-A.bpos.x,A.pos.z-A.bpos.z);A.bYaw+=angDiff(A.bYaw,Math.atan2(A.pos.x-A.bpos.x,A.pos.z-A.bpos.z))*Math.min(1,dt*(A.state==='charge'?3:7));
+ A.bob=(A.bob||0)+dt*(A.mode2==='chase'&&A.state==='idle'?6:3);
+ for(let k=A.proj.length-1;k>=0;k--){const q=A.proj[k];q.t+=dt/1.1;const pos=q.from.clone().lerp(q.to,Math.min(1,q.t));pos.y=lerp(q.from.y,hgt(q.to.x,q.to.z),Math.min(1,q.t))+Math.sin(Math.min(1,q.t)*Math.PI)*5;q.m.position.copy(pos);
+  if(q.t>=1){if(Math.hypot(A.pos.x-q.to.x,A.pos.z-q.to.z)<1.7)arenaHurt(12);splash(q.to.clone().setY(q.m.position.y),B.col,15);arenaGroup.remove(q.m,q.mk);A.proj.splice(k,1);if(G.arena!==A)return;}}}
+function arenaRender(a,dt,t){const A=G.arena;const P0=_rp.copy(A.prevP).lerp(A.pos,a),Bp=_rb.copy(A.prevB).lerp(A.bpos,a);
+ const face=A.prevFace!=null?A.prevFace+angDiff(A.prevFace,A.face)*a:A.face;
+ const u=golfer.userData;golfer.visible=true;golfer.position.copy(P0);golfer.rotation.set(0,face,0);
+ if(A.atk>0){const k=1-A.atk/.35;u.arms.rotation.set(lerp(-2.6,1.0,k),0,0);u.torso.rotation.set(lerp(-.2,.4,k),0,0);}
+ else{const tb=A.block?1:0;A.blk=(A.blk||0)+(tb-(A.blk||0))*Math.min(1,dt*18);const sp=A.vel?A.vel.length()/6:0;A.runPh=(A.runPh||0)+dt*12*sp;const run=Math.sin(A.runPh)*.25*Math.min(1,sp);
+  u.arms.rotation.set(lerp(-.6+Math.sin(t*4)*.08+run,-1.4,A.blk),0,0);u.torso.rotation.set(lerp(.1+Math.abs(run)*.3,0,A.blk),0,0);}
+ if(A.dodge>0)golfer.rotateZ(Math.sin(A.dodge*20)*.5);if(A.hurt>0)golfer.rotateX(-.3*A.hurt/.3);
+ if(bossMesh){bossMesh.position.copy(Bp);let hop;if(A.state==='stomp'){const k=1-Math.max(0,A.st)/1.1;hop=Math.sin(Math.min(1,k/.85)*Math.PI)*1.6;}else hop=Math.abs(Math.sin(A.bob||0))*.3;
+  A.hopR=A.hopR==null?hop:A.hopR+(hop-A.hopR)*Math.min(1,dt*20);bossMesh.position.y=Bp.y+A.hopR;
+  const by=A.prevBYaw!=null&&A.bYaw!=null?A.prevBYaw+angDiff(A.prevBYaw,A.bYaw)*a:(A.bYaw||0);bossMesh.rotation.y=by;}
+ arenaCamera(dt,t,P0,Bp);
+ sun.position.copy(P0).addScaledVector(sunDir,200);sun.target.position.copy(P0);}
+// third-person camera that always frames both the player and the boss — fully damped, no snapping
+const _cam=new THREE.PerspectiveCamera();
+function arenaCamera(dt,t,P0,Bp){const A=G.arena;if(!A)return;P0=P0||A.pos;Bp=Bp||A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
+ const want=Math.atan2(P0.x-Bp.x,P0.z-Bp.z);// camera behind the player, looking at the boss
+ if(A.camYaw==null)A.camYaw=want;
+ // yaw follows slowly; when the two are close together the direction is unstable, so follow even slower
+ const yr=.35+1.4*sstep(3,9,sep);A.camYaw+=angDiff(A.camYaw,want)*(1-Math.exp(-dt*yr));
+ const fT=_v1.copy(P0).lerp(Bp,.42);fT.y=Math.max(P0.y,Bp.y)+1.3;if(!A.camF)A.camF=fT.clone();A.camF.lerp(fT,1-Math.pow(.01,dt));const focus=A.camF;
+ // find the zoom needed to frame both (fine steps), then damp the zoom: out quickly, in slowly
+ _cam.fov=camera.fov;_cam.aspect=camera.aspect;_cam.near=camera.near;_cam.far=camera.far;_cam.updateProjectionMatrix();
+ const pts=[[P0,.1],[P0,1.9],[Bp,.2],[Bp,4.2]];let z=1;const base=7+sep*.7,hb=3.4+sep*.33;
+ for(let it=0;it<40;it++){const D=base*z,Hh=hb*Math.pow(z,.6);_cam.position.set(focus.x+Math.sin(A.camYaw)*D,Math.max(focus.y+Hh,hgt(focus.x+Math.sin(A.camYaw)*D,focus.z+Math.cos(A.camYaw)*D)+1.5),focus.z+Math.cos(A.camYaw)*D);
+  _cam.lookAt(focus);_cam.updateMatrixWorld();let ok=true;
+  for(const [q,h] of pts){_v2.set(q.x,q.y+h,q.z).project(_cam);if(_v2.z>1||Math.abs(_v2.x)>.72||_v2.y>.68||_v2.y<-.58){ok=false;break;}}
+  if(ok)break;z*=1.05;}
+ if(A.camZ==null)A.camZ=z;A.camZ+=(z-A.camZ)*(1-Math.pow(z>A.camZ?.003:.25,dt));
+ const D=base*A.camZ,Hh=hb*Math.pow(A.camZ,.6);const tx=focus.x+Math.sin(A.camYaw)*D,tz=focus.z+Math.cos(A.camYaw)*D;
+ camPos.set(tx,Math.max(focus.y+Hh,hgt(tx,tz)+1.5),tz);camLook.copy(focus);camera.position.copy(camPos);
+ if(A.hurt>0){const s=.12*A.hurt/.3;camera.position.x+=Math.sin(t*47)*s;camera.position.y+=Math.cos(t*39)*s*.6;}
+ camera.lookAt(camLook);A.bossOnScreen=true;}
 function teleStart(A){let m;if(A.state==='stomp'){m=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.copy(A.bpos).setY(A.bpos.y+.07);}
  else if(A.state==='charge'){const g=new THREE.PlaneGeometry(2.4,13);g.rotateX(-Math.PI/2);m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
  if(m){arenaGroup.add(m);A.tele=m;}if(A.state==='stomp')float(G.boss.ic+' STOMP incoming!');}
 function teleEnd(A){if(A.tele)arenaGroup.remove(A.tele);A.tele=null;A.state='idle';A.st=1.2+Math.random()*1.3;}
 function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length)arenaGroup.remove(arenaGroup.children[0]);G.arena=null;
- $('arenaUI').style.display='none';$('pbar').style.display='none';['clubs','swing','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
+ $('arenaUI').style.display='none';$('pbar').style.display='none';['clubs','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
  if(bossMesh&&G.boss){bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);}}
 function arenaEnd(win){const A=G.arena;if(!A)return;const p=A.p;arenaCleanup();if(!win)p.strokes++;
  if(G.online)net({t:'arenaEnd',hp:G.boss.hp,win,strokes:p.strokes});
@@ -736,13 +770,13 @@ function menu(){G.mode='menu';const last=save.lastNames||['Player 1','Player 2']
  overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">9 holes · 3 bosses · upgrade your clubs with tokens!</p>
  <input class="nm" id="n1" value="${last[0]}"><input class="nm" id="n2" value="${last[1]}" placeholder="Player 2 (optional)"><br>
  <button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
- <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · hold SPACE / big button to charge power, let go to swing!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);}
+ <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);}
 window.go=(m,cont)=>{const n1=($('n1').value||'Player 1').slice(0,14),n2=$('n2')?($('n2').value||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
  const start=cont?Math.min(save.hole||0,NHOLES-1):0;
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
  else if(m==='host')hostOnline(n1);else if(m==='join')joinOnline(n1,room);};
-G.dbg=()=>({gv:golfer.visible,gp:golfer.position.toArray().map(v=>+v.toFixed(1)),cam:camera.position.toArray().map(v=>+v.toFixed(1)),ap:G.arena&&G.arena.pos.toArray().map(v=>+v.toFixed(1)),bp:G.arena&&G.arena.bpos.toArray().map(v=>+v.toFixed(1)),arms:golfer.userData.arms.children.length});window.__eff=eff;window.__pred=predictLanding;G.doShotFull=(sh)=>{window.__apex=0;const sy0=P().pos.y;doShot(sh);let n=0;window.__lastLand=null;while(ball&&n<20000){const wasAir=ball.air;stepBall(1/120);n++;if(ball){window.__apex=Math.max(window.__apex||0,P().pos.y-sy0);}if(ball&&wasAir&&!window.__lastLand&&ball.landed)window.__lastLand=P().pos.clone();}};window.__land=()=>window.__lastLand;G.doShot=(c,pw)=>{const p=P();doShot({aim:0,power:pw,club:c,dev:0,e:eff(p.prof,c),spin:p.spin});};G.arenaStep=(n,dt)=>{for(let k=0;k<n&&G.arena;k++)arenaTick(dt,k*dt);};G.sim=()=>{let n=0;while(ball&&n<20000){stepBall(1/120);n++;}return n;};G.startHole=startHole;G.makePlayer=makePlayer;
+G.dbg=()=>({gv:golfer.visible,gp:golfer.position.toArray().map(v=>+v.toFixed(1)),cam:camera.position.toArray().map(v=>+v.toFixed(1)),ap:G.arena&&G.arena.pos.toArray().map(v=>+v.toFixed(1)),bp:G.arena&&G.arena.bpos.toArray().map(v=>+v.toFixed(1)),arms:golfer.userData.arms.children.length});window.__eff=eff;window.__surf=(x,z)=>surfInfo(H,x,z);window.__sim=(p,s)=>simulateShot(p,s,new THREE.Vector2());window.__pred=predictLanding;G.doShotFull=(sh)=>{window.__apex=0;const sy0=P().pos.y;doShot(sh);let n=0;window.__lastLand=null;while(ball&&n<20000){const wasAir=ball.air;stepBall(1/120);n++;if(ball){window.__apex=Math.max(window.__apex||0,P().pos.y-sy0);}if(ball&&wasAir&&!window.__lastLand&&ball.landed)window.__lastLand=P().pos.clone();}};window.__land=()=>window.__lastLand;G.doShot=(c,pw)=>{const p=P();doShot({aim:0,power:pw,club:c,dev:0,e:eff(p.prof,c),spin:p.spin});};G.arenaStep=(n,dt)=>{for(let k=0;k<n&&G.arena;k++)arenaTick(dt,k*dt);};G.sim=()=>{let n=0;while(ball&&n<20000){stepBall(1/120);n++;}return n;};G.startHole=startHole;G.makePlayer=makePlayer;
 
 
 // ===== landing zone marker, carry readout, wind HUD & FX =====
