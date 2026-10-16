@@ -683,10 +683,10 @@ function arenaTick(dt,t){const A=G.arena,B=G.boss;A.clock+=dt;
   if(q.t>=1){if(Math.hypot(A.pos.x-q.to.x,A.pos.z-q.to.z)<1.7)arenaHurt(12);splash(q.to.clone().setY(q.m.position.y),B.col,15);arenaGroup.remove(q.m,q.mk);A.proj.splice(k,1);if(!G.arena)return;}}
  A.bpos.y=hgt(A.bpos.x,A.bpos.z);
  if(bossMesh){bossMesh.position.copy(A.bpos);bossMesh.position.y=A.bpos.y+(A.state==='stomp'?Math.max(0,(A.st-.2))*2:Math.abs(Math.sin(t*(A.mode2==='chase'?6:3)))*.3);bossMesh.rotation.y=Math.atan2(A.pos.x-A.bpos.x,A.pos.z-A.bpos.z);}
- arenaCamera(dt,t);
+ if(G.arena===A)arenaCamera(dt,t);
  sun.position.copy(A.pos).addScaledVector(sunDir,200);sun.target.position.copy(A.pos);}
 // third-person camera that always frames both the player and the boss
-function arenaCamera(dt,t){const A=G.arena;const P0=A.pos,Bp=A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
+function arenaCamera(dt,t){const A=G.arena;if(!A)return;const P0=A.pos,Bp=A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
  const want=Math.atan2(P0.x-Bp.x,P0.z-Bp.z);// camera sits on the player's side, looking past the player at the boss
  if(A.camYaw==null)A.camYaw=want;let dy=((want-A.camYaw+Math.PI*3)%(Math.PI*2))-Math.PI;A.camYaw+=dy*Math.min(1,dt*(sep<4?1.2:2.5));
  const focus=_v1.copy(P0).lerp(Bp,.42);focus.y=Math.max(P0.y,Bp.y)+1.3;
