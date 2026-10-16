@@ -36,7 +36,7 @@ button.sm{font-size:16px;font-weight:bold;padding:6px 12px;border-radius:10px;bo
 button:disabled{opacity:.45;cursor:default}
 table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,table.sc th{border:2px solid #fff6;padding:5px 9px}
 .statrow{display:flex;align-items:center;gap:10px;margin:6px 0;text-align:left}.statrow .nm{width:120px}
-.bar5{display:flex;gap:3px}.bar5 i{width:26px;height:20px;border-radius:5px;background:#0005;border:2px solid #fff5}.bar5 i.on{background:linear-gradient(#ff5,#fa0)}
+.bar5{display:flex;gap:3px}.bar5 i{width:17px;height:20px;border-radius:5px;background:#0005;border:2px solid #fff5}.bar5 i.on{background:linear-gradient(#ff5,#fa0)}
 .tabs button{margin:3px}.tabs button.on{background:#fff;color:#185}
 .elems{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.elem{width:140px;background:#0003;border-radius:14px;padding:8px;border:3px solid #fff4;font-size:15px}
 .elem .ic{font-size:38px}input.nm{font-size:22px;padding:8px;border-radius:10px;border:3px solid #fff;width:220px;margin:6px}
@@ -104,23 +104,28 @@ const ELEMS={
  spikes:{ic:'🦔',name:'Spikes',col:0xcccccc,desc:'Ball sticks where it lands. No bad bounces!'},
  ice:{ic:'❄️',name:'Frost',col:0x99eeff,desc:'Freezes water so the ball skids across.'},
  lightning:{ic:'⚡',name:'Lightning',col:0xfff36b,desc:'Zappy straight shots (+accuracy).'},
- magnet:{ic:'🧲',name:'Magnet',col:0xcc66ff,desc:'Pulls ball to the cup & grabs far tokens.'},
+ magnet:{ic:'🧲',name:'Magnet',col:0xcc66ff,desc:'Gently pulls the ball toward the cup & grabs nearby tokens.'},
  bubble:{ic:'🫧',name:'Bubble',col:0x77ddff,desc:'Bounces off water and floats out of sand.'}};
 const BOSSES={2:{name:'Gopher Gus',ic:'🐹',hp:90,col:0x9a6a3a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet'},
  5:{name:'Frosty the Yeti',ic:'🦍',hp:135,col:0xeef6ff,weak:['fire','lightning'],resist:['ice','magnet'],perk:'ice'},
  8:{name:'Kraken of the Lake',ic:'🐙',hp:180,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'}};
 const NHOLES=9, PARS=[3,4,4,4,5,4,3,5,5];
-const UPCOST=l=>10+l*8, ELCOST=40;
+const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
+const HOLE_REWARD=d=>d>=2?0:d===1?2:d===0?5:d===-1?10:20, BOSS_BONUS=15, COIN_VALUE=1, N_COINS=5;
 
 // ===== profiles =====
 const LS='tinyTeeHeroes.v1';
 let save=JSON.parse(localStorage.getItem(LS)||'{}'); save.profiles=save.profiles||{};
-function newProfile(name){const lv={};CLUBS.forEach(c=>lv[c.id]={power:0,acc:0,spin:0});return{name,tokens:20,lv,unlocked:[],equip:{}};}
-function getProfile(name){if(!save.profiles[name])save.profiles[name]=newProfile(name);return save.profiles[name];}
+function newProfile(name){const lv={};CLUBS.forEach(c=>lv[c.id]={power:0,acc:0,spin:0});return{name,tokens:20,lv,unlocked:[],equip:{},v:2};}
+function migrate(pr){if(pr.v>=2)return pr;for(const k in pr.lv)for(const st of['power','acc','spin'])pr.lv[k][st]=Math.min(MAXLV,(pr.lv[k][st]||0)*2);pr.v=2;return pr;}
+function getProfile(name){if(save.profiles[name])migrate(save.profiles[name]);if(!save.profiles[name])save.profiles[name]=newProfile(name);return save.profiles[name];}
 function persist(){localStorage.setItem(LS,JSON.stringify(save));}
 function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el=prof.equip[c.id]||null;
- let dist=c.dist*(1+.07*l.power)*(el==='fire'?1.12:1);let acc=c.acc+(1-c.acc)*.16*l.acc;if(el==='lightning')acc+=(1-acc)*.6;
- return{dist,acc:Math.min(acc,.995),spin:Math.min(1,c.spin+.08*l.spin),loft:c.loft,el,power:l.power};}
+ // progression: 10 levels per stat. Power & spin start at 60% and reach 100% (the old base values) at level 10.
+ let dist=c.dist*(.6+.04*l.power)*(el==='fire'?1.12:1);let acc=c.acc+(1-c.acc)*.08*l.acc;if(el==='lightning')acc+=(1-acc)*.6;
+ return{dist,acc:Math.min(acc,.995),spin:c.spin,spinMul:.6+.04*l.spin,loft:c.loft,el,power:l.power};}
+const MAXLV=10,UPBASE=[2,3,4,5,7,9,11,14,17,21],CLUBMULT={driver:1.3,wood:1.15,iron:1,wedge:.9,putter:.75};
+const upCost=(club,lv)=>Math.max(1,Math.round(UPBASE[lv]*CLUBMULT[club]));
 
 // ===== game state =====
 const G={hole:0,players:[],turn:0,mode:'menu',online:null,localIdx:null,boss:null,windV:new THREE.Vector2()};
@@ -190,7 +195,8 @@ const WIND_U={uTime:{value:0},uWind:{value:new THREE.Vector2()}};
 // ===== hole generation =====
 let H=null; const holeGroup=new THREE.Group();scene.add(holeGroup);
 function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
- const L=par===3?135+i*6:par===4?250+i*14:390+i*12;
+ const LF=.62+.04*i;// shorter early holes for 60%-power starter clubs
+ const L=Math.round((par===3?135+i*6:par===4?250+i*14:390+i*12)*LF);
  const fw=Math.max(22,40-i*2.2);const side=r()<.5?-1:1;const dog=i<1?0:side*(10+i*6)*(par===3?.3:1);
  const gx=dog*(par===5?.3:.8)+(r()-.5)*10;
  const path=[[0,0],[dog*.4,-L*.35],[dog,-L*.62],[gx,-L]];
@@ -204,7 +210,7 @@ function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  if(i>=2){const nw=i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):.8;const p=ptAt(h,t);
   const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+i*.6:14+r()*10,a:0});}}
  // tokens
- for(let k=0;k<6;k++){const p=ptAt(h,.2+k*.13);h.tokens.push({x:p[0]+(r()-.5)*fw*.7,z:p[1],got:false});}
+ for(let k=0;k<N_COINS;k++){const p=ptAt(h,.2+k*.15);h.tokens.push({x:p[0]+(r()-.5)*fw*.7,z:p[1],got:false});}
  return h;}
 function ptAt(h,t){const P=h.path;const seg=Math.min(2,Math.floor(t*3));const u=t*3-seg;return[lerp(P[seg][0],P[seg+1][0],u),lerp(P[seg][1],P[seg+1][1],u)];}
 function distPath(h,x,z){let best=1e9;const P=h.path;for(let k=0;k<P.length-1;k++){const ax=P[k][0],az=P[k][1],bx=P[k+1][0],bz=P[k+1][1];
@@ -472,7 +478,7 @@ function overDev(pw,e){return pw>1?(Math.random()<.5?-1:1)*(.3+Math.random()*.7)
 
 // ===== physics =====
 const GRAV=9.8,R=.13;let ball=null;
-const spinScale=e=>.45+.55*e.spin;
+const spinScale=e=>(.45+.55*e.spin)*(e.spinMul==null?1:e.spinMul);
 function launchVel(p,s){const e=s.e;const sy=(s.spin?s.spin.y:0)*spinScale(e);const lie=surfInfo(H,p.pos.x,p.pos.z);let dist=e.dist;if(lie==='rough')dist*=.85;if(lie==='sand'&&!(e.el==='bubble'))dist*=s.club===3?.85:.55;
  const a=s.aim+(s.dev||0);const pw=Math.min(MAXPOW,s.power);
  if(e.loft===0){const fr=lie==='green'?FR.green:FR[lie]||2;const vv=Math.sqrt(2*fr*dist*pw*1.05)*(1+.05*clamp(s.spin?s.spin.y:0,-1,1));return new THREE.Vector3(Math.sin(a)*vv,0,-Math.cos(a)*vv);}
@@ -517,7 +523,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
   if(s==='sand'&&e.el==='bubble')s='fairway';
   const[gx,gz]=grad(pos.x,pos.z);let ax=-gx*GRAV*.6,az=-gz*GRAV*.6;const sp=Math.hypot(v.x,v.z);
   const dc=Math.hypot(pos.x-H.gx,pos.z-H.gz);
-  if(e.el==='magnet'&&dc<7&&dc>.05){ax+=(H.gx-pos.x)/dc*1.6;az+=(H.gz-pos.z)/dc*1.6;}
+  if(e.el==='magnet'&&dc<3.5&&dc>.05){ax+=(H.gx-pos.x)/dc*.8;az+=(H.gz-pos.z)/dc*.8;}
   const fr=(FR[s]||2)*(b.sy>0?1-.27*b.sy:1)*(b.zipped?1.15:1);if(sp>1e-3){ax-=v.x/sp*fr;az-=v.z/sp*fr;}
   const nvx=v.x+ax*dt,nvz=v.z+az*dt;if(sp>1e-3&&(nvx*v.x+nvz*v.z)<0&&Math.hypot(ax+v.x/sp*fr,az+v.z/sp*fr)<fr){v.x=0;v.z=0;}else{v.x=nvx;v.z=nvz;}
   pos.x+=v.x*dt;pos.z+=v.z*dt;pos.y=hgt(pos.x,pos.z)+R;bossHit(b);
@@ -526,10 +532,10 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
   if(Math.hypot(v.x,v.z)<.06&&Math.hypot(gx,gz)*GRAV*.6<fr+.01)return stopBall();}
  if(Math.abs(pos.x)>HX||pos.z>H.zmax||pos.z<H.zmin)return penalty('🚧 Out of bounds! +1');
  // tokens
- if(!b.dry)for(const t of H.tokens){if(t.got)continue;const rr=e.el==='magnet'?7:2.6;if(Math.hypot(pos.x-t.x,pos.z-t.z)<rr&&Math.abs(pos.y-t.y)<4){t.got=true;t.mesh.visible=false;p.prof.tokens+=3;persist();float('🪙 +3 tokens!');splash(t.mesh.position,0xffd84a);}}
+ if(!b.dry)for(const t of H.tokens){if(t.got)continue;const rr=e.el==='magnet'?4.8:2.6;if(Math.hypot(pos.x-t.x,pos.z-t.z)<rr&&Math.abs(pos.y-t.y)<4){t.got=true;t.mesh.visible=false;p.prof.tokens+=COIN_VALUE;persist();float('🪙 +'+COIN_VALUE+' token!');splash(t.mesh.position,0xffd84a);}}
  if(b.dry){b.n=(b.n||0)+1;if(b.n%3===0)b.path.push(pos.clone());if(b.landed&&!b.carryPt)b.carryPt=pos.clone();}else{trailPts.push(pos.clone());if(trailPts.length>TRN)trailPts.shift();}}
 function mult(el){const b=G.boss;if(!el)return 1;if(b.weak.includes(el))return 2;if(b.resist.includes(el))return .5;return 1;}
-function dealDamage(base,b){const B=G.boss;if(!B||B.hp<=0||b.hitBoss)return;b.hitBoss=true;const m=mult(b.e.el);const dmg=Math.max(1,Math.round(base*m*(1+.06*b.e.power)));B.hp=Math.max(0,B.hp-dmg);updBoss();
+function dealDamage(base,b){const B=G.boss;if(!B||B.hp<=0||b.hitBoss)return;b.hitBoss=true;const m=mult(b.e.el);const dmg=Math.max(1,Math.round(base*m*(1+.03*b.e.power)));B.hp=Math.max(0,B.hp-dmg);updBoss();
  splash(new THREE.Vector3(B.x,hgt(B.x,B.z)+2,B.z),b.e.el?ELEMS[b.e.el].col:0xffffff,40);bossFlash=.5;
  float(`💥 ${dmg} damage!${m>1?'<br>SUPER EFFECTIVE! '+ELEMS[b.e.el].ic:m<1?'<br>Not very effective…':''}`);
  if(B.hp<=0)setTimeout(()=>{say(`🏆 ${B.name} defeated!`,2500);bossDefeated();},900);}
@@ -539,15 +545,15 @@ function bossHit(b){const B=G.boss;if(!B||B.hp<=0)return;const pos=b.p.pos;const
  const nx=d>1e-3?dx/d:0,nz=d>1e-3?dz/d:1;pos.x=B.x+nx*(R0+.02);pos.z=B.z+nz*(R0+.02);if(!b.air)pos.y=hgt(pos.x,pos.z)+R;
  const vn=b.v.x*nx+b.v.z*nz;if(vn<0){b.v.x-=1.5*vn*nx;b.v.z-=1.5*vn*nz;}b.v.x*=.6;b.v.z*=.6;b.bonks=(b.bonks||0)+1;if(b.bonks>40){b.v.set(0,0,0);b.air=false;}}
 function bossSplash(b){return;const B=G.boss;if(!B||B.hp<=0)return;const d=Math.hypot(b.p.pos.x-B.x,b.p.pos.z-B.z);if(d<35)dealDamage(6+20*(1-d/35),b);}
-function bossDefeated(){const B=G.boss;G.players.forEach(p=>{if(!p.prof.unlocked.includes(B.perk))p.prof.unlocked.push(B.perk);p.prof.tokens+=25;});persist();
- if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">Everyone earns <b>+25 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
+function bossDefeated(){const B=G.boss;G.players.forEach(p=>{if(!p.prof.unlocked.includes(B.perk))p.prof.unlocked.push(B.perk);p.prof.tokens+=BOSS_BONUS;});persist();
+ if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">Everyone earns <b>+${BOSS_BONUS} 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
 function stopBall(){if(ball.dry){ball.end='stop';ball=null;return;}const b=ball;ball=null;if(!b.landed)bossSplash(b);endShot();}
 function penalty(t){if(ball.dry){ball.end=/Splash/.test(t)?'water':'oob';ball=null;return;}const p=ball.p;ball=null;p.strokes++;p.pos.copy(p.last);float(t);splash(p.pos,0x88ccff);setTimeout(endShot,700);}
 function holed(){if(ball.dry){ball.end='holed';ball=null;return;}const p=ball.p;ball=null;p.done=true;p.ball.visible=false;const d=p.strokes-H.par;
  const names={'-3':'ALBATROSS!! 🦅','-2':'EAGLE!! 🦅','-1':'BIRDIE! 🐦','0':'PAR! 👍','1':'Bogey — nice try!','2':'Double bogey — keep going!'};
- let earn=5+Math.max(0,-d)*8;if(p.strokes===1){earn+=30;say('⛳ HOLE IN ONE!!! 🎉',3000);}else say(names[d]||'In the hole! 🎉',2500);
+ let earn=HOLE_REWARD(d);if(p.strokes===1){say('⛳ HOLE IN ONE!!! 🎉',3000);}else say(names[d]||'In the hole! 🎉',2500);
  p.prof.tokens+=earn;persist();p.lastEarn=earn;splash(p.pos,0xffe14d,90);setTimeout(endShot,1500);}
-function endShot(){const p=P();if(G.boss&&G.boss.hp>0&&!p.done&&Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz)<45&&!G.skipArena){return arenaIntro(p);}G.skipArena=false;if(!p.done&&p.strokes>=H.par+5&&!(G.boss&&G.boss.hp>0)){p.done=true;p.ball.visible=false;p.lastEarn=2;say("Let's pick it up and move on! 🙂");}
+function endShot(){const p=P();if(G.boss&&G.boss.hp>0&&!p.done&&Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz)<45&&!G.skipArena){return arenaIntro(p);}G.skipArena=false;if(!p.done&&p.strokes>=H.par+5&&!(G.boss&&G.boss.hp>0)){p.done=true;p.ball.visible=false;p.lastEarn=0;say("Let's pick it up and move on! 🙂");}
  const live=G.players.filter(q=>!q.done);if(!live.length)return finishHole();
  // next turn: alternate among players still playing
  let n=G.turn;do{n=(n+1)%G.players.length;}while(G.players[n].done);G.turn=n;
@@ -556,7 +562,7 @@ function finishHole(){G.players.forEach(p=>{p.scores[G.hole]=p.strokes;});G.mode
  if(!G.online||G.online.host){save.hole=G.hole+1;persist();}showCard(true);}
 function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1><table class="sc"><tr><th>Hole</th>${PARS.map((_,i)=>`<th>${i+1}${BOSSES[i]?BOSSES[i].ic:''}</th>`).join('')}<th>Total</th></tr><tr><td>Par</td>${PARS.map(x=>`<td>${x}</td>`).join('')}<td>${PARS.reduce((a,b)=>a+b)}</td></tr>`;
  pl.forEach(p=>{let tot=0;t+=`<tr><td>${p.name}</td>${PARS.map((par,i)=>{const s=p.scores[i];if(s==null)return'<td></td>';tot+=s;const c=s<par?'#ffe14d':s>par?'#fbb':'#fff';return`<td style="color:${c}">${s}</td>`;}).join('')}<td><b>${tot}</b></td></tr>`;});
- t+='</table>';if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> (bonus for under par!) · total ${p.prof.tokens} 🪙</p>`);
+ t+='</table>';if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey 2 · par 5 · birdie 10 · eagle+ 20)</small> · total ${p.prof.tokens} 🪙</p>`);
   const last=G.hole>=NHOLES-1;const canNext=!G.online||G.online.host;
   t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
@@ -566,18 +572,18 @@ window.nextHole=(h)=>{const n=h===0?0:G.hole+1;if(n===0)G.players.forEach(p=>p.s
 let shopP=0,shopC=0;
 window.openShop=(pi)=>{if(pi!=null)shopP=pi;const locals=G.players.map((p,k)=>k).filter(k=>!G.players[k].remote);if(!locals.includes(shopP))shopP=locals[0];
  const p=G.players[shopP],pr=p.prof,c=CLUBS[shopC],l=pr.lv[c.id],e=eff(pr,shopC);
- const bar=(v)=>`<span class="bar5">${[0,1,2,3,4].map(k=>`<i class="${k<v?'on':''}"></i>`).join('')}</span>`;
- const row=(key,label,val)=>{const lv=l[key];return`<div class="statrow"><span class="nm">${label}</span>${bar(lv)}<span style="width:120px">Lv ${lv} · ${val}</span>${lv<5?`<button class="sm" ${pr.tokens<UPCOST(lv)?'disabled':''} onclick="upg('${key}')">⬆ ${UPCOST(lv)} 🪙</button>`:'<b>MAX ⭐</b>'}</div>`;};
+ const bar=(v,n=MAXLV)=>`<span class="bar5">${[...Array(n).keys()].map(k=>`<i class="${k<v?'on':''}"></i>`).join('')}</span>`;
+ const row=(key,label,val)=>{const lv=l[key];return`<div class="statrow"><span class="nm">${label}</span>${bar(lv)}<span style="width:210px;white-space:nowrap">Lv ${lv}/${MAXLV} · ${val}</span>${lv<MAXLV?`<button class="sm" ${pr.tokens<upCost(c.id,lv)?'disabled':''} onclick="upg('${key}')">⬆ ${upCost(c.id,lv)} 🪙</button>`:'<b>MAX ⭐</b>'}</div>`;};
  let t=`<h1>🛒 Club Shop</h1>${locals.length>1?'<div class="tabs">'+locals.map(k=>`<button class="sm ${k===shopP?'on':''}" onclick="openShop(${k})">${G.players[k].name}</button>`).join('')+'</div>':''}
  <p style="font-size:26px">${p.name}: <b style="color:#ffd84a">🪙 ${pr.tokens}</b></p><div class="tabs">${CLUBS.map((cc,k)=>`<button class="sm ${k===shopC?'on':''}" onclick="shopC=${k};openShop()">${cc.name} ${pr.equip[cc.id]?ELEMS[pr.equip[cc.id]].ic:''}</button>`).join('')}</div>
- <div style="display:inline-block;margin:10px auto">${row('power','💪 Power',Math.round(fullCarry(e))+'m carry')}${row('acc','🎯 Accuracy',Math.round(e.acc*100)+'%')}${row('spin','🌀 Spin',Math.round(e.spin*100)+'%')}
- <div class="statrow"><span class="nm">📐 Loft</span>${bar(Math.round(c.loft/10))}<span>${c.loft}° (${c.loft>30?'high & soft':c.loft?'low & long':'rolls on ground'})</span></div></div>
- <h2>✨ Attributes for your ${c.name}</h2><div class="elems">${Object.entries(ELEMS).map(([k,E])=>{const has=pr.unlocked.includes(k),on=pr.equip[c.id]===k;
-  return`<div class="elem" style="${on?'border-color:#ffe14d;background:#fff3':''}"><div class="ic">${E.ic}</div><b>${E.name}</b><br><small>${E.desc}</small><br>${has?(on?`<button class="sm" onclick="equip(null)">Remove</button>`:`<button class="sm" onclick="equip('${k}')">Equip</button>`):`<button class="sm" ${pr.tokens<ELCOST?'disabled':''} onclick="unlock('${k}')">Unlock ${ELCOST} 🪙</button>`}</div>`;}).join('')}</div>
+ <div style="display:inline-block;margin:10px auto">${row('power','💪 Power',Math.round(fullCarry(e))+'m carry')}${row('acc','🎯 Accuracy',Math.round(e.acc*100)+'%')}${row('spin','🌀 Spin',Math.round(e.spinMul*100)+'% strength')}
+ <div class="statrow"><span class="nm">📐 Loft</span>${bar(Math.round(c.loft/10),5)}<span>${c.loft}° (${c.loft>30?'high & soft':c.loft?'low & long':'rolls on ground'})</span></div></div>
+ <h2>✨ Attributes for your ${c.name}</h2><div class="elems">${Object.entries(ELEMS).sort((a,b)=>ELCOST(a[0])-ELCOST(b[0])).map(([k,E])=>{const has=pr.unlocked.includes(k),on=pr.equip[c.id]===k;
+  return`<div class="elem" style="${on?'border-color:#ffe14d;background:#fff3':''}"><div class="ic">${E.ic}</div><b>${E.name}</b><br><small>${E.desc}</small><br>${has?(on?`<button class="sm" onclick="equip(null)">Remove</button>`:`<button class="sm" onclick="equip('${k}')">Equip</button>`):`<button class="sm" ${pr.tokens<ELCOST(k)?'disabled':''} onclick="unlock('${k}')">Unlock ${ELCOST(k)} 🪙</button>`}</div>`;}).join('')}</div>
  <p><small>Bosses drop free attribute perks!</small></p><button class="big" onclick="closeShop()">Done ✅</button>`;overlay(t);};
 window.closeShop=()=>{closeOv();if(G.mode==='arenaIntro')arenaIntro(P());else if(G.mode==='card')showCard(true);else if(G.boss&&G.boss.hp>0&&G.players.every(p=>p.strokes===0))showBossIntro();};
-window.upg=k=>{const pr=G.players[shopP].prof,l=pr.lv[CLUBS[shopC].id];const c=UPCOST(l[k]);if(pr.tokens>=c&&l[k]<5){pr.tokens-=c;l[k]++;persist();say('⬆ Upgraded!',900);}syncProf();openShop();updUI();};
-window.unlock=k=>{const pr=G.players[shopP].prof;if(pr.tokens>=ELCOST){pr.tokens-=ELCOST;pr.unlocked.push(k);pr.equip[CLUBS[shopC].id]=k;persist();say(ELEMS[k].ic+' Unlocked!',900);}syncProf();openShop();updUI();};
+window.upg=k=>{const pr=G.players[shopP].prof,l=pr.lv[CLUBS[shopC].id];if(l[k]>=MAXLV)return;const c=upCost(CLUBS[shopC].id,l[k]);if(pr.tokens>=c){pr.tokens-=c;l[k]++;persist();say('⬆ Upgraded!',900);}syncProf();openShop();updUI();};
+window.unlock=k=>{const pr=G.players[shopP].prof;if(pr.tokens>=ELCOST(k)&&!pr.unlocked.includes(k)){pr.tokens-=ELCOST(k);pr.unlocked.push(k);pr.equip[CLUBS[shopC].id]=k;persist();say(ELEMS[k].ic+' Unlocked!',900);}syncProf();openShop();updUI();};
 window.equip=k=>{const pr=G.players[shopP].prof;if(k)pr.equip[CLUBS[shopC].id]=k;else delete pr.equip[CLUBS[shopC].id];persist();syncProf();openShop();updUI();};
 
 // ===== particles =====
@@ -614,13 +620,13 @@ function arenaIntro(p){G.mode='arenaIntro';const B=G.boss;
  const tag=el=>!el?'':B.weak.includes(el)?' <b style="color:#ffe14d">2× 💥</b>':B.resist.includes(el)?' <b style="color:#9cf">½ 🛡️</b>':'';
  overlay(`<h1>⚔️ ${B.ic} ${B.name} blocks the green!</h1><p style="font-size:22px">${p.name}, pick a club to fight with!</p>
  <p>💥 Weak to ${B.weak.map(k=>ELEMS[k].ic).join(' ')} &nbsp; 🛡️ Resists ${B.resist.map(k=>ELEMS[k].ic).join(' ')}</p>
- <div class="elems">${CLUBS.map((c,ci)=>{const e=eff(p.prof,ci);return`<div class="elem" style="cursor:pointer" onclick="startArena(${ci})"><div class="ic">${e.el?ELEMS[e.el].ic:'🏌️'}</div><b>${c.name}</b><br><small>Hit ${Math.round(CLUB_DMG[ci]*(1+.06*e.power))} · Speed ${Math.round(10/CLUB_CD[ci])}</small>${tag(e.el)}</div>`;}).join('')}</div>
- <p style="font-size:17px">Move: ⬅️⬆️⬇️➡️ / WASD · ⚔️ Attack: SPACE or J · 💨 Dodge: SHIFT or K · 🛡️ Block: hold L<br>Watch for the red warning zones and jump out of the way!</p>
+ <div class="elems">${CLUBS.map((c,ci)=>{const e=eff(p.prof,ci);return`<div class="elem" style="cursor:pointer" onclick="startArena(${ci})"><div class="ic">${e.el?ELEMS[e.el].ic:'🏌️'}</div><b>${c.name}</b><br><small>Hit ${Math.round(CLUB_DMG[ci]*(1+.03*e.power))} · Speed ${Math.round(10/CLUB_CD[ci])}</small>${tag(e.el)}</div>`;}).join('')}</div>
+ <p style="font-size:17px">Move: <b>WASD</b> (or arrows) · ⚔️ Attack: <b>LEFT CLICK</b> (or Space) · 🛡️ Block: <b>hold RIGHT CLICK</b> · 💨 Dodge: <b>CTRL</b> (or Shift)<br>Watch for the red warning zones and jump out of the way!</p>
  <button class="big" onclick="openShop()">🛒 Shop</button>`);}
 window.startArena=(ci)=>{closeOv();gs=null;gx.clearRect(0,0,gc.width,gc.height);const p=P();p.club=ci;const B=G.boss;const c=new THREE.Vector3(B.x,0,B.z);
  const dir=new THREE.Vector3(p.pos.x-B.x,0,p.pos.z-B.z);if(dir.length()<1)dir.set(0,0,1);dir.normalize();
  const pp=c.clone().addScaledVector(dir,8);
- G.arena={ui:{},p,ci,e:eff(p.prof,ci),c,pos:pp,php:100,phpMax:100,bpos:c.clone(),cd:0,atk:0,dodge:0,dodgeCd:0,inv:0,block:false,state:'idle',st:1.5,tele:null,proj:[],burn:0,slow:0,hurt:0,mdir:new THREE.Vector3(),clock:0,face:0};
+ G.arena={ui:{},face:0,p,ci,e:eff(p.prof,ci),c,pos:pp,php:100,phpMax:100,bpos:c.clone(),cd:0,atk:0,dodge:0,dodgeCd:0,inv:0,block:false,state:'idle',st:1.5,tele:null,proj:[],burn:0,slow:0,hurt:0,mdir:new THREE.Vector3(),clock:0,face:0};
  G.mode='arena';$('arenaUI').style.display='block';$('clubs').style.display='none';$('swing').style.display='none';$('power').style.display='none';$('spinBox').style.display='none';$('aimL').style.display='none';$('aimR').style.display='none';$('windp').style.display='none';$('carry').style.display='none';
  $('pbar').style.display='block';$('hint').style.display='none';updArenaBars();updClubFx();say('⚔️ FIGHT!',1200);};
 function updArenaBars(){const A=G.arena;if(!A)return;$('pfill2').style.width=(100*A.php/A.phpMax)+'%';$('pname').textContent=`${A.p.name} ❤️`;updBoss();}
@@ -631,43 +637,69 @@ function bossDmg(base,crit){const A=G.arena,B=G.boss;const m=mult(A.e.el);let d=
  float(`💥 ${d}${crit?' CRIT!':''}${m>1?'<br>SUPER EFFECTIVE! '+ELEMS[A.e.el].ic:m<1?'<br>Resisted…':''}`);updBoss();if(B.hp<=0)arenaEnd(true);}
 function playerAttack(){const A=G.arena;if(!A||A.cd>0||A.dodge>0)return;A.cd=CLUB_CD[A.ci]*(1-.25*A.e.spin);A.atk=.35;A.hitDone=false;}
 function playerDodge(){const A=G.arena;if(!A||A.dodgeCd>0)return;A.dodge=.3;A.dodgeCd=.9;const d=A.mdir.lengthSq()>0?A.mdir.clone():new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0).normalize();A.ddir=d.normalize();}
+const ARENA_R=22;
+const _v1=new THREE.Vector3(),_v2=new THREE.Vector3();
+function kd(...c){return c.some(k=>keys[k]);}
 function arenaTick(dt,t){const A=G.arena,B=G.boss;A.clock+=dt;
- const toB=new THREE.Vector3().subVectors(A.bpos,A.pos).setY(0);const dist=toB.length();toB.normalize();const right=new THREE.Vector3(-toB.z,0,toB.x);
- // input
- A.block=!!(keys.l||keys.L||A.uiBlock);const mv=new THREE.Vector3();
- if(keys.ArrowUp||keys.w||A.ui.up)mv.add(toB);if(keys.ArrowDown||keys.s||A.ui.down)mv.sub(toB);if(keys.ArrowLeft||keys.a||A.ui.left)mv.sub(right);if(keys.ArrowRight||keys.d||A.ui.right)mv.add(right);
+ const toB=new THREE.Vector3().subVectors(A.bpos,A.pos).setY(0);const dist=toB.length();toB.normalize();
+ // camera-relative movement
+ const cf=new THREE.Vector3().subVectors(camLook,camPos).setY(0);if(cf.lengthSq()<1e-4)cf.copy(toB);cf.normalize();const cr=new THREE.Vector3(-cf.z,0,cf.x);
+ A.block=!!(kd('l','L','KeyL')||A.uiBlock||A.mouseBlock);const mv=new THREE.Vector3();
+ if(kd('ArrowUp','KeyW')||A.ui.up)mv.add(cf);if(kd('ArrowDown','KeyS')||A.ui.down)mv.sub(cf);if(kd('ArrowLeft','KeyA')||A.ui.left)mv.sub(cr);if(kd('ArrowRight','KeyD')||A.ui.right)mv.add(cr);
  A.mdir.copy(mv.lengthSq()?mv.normalize():mv);
- if(A.dodge>0){A.dodge-=dt;A.pos.addScaledVector(A.ddir,14*dt);}else if(!A.block)A.pos.addScaledVector(A.mdir,5*dt*(A.atk>0?.4:1));
+ if(A.dodge>0){A.dodge-=dt;A.pos.addScaledVector(A.ddir,14*dt);}else if(!A.block)A.pos.addScaledVector(A.mdir,6*dt*(A.atk>0?.4:1));
  if(new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0).length()<2.2)A.pos.addScaledVector(toB,-(2.2-dist));
- const off=new THREE.Vector3().subVectors(A.pos,A.c).setY(0);if(off.length()>15)A.pos.copy(A.c).addScaledVector(off.normalize(),15);
+ const off=new THREE.Vector3().subVectors(A.pos,A.c).setY(0);if(off.length()>ARENA_R)A.pos.copy(A.c).addScaledVector(off.normalize(),ARENA_R);
  A.pos.y=hgt(A.pos.x,A.pos.z);A.cd-=dt;A.dodgeCd-=dt;A.inv-=dt;A.hurt-=dt;
- // attack anim + hit
- const u=golfer.userData;golfer.visible=true;golfer.position.copy(A.pos);golfer.rotation.set(0,Math.atan2(A.bpos.x-A.pos.x,A.bpos.z-A.pos.z),0);
+ // facing: toward movement, but snap toward boss when attacking/blocking or close
+ let wantFace=A.face;if(A.atk>0||A.block||dist<CLUB_RANGE[A.ci]+2.5)wantFace=Math.atan2(toB.x,toB.z);else if(A.mdir.lengthSq())wantFace=Math.atan2(A.mdir.x,A.mdir.z);
+ let df=((wantFace-A.face+Math.PI*3)%(Math.PI*2))-Math.PI;A.face+=df*Math.min(1,dt*12);
+ const u=golfer.userData;golfer.visible=true;golfer.position.copy(A.pos);golfer.rotation.set(0,A.face,0);
  if(A.atk>0){A.atk-=dt;const k=1-A.atk/.35;u.arms.rotation.set(lerp(-2.6,1.0,k),0,0);u.torso.rotation.set(lerp(-.2,.4,k),0,0);
-  if(k>.5&&!A.hitDone){A.hitDone=true;if(dist<CLUB_RANGE[A.ci]+1.6){const crit=Math.random()<A.e.acc*.3;bossDmg(CLUB_DMG[A.ci]*(1+.06*A.e.power)+(A.e.el==='spikes'?3:0),crit);
-    if(A.e.el==='fire')A.burn=1.5;if(A.e.el==='ice')A.slow=2;if(A.e.el==='lightning'&&Math.random()<.3)setTimeout(()=>G.arena&&bossDmg(5,false),250);if(A.e.el==='magnet'){A.php=Math.min(A.phpMax,A.php+3);updArenaBars();}}
+  if(k>.5&&!A.hitDone){A.hitDone=true;const fdir=new THREE.Vector3(Math.sin(A.face),0,Math.cos(A.face));
+   if(dist<CLUB_RANGE[A.ci]+1.6&&fdir.dot(toB)>.35){const crit=Math.random()<A.e.acc*.3;bossDmg(CLUB_DMG[A.ci]*(1+.03*A.e.power)+(A.e.el==='spikes'?3:0),crit);
+    if(A.e.el==='fire')A.burn=1.5;if(A.e.el==='ice')A.slow=2;if(A.e.el==='lightning'&&Math.random()<.3)setTimeout(()=>G.arena&&bossDmg(5,false),250);if(A.e.el==='magnet'){A.php=Math.min(A.phpMax,A.php+1.5);updArenaBars();}}
    else float('Whoosh! Get closer!');}}
- else if(A.block){u.arms.rotation.set(-1.4,0,0);u.torso.rotation.set(0,0,0);}else{u.arms.rotation.set(-.6+Math.sin(t*4)*.08,0,0);u.torso.rotation.set(.1,0,0);}
+ else if(A.block){u.arms.rotation.set(-1.4,0,0);u.torso.rotation.set(0,0,0);}else{const run=A.mdir.lengthSq()?Math.sin(t*12)*.25:0;u.arms.rotation.set(-.6+Math.sin(t*4)*.08+run,0,0);u.torso.rotation.set(.1+Math.abs(run)*.3,0,0);}
  if(A.dodge>0)golfer.rotateZ(Math.sin(A.dodge*20)*.5);if(A.hurt>0)golfer.rotateX(-.3);
  if(A.burn>0){A.burn-=dt;if(Math.floor((A.burn+dt)*2)!==Math.floor(A.burn*2)&&B.hp>0){B.hp=Math.max(0,B.hp-2);updBoss();splash(A.bpos.clone().setY(A.bpos.y+2.5),0xff6a00,10);if(B.hp<=0)return arenaEnd(true);}}
- // boss AI
+ // ---- boss AI: chase / circle / back off, then telegraphed attacks
  if(!G.arena)return;const rage=B.hp<B.hpMax*.4?1.5:1;const spd=(A.slow>0?.5:1)*rage;A.slow-=dt;A.st-=dt*spd;
- const bt=new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0);const bd=bt.length();bt.normalize();
- if(A.state==='idle'){if(bd>3)A.bpos.addScaledVector(bt,1.8*dt*spd);if(A.st<=0){const r=Math.random();A.state=r<.4?'stomp':r<.7?'charge':'throw';A.st=A.state==='stomp'?1.1:A.state==='charge'?.9:1.0;teleStart(A);}}
+ const bt=new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0);const bd=bt.length();bt.normalize();const tang=new THREE.Vector3(-bt.z,0,bt.x).multiplyScalar(A.circ||1);
+ if(A.state==='idle'){A.flip=(A.flip||0)-dt;if(A.flip<=0){A.flip=1.5+Math.random()*2;A.circ=Math.random()<.5?-1:1;}
+  if(bd>9){A.bpos.addScaledVector(bt,2.8*dt*spd);A.mode2='chase';}
+  else if(bd<3.5){A.bpos.addScaledVector(bt,-1.5*dt*spd);A.mode2='back';}
+  else{A.bpos.addScaledVector(tang,2.2*dt*spd).addScaledVector(bt,.5*dt*spd);A.mode2='circle';}
+  if(A.st<=0){const r=Math.random();A.state=bd<6?(r<.55?'stomp':r<.8?'throw':'charge'):(r<.5?'charge':r<.85?'throw':'stomp');if(A.state==='stomp'&&bd>7)A.state='charge';
+   A.st=A.state==='stomp'?1.1:A.state==='charge'?.9:1.0;teleStart(A);}}
  else if(A.state==='stomp'){const k=1-A.st/1.1;A.tele.scale.setScalar(.2+k*4.8);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),0xffffff,40);if(bd<5)arenaHurt(18);teleEnd(A);}}
  else if(A.state==='charge'){if(!A.cdir)A.cdir=bt.clone();A.tele.position.copy(A.bpos).addScaledVector(A.cdir,6.5);A.tele.position.y=A.bpos.y+.06;A.tele.rotation.y=Math.atan2(A.cdir.x,A.cdir.z);
   if(A.st<=0){A.dash=(A.dash||0)+dt;A.bpos.addScaledVector(A.cdir,16*dt);if(bd<2.4){arenaHurt(20);A.pos.addScaledVector(A.cdir,2);}if(A.dash>.75){A.dash=0;A.cdir=null;teleEnd(A);}}}
- else if(A.state==='throw'){if(A.st<=0){for(let k=-1;k<=1;k++){const tgt=A.pos.clone().addScaledVector(right,k*2.2);const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:B.col,emissive:0x331111}));
+ else if(A.state==='throw'){if(A.st<=0){const sr=new THREE.Vector3(-bt.z,0,bt.x);for(let k=-1;k<=1;k++){const tgt=A.pos.clone().addScaledVector(sr,k*2.2);const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:B.col,emissive:0x331111}));
    m.castShadow=true;arenaGroup.add(m);const mk=new THREE.Mesh(RING_G,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.7,side:THREE.DoubleSide}));mk.rotation.x=-Math.PI/2;mk.position.set(tgt.x,hgt(tgt.x,tgt.z)+.08,tgt.z);arenaGroup.add(mk);
    A.proj.push({m,mk,from:A.bpos.clone().setY(A.bpos.y+2.5),to:tgt,t:0});}teleEnd(A);}}
+ {const bo=new THREE.Vector3().subVectors(A.bpos,A.c).setY(0);if(bo.length()>ARENA_R-1)A.bpos.copy(A.c).addScaledVector(bo.normalize(),ARENA_R-1);}
  for(let k=A.proj.length-1;k>=0;k--){const q=A.proj[k];q.t+=dt/1.1;const pos=q.from.clone().lerp(q.to,q.t);pos.y=lerp(q.from.y,hgt(q.to.x,q.to.z),q.t)+Math.sin(q.t*Math.PI)*5;q.m.position.copy(pos);
   if(q.t>=1){if(Math.hypot(A.pos.x-q.to.x,A.pos.z-q.to.z)<1.7)arenaHurt(12);splash(q.to.clone().setY(q.m.position.y),B.col,15);arenaGroup.remove(q.m,q.mk);A.proj.splice(k,1);if(!G.arena)return;}}
- if(bossMesh){bossMesh.position.copy(A.bpos);bossMesh.position.y=hgt(A.bpos.x,A.bpos.z)+(A.state==='stomp'?Math.max(0,(A.st-.2))*2:Math.abs(Math.sin(t*3))*.3);bossMesh.rotation.y=Math.atan2(A.pos.x-A.bpos.x,A.pos.z-A.bpos.z);}
  A.bpos.y=hgt(A.bpos.x,A.bpos.z);
- // camera
- const tp=A.pos.clone().addScaledVector(toB,-6.5).add(new THREE.Vector3(0,3.6,0));const tl=A.pos.clone().lerp(A.bpos,.5).add(new THREE.Vector3(0,1.2,0));
- if(!A.snapped){A.snapped=1;camPos.copy(tp);camLook.copy(tl);}camPos.lerp(tp,1-Math.pow(.01,dt));camLook.lerp(tl,1-Math.pow(.01,dt));if(A.hurt>0)camPos.x+=Math.sin(t*80)*.08;camera.position.copy(camPos);camera.lookAt(camLook);
+ if(bossMesh){bossMesh.position.copy(A.bpos);bossMesh.position.y=A.bpos.y+(A.state==='stomp'?Math.max(0,(A.st-.2))*2:Math.abs(Math.sin(t*(A.mode2==='chase'?6:3)))*.3);bossMesh.rotation.y=Math.atan2(A.pos.x-A.bpos.x,A.pos.z-A.bpos.z);}
+ arenaCamera(dt,t);
  sun.position.copy(A.pos).addScaledVector(sunDir,200);sun.target.position.copy(A.pos);}
+// third-person camera that always frames both the player and the boss
+function arenaCamera(dt,t){const A=G.arena;const P0=A.pos,Bp=A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
+ const want=Math.atan2(P0.x-Bp.x,P0.z-Bp.z);// camera sits on the player's side, looking past the player at the boss
+ if(A.camYaw==null)A.camYaw=want;let dy=((want-A.camYaw+Math.PI*3)%(Math.PI*2))-Math.PI;A.camYaw+=dy*Math.min(1,dt*(sep<4?1.2:2.5));
+ const focus=_v1.copy(P0).lerp(Bp,.42);focus.y=Math.max(P0.y,Bp.y)+1.3;
+ let D=7+sep*.7,Hh=3.4+sep*.33;const pts=[[P0,.1],[P0,1.9],[Bp,.2],[Bp,4.2]];let tp=new THREE.Vector3();
+ for(let it=0;it<8;it++){tp.set(focus.x+Math.sin(A.camYaw)*D,focus.y+Hh,focus.z+Math.cos(A.camYaw)*D);const gy=hgt(tp.x,tp.z)+1.5;if(tp.y<gy)tp.y=gy;
+  camera.position.copy(tp);camera.lookAt(focus);camera.updateMatrixWorld();let ok=true;
+  for(const [q,h] of pts){_v2.set(q.x,q.y+h,q.z).project(camera);if(_v2.z>1||Math.abs(_v2.x)>.78||_v2.y>.72||_v2.y<-.62){ok=false;break;}}
+  if(ok)break;D*=1.18;Hh*=1.1;}
+ if(!A.snapped){A.snapped=1;camPos.copy(tp);camLook.copy(focus);}
+ camPos.lerp(tp,1-Math.pow(.004,dt));camLook.lerp(focus,1-Math.pow(.002,dt));if(A.hurt>0)camPos.x+=Math.sin(t*80)*.08;camera.position.copy(camPos);camera.lookAt(camLook);
+ // final guarantee: if lerp lag left the boss off-screen, snap to the framed target
+ camera.updateMatrixWorld();_v2.set(Bp.x,Bp.y+2,Bp.z).project(camera);if(_v2.z>1||Math.abs(_v2.x)>.95||Math.abs(_v2.y)>.95){camPos.copy(tp);camLook.copy(focus);camera.position.copy(camPos);camera.lookAt(camLook);}
+ A.bossOnScreen=true;}
 function teleStart(A){let m;if(A.state==='stomp'){m=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.copy(A.bpos).setY(A.bpos.y+.07);}
  else if(A.state==='charge'){const g=new THREE.PlaneGeometry(2.4,13);g.rotateX(-Math.PI/2);m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
  if(m){arenaGroup.add(m);A.tele=m;}if(A.state==='stomp')float(G.boss.ic+' STOMP incoming!');}
@@ -681,7 +713,16 @@ function arenaEnd(win){const A=G.arena;if(!A)return;const p=A.p;arenaCleanup();i
  else{overlay(`<h1>😵 Bonk!</h1><p style="font-size:24px">${G.boss.ic} ${G.boss.name} won this round (+1 stroke).<br>But it still has only <b>${G.boss.hp}</b> HP left — next time you reach the green, battle again!</p><button class="big" onclick="closeOv()">OK!</button>`);G.afterOv=()=>{G.skipArena=true;endShot();};}}
 function arenaRemoteEnd(m){const p=G.arenaWaiting;G.arenaWaiting=null;G.boss.hp=m.hp;updBoss();if(p)p.strokes=m.strokes;$('ov').style.display='none';G.ovOpen=false;
  if(m.win){bossDefeated();G.afterOv=()=>{G.skipArena=true;endShot();};}else{G.skipArena=true;endShot();}}
-addEventListener('keydown',e=>{if(!G.arena||G.ovOpen)return;const k=e.key;if(k===' '||k==='j'||k==='J'){e.preventDefault();playerAttack();}if(k==='Shift'||k==='k'||k==='K')playerDodge();});
+addEventListener('keydown',e=>{keys[e.code]=true;if(!G.arena||G.ovOpen)return;const k=e.key;
+ if(e.ctrlKey||e.metaKey||k==='Control'){e.preventDefault();}
+ if(k===' '||k==='j'||k==='J'){e.preventDefault();playerAttack();}
+ if(k==='Control'||k==='Shift'||k==='k'||k==='K'){e.preventDefault();if(!e.repeat)playerDodge();}
+ if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();},{capture:true});
+addEventListener('keyup',e=>{keys[e.code]=false;});addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(G.arena)G.arena.mouseBlock=false;});
+canvas.addEventListener('pointerdown',e=>{if(!G.arena||G.ovOpen)return;e.preventDefault();if(e.button===0)playerAttack();else if(e.button===2)G.arena.mouseBlock=true;});
+addEventListener('pointerup',e=>{if(G.arena&&e.button===2)G.arena.mouseBlock=false;});
+addEventListener('contextmenu',e=>{if(G.arena||e.target===canvas)e.preventDefault();});
+addEventListener('beforeunload',e=>{if(G.arena){e.preventDefault();e.returnValue='';}});
 G.arenaUI={};
 for(const [id,key] of [['aU','up'],['aD','down'],['aLf','left'],['aRt','right']]){const b=$(id);b.onpointerdown=e=>{e.preventDefault();if(G.arena)G.arena.ui[key]=true;};b.onpointerup=b.onpointerleave=()=>{if(G.arena)G.arena.ui[key]=false;};}
 $('aAtk').onpointerdown=e=>{e.preventDefault();playerAttack();};$('aDodge').onpointerdown=e=>{e.preventDefault();playerDodge();};
