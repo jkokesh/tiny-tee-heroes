@@ -110,7 +110,7 @@ const BOSSES={2:{name:'Gopher Gus',ic:'🐹',hp:90,col:0x9a6a3a,weak:['fire','sp
  8:{name:'Kraken of the Lake',ic:'🐙',hp:180,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'}};
 const NHOLES=9, PARS=[3,4,4,4,5,4,3,5,5];
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
-const HOLE_REWARD=d=>d>=2?0:d===1?2:d===0?5:d===-1?10:20, BOSS_BONUS=15, COIN_VALUE=1, N_COINS=5;
+const HOLE_REWARD=d=>d>=2?0:d===1?6:d===0?15:d===-1?30:60, BOSS_BONUS=45, COIN_VALUE=3, N_COINS=5;
 
 // ===== profiles =====
 const LS='tinyTeeHeroes.v1';
@@ -552,7 +552,7 @@ function stopBall(){if(ball.dry){ball.end='stop';ball=null;return;}const b=ball;
 function penalty(t){if(ball.dry){ball.end=/Splash/.test(t)?'water':'oob';ball=null;return;}const p=ball.p;ball=null;p.strokes++;p.pos.copy(p.last);float(t);splash(p.pos,0x88ccff);setTimeout(endShot,700);}
 function holed(){if(ball.dry){ball.end='holed';ball=null;return;}const p=ball.p;ball=null;p.done=true;p.ball.visible=false;const d=p.strokes-H.par;
  const names={'-3':'ALBATROSS!! 🦅','-2':'EAGLE!! 🦅','-1':'BIRDIE! 🐦','0':'PAR! 👍','1':'Bogey — nice try!','2':'Double bogey — keep going!'};
- let earn=HOLE_REWARD(d);if(p.strokes===1){say('⛳ HOLE IN ONE!!! 🎉',3000);}else say(names[d]||'In the hole! 🎉',2500);
+ let earn=HOLE_REWARD(d);const et=earn?` +${earn} 🪙`:'';if(p.strokes===1){say('⛳ HOLE IN ONE!!! 🎉'+et,3000);}else say((names[d]||'In the hole! 🎉')+et,2500);
  p.prof.tokens+=earn;persist();p.lastEarn=earn;splash(p.pos,0xffe14d,90);setTimeout(endShot,1500);}
 function endShot(){const p=P();if(G.boss&&G.boss.hp>0&&!p.done&&Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz)<45&&!G.skipArena){return arenaIntro(p);}G.skipArena=false;if(!p.done&&p.strokes>=H.par+5&&!(G.boss&&G.boss.hp>0)){p.done=true;p.ball.visible=false;p.lastEarn=0;say("Let's pick it up and move on! 🙂");}
  const live=G.players.filter(q=>!q.done);if(!live.length)return finishHole();
@@ -563,7 +563,7 @@ function finishHole(){G.players.forEach(p=>{p.scores[G.hole]=p.strokes;});G.mode
  if(!G.online||G.online.host){save.hole=G.hole+1;persist();}showCard(true);}
 function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1><table class="sc"><tr><th>Hole</th>${PARS.map((_,i)=>`<th>${i+1}${BOSSES[i]?BOSSES[i].ic:''}</th>`).join('')}<th>Total</th></tr><tr><td>Par</td>${PARS.map(x=>`<td>${x}</td>`).join('')}<td>${PARS.reduce((a,b)=>a+b)}</td></tr>`;
  pl.forEach(p=>{let tot=0;t+=`<tr><td>${p.name}</td>${PARS.map((par,i)=>{const s=p.scores[i];if(s==null)return'<td></td>';tot+=s;const c=s<par?'#ffe14d':s>par?'#fbb':'#fff';return`<td style="color:${c}">${s}</td>`;}).join('')}<td><b>${tot}</b></td></tr>`;});
- t+='</table>';if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey 2 · par 5 · birdie 10 · eagle+ 20)</small> · total ${p.prof.tokens} 🪙</p>`);
+ t+='</table>';if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
   const last=G.hole>=NHOLES-1;const canNext=!G.online||G.online.host;
   t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
