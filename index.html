@@ -31,6 +31,7 @@ canvas#c{display:block;width:100%;height:100%}
 .card{background:linear-gradient(#2d8a4e,#175c33);border:5px solid #fff;border-radius:24px;padding:22px 30px;max-width:960px;max-height:92vh;overflow:auto;text-align:center;font-size:20px}
 .card h1{margin:4px 0 12px;font-size:40px;color:#ffe14d;text-shadow:3px 3px 0 #0006}
 button.big{font-size:24px;font-weight:bold;padding:12px 26px;margin:8px;border-radius:16px;border:4px solid #fff;background:#fb2;color:#520;cursor:pointer}
+#saveInfo{max-width:720px;margin:4px auto}.savecard{background:#fff2;border:3px solid #fff8;border-radius:14px;padding:8px 12px;margin:6px;font-size:18px}.savecard button.sm.on{background:#7d7}button.sm.fresh{background:#ff8a7a}
 button.sm{font-size:16px;font-weight:bold;padding:6px 12px;border-radius:10px;border:3px solid #fff;background:#fb2;color:#520;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
 table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,table.sc th{border:2px solid #fff6;padding:5px 9px}
@@ -765,13 +766,32 @@ G.arenaIntro=arenaIntro;G.playerAttack=playerAttack;
 
 // ===== menu =====
 const room=new URLSearchParams(location.search).get('room');
+const RESET_Q=new URLSearchParams(location.search).get('reset')==='1';
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+function profSummary(pr){migrate(pr);let ups=0;for(const k in pr.lv)for(const st of['power','acc','spin'])ups+=pr.lv[k][st]||0;
+ const at=(pr.unlocked||[]).map(k=>ELEMS[k]?ELEMS[k].ic:'').join(' ');return`🪙 ${pr.tokens} · ⬆️ ${ups} upgrade${ups===1?'':'s'} · ✨ ${at||'no attributes yet'}`;}
+const menuNames=()=>{const a=$('n1')?$('n1').value.trim().slice(0,14):'',b=$('n2')?$('n2').value.trim().slice(0,14):'';return[a||'Player 1',b];};
+// show Continue / Start Fresh for every typed name that has saved progress
+function updSaveInfo(){const el=$('saveInfo');if(!el)return;const [a,b]=menuNames();const rows=[];
+ [[1,a],[2,b]].forEach(([i,n])=>{if(!n||(i===2&&!$('n2')))return;const pr=save.profiles[n];
+  if(pr)rows.push(`<div class="savecard" data-p="${i}"><b>${i===2?'👫':'🧑'} ${esc(n)}</b> — saved progress: ${profSummary(pr)}<br>
+   <button class="sm ${G.keep&&G.keep[i]?'on':''}" onclick="keepProg(${i})">▶️ Continue</button> <button class="sm fresh" onclick="askFresh(${i})">🧹 Start Fresh</button></div>`);
+  else if(RESET_Q)rows.push(`<div class="savecard"><b>${esc(n)}</b> — no saved progress, you'll start fresh with 🪙 20!</div>`);});
+ el.innerHTML=(RESET_Q&&rows.length?`<p style="font-size:20px;margin:4px">🧹 Want a fresh start? Pick <b>Start Fresh</b> below.</p>`:'')+rows.join('');}
+window.keepProg=i=>{G.keep=G.keep||{};G.keep[i]=true;updSaveInfo();say('▶️ Keeping your stuff! Now pick 1 Player or 2 Players.',1800);};
+window.askFresh=i=>{const n=menuNames()[i-1];if(!n||!save.profiles[n])return;const [a,b]=menuNames();save.lastNames=[a,b||'Player 2'];persist();
+ overlay(`<h1>🤔 Are you sure?</h1><p style="font-size:24px">Starting fresh will erase <b>${esc(n)}</b>'s<br>🪙 tokens, ⬆️ club upgrades and ✨ attributes & boss powers.</p>
+ <p style="font-size:20px">You'll start again with <b>🪙 20</b> tokens and brand-new clubs.</p>
+ <button class="big" id="freshYes" onclick="doFresh(${i})">🧹 Yes, start fresh!</button><button class="big" id="freshNo" style="background:#7d7" onclick="menu()">🙅 No, keep my stuff!</button>`);G.freshName=n;};
+window.doFresh=i=>{const n=G.freshName;if(!n)return;delete save.profiles[n];delete save.hole;persist();G.freshName=null;menu();say(`🧹 ${n} is starting fresh! 🪙 20`,2200);};
 function menu(){G.mode='menu';const last=save.lastNames||['Player 1','Player 2'];
- if(room){overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:24px">Your friend invited you to room <b>${room}</b>!</p><input class="nm" id="n1" value="${last[1]}"><br><button class="big" onclick="go('join')">Join Game 🌐</button>`);return;}
+ if(room){overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:24px">Your friend invited you to room <b>${esc(room)}</b>!</p><input class="nm" id="n1" value="${esc(last[1])}" oninput="updSaveInfo()"><div id="saveInfo"></div><br><button class="big" onclick="go('join')">Join Game 🌐</button>`);updSaveInfo();return;}
  overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">9 holes · 3 bosses · upgrade your clubs with tokens!</p>
- <input class="nm" id="n1" value="${last[0]}"><input class="nm" id="n2" value="${last[1]}" placeholder="Player 2 (optional)"><br>
+ <input class="nm" id="n1" value="${esc(last[0])}" oninput="updSaveInfo()"><input class="nm" id="n2" value="${esc(last[1])}" placeholder="Player 2 (optional)" oninput="updSaveInfo()"><div id="saveInfo"></div>
  <button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
- <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);}
-window.go=(m,cont)=>{const n1=($('n1').value||'Player 1').slice(0,14),n2=$('n2')?($('n2').value||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
+ <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);updSaveInfo();}
+window.updSaveInfo=updSaveInfo;
+window.go=(m,cont)=>{const n1=($('n1').value.trim()||'Player 1').slice(0,14),n2=$('n2')?($('n2').value.trim()||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
  const start=cont?Math.min(save.hole||0,NHOLES-1):0;
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
