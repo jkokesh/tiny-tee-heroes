@@ -121,9 +121,10 @@ function migrate(pr){if(pr.v>=2)return pr;for(const k in pr.lv)for(const st of['
 function getProfile(name){if(save.profiles[name])migrate(save.profiles[name]);if(!save.profiles[name])save.profiles[name]=newProfile(name);return save.profiles[name];}
 function persist(){localStorage.setItem(LS,JSON.stringify(save));}
 function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el=prof.equip[c.id]||null;
- // progression: 10 levels per stat. Power & spin start at 60% and reach 100% (the old base values) at level 10.
- let dist=c.dist*(.6+.04*l.power)*(el==='fire'?1.12:1);let acc=c.acc+(1-c.acc)*.08*l.acc;if(el==='lightning')acc+=(1-acc)*.6;
- return{dist,acc:Math.min(acc,.995),spin:c.spin,spinMul:.6+.04*l.spin,loft:c.loft,el,power:l.power};}
+ // progression: 10 levels per stat. Power starts at 40% (+6%/level), spin at 20% (+8%/level) → both 100% at level 10.
+ // Accuracy: "miss" (1-acc) starts at 2× the club's base miss and shrinks evenly to 0.2× at level 10.
+ let dist=c.dist*(.4+.06*l.power)*(el==='fire'?1.12:1);let acc=1-(1-c.acc)*(2-.18*l.acc);if(el==='lightning')acc+=(1-acc)*.6;
+ return{dist,acc:clamp(acc,0,.995),spin:c.spin,spinMul:.2+.08*l.spin,loft:c.loft,el,power:l.power};}
 // cost to buy level lv+1 (same for every club & stat): 2,5,9,15,22,31,42,55,70,88 — 339 tokens to max one stat
 const MAXLV=10,UPBASE=[2,5,9,15,22,31,42,55,70,88];
 const upCost=(club,lv)=>UPBASE[lv];
