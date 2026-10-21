@@ -481,7 +481,18 @@ function drawSpin(){const p=P();const sp=p?p.spin:{x:0,y:0};const W=spc.width,c=
  spx.strokeStyle='#0003';[.33,.66].forEach(f=>{spx.beginPath();spx.arc(c,c,r*.8*f+2,0,7);spx.stroke();});if(amt){spx.strokeStyle='#e22';spx.lineWidth=3;spx.beginPath();spx.moveTo(c,c);spx.lineTo(c+sp.x*r*.8,c-sp.y*r*.8);spx.stroke();spx.lineWidth=1;}}
 spc.addEventListener('pointerdown',e=>{const p=P();if(!p||!myTurn())return;const b=spc.getBoundingClientRect();let x=(e.clientX-b.left)/b.width*2-1,y=-((e.clientY-b.top)/b.height*2-1);const l=Math.hypot(x,y);if(l>1){x/=l;y/=l;}
  if(Math.hypot(x,y)<.18){x=0;y=0;}p.spin={x:+x.toFixed(2),y:+y.toFixed(2)};drawSpin();});
-$('aimL').onpointerdown=()=>keys.ArrowLeft=true;$('aimR').onpointerdown=()=>keys.ArrowRight=true;addEventListener('pointerup',()=>{keys.ArrowLeft=keys.ArrowRight=false;});
+// aim: a tap = fine 0.5° step; holding waits 0.3 s, then turns smoothly, accelerating from 4°/s up to 60°/s
+const AIM_STEP=0.5*Math.PI/180,AIM_DELAY=.3,AIM_V0=4*Math.PI/180,AIM_ACC=45*Math.PI/180,AIM_VMAX=60*Math.PI/180;let aimHold=null;
+function aimPress(dir){if(G.mode!=='aim'||!myTurn()||G.ovOpen)return;const p=P();p.aim+=dir*AIM_STEP;aimHold={dir,t0:performance.now(),done:0};}
+// closed-form angle turned after holding h seconds (frame-rate independent)
+function aimTurned(h){h-=AIM_DELAY;if(h<=0)return 0;const hc=(AIM_VMAX-AIM_V0)/AIM_ACC;return h<hc?AIM_V0*h+.5*AIM_ACC*h*h:AIM_V0*hc+.5*AIM_ACC*hc*hc+AIM_VMAX*(h-hc);}
+G.aimTurned=aimTurned;
+function aimRelease(dir){if(aimHold&&(dir==null||aimHold.dir===dir))aimHold=null;}
+G.aimPress=aimPress;G.aimRelease=aimRelease;
+for(const [id,d] of [['aimL',-1],['aimR',1]]){const bt=$(id);bt.onpointerdown=e=>{e.preventDefault();aimPress(d);};bt.onpointerup=bt.onpointerleave=bt.onpointercancel=()=>aimRelease(d);}
+addEventListener('pointerup',()=>aimRelease());addEventListener('blur',()=>aimRelease());
+addEventListener('keydown',e=>{if(G.arena)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();if(!e.repeat)aimPress(e.key==='ArrowLeft'?-1:1);}});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft')aimRelease(-1);if(e.key==='ArrowRight')aimRelease(1);});
 function startCharge(){if(G.mode!=='aim'||!myTurn()||G.ovOpen)return;charging=true;power=0;pdir=1;G.mode='power';}
 function release(){if(!charging)return;charging=false;const p=P();const e=eff(p.prof,p.club);
  const dev=(Math.random()-.5)*2*(1-e.acc)*.14+overDev(power,e);if(power>1.005)say(`💥 Overswing! ${Math.round(power*100)}%`,1100);
@@ -920,7 +931,7 @@ const camPos=new THREE.Vector3(0,5,10),camLook=new THREE.Vector3();
 function tick(){requestAnimationFrame(tick);try{tickInner();}catch(e){recover(e&&e.stack||e);}}
 function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  if(H){const p=P();
-  if(G.mode==='aim'&&myTurn()){if(keys.ArrowLeft)p.aim-=dt*.9;if(keys.ArrowRight)p.aim+=dt*.9;}
+  if(G.mode==='aim'&&myTurn()){if(aimHold){const tot=aimTurned((performance.now()-aimHold.t0)/1000);p.aim+=aimHold.dir*(tot-aimHold.done);aimHold.done=tot;}}else aimHold=null;
   if(G.mode==='power'){power+=pdir*dt*.75;if(power>=MAXPOW){power=MAXPOW;pdir=-1;}if(power<=0){power=0;pdir=1;}$('pfill').style.height=(power/MAXPOW*100)+'%';$('pfill').style.filter=power>1?'hue-rotate(-40deg) saturate(2)':'';}
   if(G.swing){const w=G.swing;w.t+=dt;const T1=.14,T2=.5;if(w.t>=T1&&!w.fired){w.fired=true;doShot(w.shot);}if(w.t>T2+.4)G.swing=null;}
   if(ball){G.acc=(G.acc||0)+dt;let n=0;while(ball&&G.acc>=1/120&&n<12){stepBall(1/120);G.acc-=1/120;n++;}}else G.acc=0;
