@@ -27,6 +27,9 @@ canvas#c{display:block;width:100%;height:100%}
 #msg{position:absolute;top:30%;width:100%;text-align:center;font-size:64px;font-weight:900;color:#fff;text-shadow:0 0 12px #f80,4px 4px 0 #a40;pointer-events:none;transition:opacity .4s;opacity:0}
 #bossbar{position:absolute;top:200px;left:50%;transform:translateX(-50%);width:420px;display:none;text-align:center;font-size:22px;font-weight:bold}
 #bossbar .bar{height:22px;border:3px solid #fff;border-radius:12px;background:#400;overflow:hidden}#bossfill{height:100%;background:linear-gradient(#f66,#c00);width:100%;transition:width .4s}
+.shophead{position:sticky;top:-22px;margin:-22px -30px 10px;padding:12px 56px 10px;background:linear-gradient(#2d8a4e,#24794a);border-bottom:3px solid #fff8;border-radius:19px 19px 0 0;z-index:3;box-shadow:0 4px 10px #0005}
+.shophead h1{margin:0 0 4px}.shopbar{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}.shopbar .donebtn{margin:0;padding:8px 22px;font-size:22px}
+.shopx{position:absolute;top:10px;right:12px;width:42px;height:42px;border-radius:50%;border:3px solid #fff;background:#e55;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
 .overlay{position:absolute;inset:0;background:rgba(0,30,10,.8);display:none;align-items:center;justify-content:center;z-index:10}
 .card{background:linear-gradient(#2d8a4e,#175c33);border:5px solid #fff;border-radius:24px;padding:22px 30px;max-width:960px;max-height:92vh;overflow:auto;text-align:center;font-size:20px}
 .card h1{margin:4px 0 12px;font-size:40px;color:#ffe14d;text-shadow:3px 3px 0 #0006}
@@ -43,6 +46,8 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 .aimb{position:absolute;bottom:20px;width:70px;height:70px;border-radius:50%;font-size:30px;border:4px solid #fff;background:#3b7;color:#fff;cursor:pointer}
 .ab{width:70px;height:70px;border-radius:16px;font-size:24px;font-weight:bold;border:4px solid #fff;background:#3b7;color:#fff;cursor:pointer;touch-action:none}
 #turn{position:absolute;top:185px;left:12px;font-size:22px;display:none}
+@media (max-width:700px){.card{padding:14px 12px;font-size:16px}.shophead{top:-14px;margin:-14px -12px 8px;padding:8px 50px}.shophead h1{font-size:24px}
+ .statrow{flex-wrap:wrap;justify-content:center;gap:6px}.statrow .nm{width:auto}.bar5 i{width:11px}.elem{width:42%}}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="info" class="panel"></div>
@@ -389,9 +394,10 @@ function showBossIntro(){const b=G.boss;const el=k=>ELEMS[k].ic+' '+ELEMS[k].nam
  <button class="big" onclick="openShop()">🛒 Shop</button><button class="big" onclick="closeOv()">Let's Battle! ⚔️</button>`);}
 
 // ===== UI =====
-function overlay(html){$('ovc').innerHTML=html;$('ov').style.display='flex';G.ovOpen=true;}
+function overlay(html){if(G.inShop){G.inShop=false;$('ovc').classList.remove('shopcard');}$('ovc').innerHTML=html;$('ov').style.display='flex';G.ovOpen=true;}
 function closeOv(){$('ov').style.display='none';G.ovOpen=false;if(G.afterOv){const f=G.afterOv;G.afterOv=null;f();}}
 window.closeOv=closeOv;
+addEventListener('keydown',e=>{if(e.key==='Escape'&&G.inShop){e.preventDefault();closeShop();}});
 let msgT=0;function say(t,dur=1800){const m=$('msg');m.innerHTML=t;m.style.opacity=1;clearTimeout(msgT);msgT=setTimeout(()=>m.style.opacity=0,dur);}
 function float(t){if(DRY)return;say(t,1400);}
 function myTurn(){const p=P();return p&&!p.remote;}
@@ -588,14 +594,16 @@ window.openShop=(pi)=>{if(pi!=null)shopP=pi;const locals=G.players.map((p,k)=>k)
  const p=G.players[shopP],pr=p.prof,c=CLUBS[shopC],l=pr.lv[c.id],e=eff(pr,shopC);
  const bar=(v,n=MAXLV)=>`<span class="bar5">${[...Array(n).keys()].map(k=>`<i class="${k<v?'on':''}"></i>`).join('')}</span>`;
  const row=(key,label,val)=>{const lv=l[key];return`<div class="statrow"><span class="nm">${label}</span>${bar(lv)}<span style="width:210px;white-space:nowrap">Lv ${lv}/${MAXLV} · ${val}</span>${lv<MAXLV?`<button class="sm" ${pr.tokens<upCost(c.id,lv)?'disabled':''} onclick="upg('${key}')">⬆ ${upCost(c.id,lv)} 🪙</button>`:'<b>MAX ⭐</b>'}</div>`;};
- let t=`<h1>🛒 Club Shop</h1>${locals.length>1?'<div class="tabs">'+locals.map(k=>`<button class="sm ${k===shopP?'on':''}" onclick="openShop(${k})">${G.players[k].name}</button>`).join('')+'</div>':''}
- <p style="font-size:26px">${p.name}: <b style="color:#ffd84a">🪙 ${pr.tokens}</b></p><div class="tabs">${CLUBS.map((cc,k)=>`<button class="sm ${k===shopC?'on':''}" onclick="shopC=${k};openShop()">${cc.name} ${pr.equip[cc.id]?ELEMS[pr.equip[cc.id]].ic:''}</button>`).join('')}</div>
+ let t=`<div class="shophead"><button class="shopx" id="shopX" title="Close (Esc)" onclick="closeShop()">✖</button><h1>🛒 Club Shop</h1>
+ <div class="shopbar"><b style="color:#ffd84a;font-size:24px">${esc(p.name)}: 🪙 ${pr.tokens}</b><button class="big donebtn" id="shopDoneTop" onclick="closeShop()">Done ✅</button></div></div>${locals.length>1?'<div class="tabs">'+locals.map(k=>`<button class="sm ${k===shopP?'on':''}" onclick="openShop(${k})">${G.players[k].name}</button>`).join('')+'</div>':''}
+ <div class="tabs">${CLUBS.map((cc,k)=>`<button class="sm ${k===shopC?'on':''}" onclick="shopC=${k};openShop()">${cc.name} ${pr.equip[cc.id]?ELEMS[pr.equip[cc.id]].ic:''}</button>`).join('')}</div>
  <div style="display:inline-block;margin:10px auto">${row('power','💪 Power',Math.round(fullCarry(e))+'m carry')}${row('acc','🎯 Accuracy',Math.round(e.acc*100)+'%')}${row('spin','🌀 Spin',Math.round(e.spinMul*100)+'% strength')}
  <div class="statrow"><span class="nm">📐 Loft</span>${bar(Math.round(c.loft/10),5)}<span>${c.loft}° (${c.loft>30?'high & soft':c.loft?'low & long':'rolls on ground'})</span></div></div>
  <h2>✨ Attributes for your ${c.name}</h2><div class="elems">${Object.entries(ELEMS).sort((a,b)=>ELCOST(a[0])-ELCOST(b[0])).map(([k,E])=>{const has=pr.unlocked.includes(k),on=pr.equip[c.id]===k;
   return`<div class="elem" style="${on?'border-color:#ffe14d;background:#fff3':''}"><div class="ic">${E.ic}</div><b>${E.name}</b><br><small>${E.desc}</small><br>${has?(on?`<button class="sm" onclick="equip(null)">Remove</button>`:`<button class="sm" onclick="equip('${k}')">Equip</button>`):`<button class="sm" ${pr.tokens<ELCOST(k)?'disabled':''} onclick="unlock('${k}')">Unlock ${ELCOST(k)} 🪙</button>`}</div>`;}).join('')}</div>
- <p><small>Bosses drop free attribute perks!</small></p><button class="big" onclick="closeShop()">Done ✅</button>`;overlay(t);};
-window.closeShop=()=>{closeOv();if(G.mode==='arenaIntro')arenaIntro(P());else if(G.mode==='card')showCard(true);else if(G.boss&&G.boss.hp>0&&G.players.every(p=>p.strokes===0))showBossIntro();};
+ <p><small>Bosses drop free attribute perks!</small></p><button class="big" onclick="closeShop()">Done ✅</button>`;
+ const oc=$('ovc'),keepScroll=G.inShop?oc.scrollTop:0;overlay(t);G.inShop=true;oc.classList.add('shopcard');oc.scrollTop=keepScroll;};
+window.closeShop=()=>{if(!G.inShop)return;G.inShop=false;$('ovc').classList.remove('shopcard');closeOv();if(G.mode==='arenaIntro')arenaIntro(P());else if(G.mode==='card')showCard(true);else if(G.boss&&G.boss.hp>0&&G.players.every(p=>p.strokes===0))showBossIntro();};
 window.upg=k=>{const pr=G.players[shopP].prof,l=pr.lv[CLUBS[shopC].id];if(l[k]>=MAXLV)return;const c=upCost(CLUBS[shopC].id,l[k]);if(pr.tokens>=c){pr.tokens-=c;l[k]++;persist();say('⬆ Upgraded!',900);}syncProf();openShop();updUI();};
 window.unlock=k=>{const pr=G.players[shopP].prof;if(pr.tokens>=ELCOST(k)&&!pr.unlocked.includes(k)){pr.tokens-=ELCOST(k);pr.unlocked.push(k);pr.equip[CLUBS[shopC].id]=k;persist();say(ELEMS[k].ic+' Unlocked!',900);}syncProf();openShop();updUI();};
 window.equip=k=>{const pr=G.players[shopP].prof;if(k)pr.equip[CLUBS[shopC].id]=k;else delete pr.equip[CLUBS[shopC].id];persist();syncProf();openShop();updUI();};
