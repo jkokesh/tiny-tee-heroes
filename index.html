@@ -32,6 +32,8 @@ canvas#c{display:block;width:100%;height:100%}
 .shopx{position:absolute;top:10px;right:12px;width:42px;height:42px;border-radius:50%;border:3px solid #fff;background:#e55;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
 #windp.nowind canvas{opacity:.3;filter:grayscale(1)}
 .startrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:6px 0}.startrow button.big{min-width:230px;line-height:1.15}.startrow small{font-size:15px;font-weight:normal}
+.cheerEmo{position:fixed;bottom:10%;font-size:44px;pointer-events:none;z-index:20;animation:cheerUp 1.6s ease-out forwards}@keyframes cheerUp{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translateY(-55vh) scale(1.3) rotate(20deg);opacity:0}}
+#specCheer:disabled{opacity:.5}
 .overlay{position:absolute;inset:0;background:rgba(0,30,10,.8);display:none;align-items:center;justify-content:center;z-index:10}
 .card{background:linear-gradient(#2d8a4e,#175c33);border:5px solid #fff;border-radius:24px;padding:22px 30px;max-width:960px;max-height:92vh;overflow:auto;text-align:center;font-size:20px}
 .card h1{margin:4px 0 12px;font-size:40px;color:#ffe14d;text-shadow:3px 3px 0 #0006}
@@ -69,7 +71,8 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 <div id="pbar" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:380px;display:none;text-align:center;font-size:20px;font-weight:bold"><div id="pname"></div><div class="bar" style="height:22px;border:3px solid #fff;border-radius:12px;background:#033;overflow:hidden"><div id="pfill2" style="height:100%;width:100%;background:linear-gradient(#6f6,#1a1)"></div></div></div>
 <div id="arenaUI" style="display:none"><div style="position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:70px 70px 70px;gap:6px">
 <span></span><button class="ab" id="aU">▲</button><span></span><button class="ab" id="aLf">◀</button><button class="ab" id="aD">▼</button><button class="ab" id="aRt">▶</button></div>
-<div style="position:absolute;right:20px;bottom:20px;display:flex;gap:10px;align-items:flex-end"><button class="ab" id="aBlock" style="width:90px;height:90px">🛡️<br>Block</button><button class="ab" id="aDodge" style="width:90px;height:90px">💨<br>Dodge</button><button class="ab" id="aAtk" style="width:130px;height:130px;font-size:30px;background:radial-gradient(#ff7,#f60)">⚔️<br>HIT</button></div></div>
+<div style="position:absolute;right:20px;bottom:20px;display:flex;gap:10px;align-items:flex-end"><button class="ab" id="aBlock" style="width:90px;height:90px">🛡️<br>Block</button><button class="ab" id="aDodge" style="width:90px;height:90px">💨<br>Dodge</button><button class="ab" id="aCheer" style="display:none;width:100px;height:90px;font-size:15px;background:radial-gradient(#ffe98a,#e8a400)">📣 cheer</button><button class="ab" id="aAtk" style="width:130px;height:130px;font-size:30px;background:radial-gradient(#ff7,#f60)">⚔️<br>HIT</button></div></div>
+<div id="specBan" class="panel" style="display:none;top:84px;left:50%;transform:translateX(-50%);padding:8px 16px;text-align:center;font-size:20px;z-index:5"><b>👀 Watching <span id="specName"></span> fight!</b> <span id="specWait" style="display:none;color:#ffb">⏳ waiting for friend…</span><br><button class="big" id="specCheer" style="margin:6px 0 0;font-size:20px;padding:8px 18px" onclick="specCheer()">📣 Cheer for the Boss! (C)</button></div>
 <div id="ov" class="overlay"><div class="card" id="ovc"></div></div>
 <script>console.warn('Scripts "build/three.js" and "build/three.min.js" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation'),
 /**
@@ -123,11 +126,17 @@ const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_V
 // ===== profiles =====
 const LS='tinyTeeHeroes.v1';
 let save=JSON.parse(localStorage.getItem(LS)||'{}'); save.profiles=save.profiles||{};
-function newProfile(name){const lv={};CLUBS.forEach(c=>lv[c.id]={power:0,acc:0,spin:0});return{name,tokens:20,lv,unlocked:[],equip:{},v:2};}
-function migrate(pr){if(pr.v>=2)return pr;for(const k in pr.lv)for(const st of['power','acc','spin'])pr.lv[k][st]=Math.min(MAXLV,(pr.lv[k][st]||0)*2);pr.v=2;return pr;}
+function newProfile(name){const lv={};CLUBS.forEach(c=>lv[c.id]={power:0,acc:0,spin:0});const owned={};CLUBS.forEach(c=>owned[c.id]=[]);return{name,tokens:20,lv,owned,equip:{},v:3};}
+function migrate(pr){if(!pr)return pr;if(!(pr.v>=2)){for(const k in pr.lv)for(const st of['power','acc','spin'])pr.lv[k][st]=Math.min(MAXLV,(pr.lv[k][st]||0)*2);pr.v=2;}
+ // v3: attributes are owned PER CLUB. An old global attribute goes to the club(s) it is equipped on, otherwise to the Driver.
+ if(pr.v<3){pr.owned={};CLUBS.forEach(c=>pr.owned[c.id]=[]);pr.equip=pr.equip||{};for(const el of (pr.unlocked||[])){const on=CLUBS.filter(c=>pr.equip[c.id]===el);(on.length?on:[CLUBS[0]]).forEach(c=>{if(!pr.owned[c.id].includes(el))pr.owned[c.id].push(el);});}
+  delete pr.unlocked;pr.v=3;}
+ CLUBS.forEach(c=>{pr.owned[c.id]=pr.owned[c.id]||[];if(pr.equip[c.id]&&!pr.owned[c.id].includes(pr.equip[c.id]))delete pr.equip[c.id];});return pr;}
+const owns=(pr,cid,el)=>!!(pr.owned&&pr.owned[cid]&&pr.owned[cid].includes(el));
+const ownedAll=pr=>{const o=[];CLUBS.forEach(c=>(pr.owned&&pr.owned[c.id]||[]).forEach(el=>o.push([c,el])));return o;};
 function getProfile(name){if(save.profiles[name])migrate(save.profiles[name]);if(!save.profiles[name])save.profiles[name]=newProfile(name);return save.profiles[name];}
 function persist(){localStorage.setItem(LS,JSON.stringify(save));}
-function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el=prof.equip[c.id]||null;
+function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el0=prof.equip[c.id]||null,el=el0&&owns(prof,c.id,el0)?el0:null;
  // progression: 10 levels per stat. Power starts at 40% (+6%/level), spin at 7% (+9.3%/level; backspin bite uses BITE table) → both 100% at level 10.
  // Accuracy: "miss" (1-acc) starts at 2× the club's base miss and shrinks evenly to 0.2× at level 10.
  let dist=c.dist*(.4+.06*l.power)*(el==='fire'?1.12:1);let acc=1-(1-c.acc)*(2-.18*l.acc);if(el==='lightning')acc+=(1-acc)*.6;
@@ -203,6 +212,16 @@ const wNorm=waterNormal();
 const WIND_U={uTime:{value:0},uWind:{value:new THREE.Vector2()}};
 // ===== hole generation =====
 let H=null; const holeGroup=new THREE.Group();scene.add(holeGroup);
+const ELEV=[
+ {prof:[[0,2],[1,.5]],mound:.3,tier:.35},                                         // 1 gentle, slightly downhill
+ {prof:[[0,6],[.06,6],[.28,1],[.7,0],[1,1.8]],mound:.6,tier:.6},                  // 2 elevated tee
+ {prof:[[0,0],[.45,1],[.8,4.5],[1,7]],mound:.8,tier:0},                          // 3 uphill to a raised green (boss)
+ {prof:[[0,8],[.06,8],[.22,3],[1,2.5]],rav:[.47,5,.045],mound:1,tier:1},          // 4 downhill tee + ravine to carry
+ {prof:[[0,3],[.3,9],[.52,2],[.78,7],[1,11]],mound:1.3,tier:1.1},                 // 5 big rolling hills, raised green
+ {prof:[[0,14],[.06,14],[.27,4],[.6,0],[1,9]],mound:1.1,tier:0},                 // 6 high tee, valley, raised green (boss)
+ {prof:[[0,24],[.08,24],[.2,6],[.38,.5],[1,0]],mound:.6,tier:1.2,island:1},       // 7 cliff-top tee down to an island-ish green
+ {prof:[[0,10],[.06,10],[.3,6],[.6,10],[.85,14],[1,20]],rav:[.36,8,.04],mound:1.5,tier:1.4}, // 8 ravine + climb to a perched green
+ {prof:[[0,30],[.07,30],[.2,12],[.5,4],[.8,8],[1,14]],rav:[.63,7,.035],mound:1.6,tier:0}];   // 9 cliff-top finale (boss)
 function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  const LF=.62+.04*i;// shorter early holes for 60%-power starter clubs
  const L=Math.round((par===3?135+i*6:par===4?250+i*14:390+i*12)*LF);
@@ -218,26 +237,47 @@ function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  // water
  if(i>=2){const nw=i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):.8;const p=ptAt(h,t);
   const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+i*.6:14+r()*10,a:0});}}
+ // island-ish green (hole 7): water wraps the front and one side of the green
+ Object.assign(h,ELEV[i]||ELEV[0]);h.boss=!!BOSSES[i];h.segL=[];h.totL=0;for(let k=0;k<3;k++){const l=Math.hypot(path[k+1][0]-path[k][0],path[k+1][1]-path[k][1]);h.segL.push(l);h.totL+=l;}
+ h.tierA=r()*Math.PI;
+ if(h.island){h.water.push({x:gx-side*(gr+6),z:-L+gr*.4,rx:9,rz:gr+12,a:0});}
+ h.Eg=elevBase(h,gx,-L);for(const w of h.water)w.y=elevBase(h,w.x,w.z);
  // tokens
  for(let k=0;k<N_COINS;k++){const p=ptAt(h,.2+k*.15);h.tokens.push({x:p[0]+(r()-.5)*fw*.7,z:p[1],got:false});}
  return h;}
+// distance to the hole's centre line and progress along it (0 = tee, 1 = green)
+function pathInfo(h,x,z){let best=1e18,bt=0,cum=0;const P=h.path;for(let k=0;k<P.length-1;k++){const ax=P[k][0],az=P[k][1],bx=P[k+1][0],bz=P[k+1][1];
+ const dx=bx-ax,dz=bz-az;const t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);const ex=ax+dx*t-x,ez=az+dz*t-z;const d2=ex*ex+ez*ez;if(d2<best){best=d2;bt=(cum+t*h.segL[k])/h.totL;}cum+=h.segL[k];}
+ // behind the tee / beyond the green: keep the end values
+ if(bt<=0&&z>0)bt=0;return{d:Math.sqrt(best),t:bt};}
+function profAt(h,t){const P=h.prof;if(t<=P[0][0])return P[0][1];for(let k=1;k<P.length;k++)if(t<=P[k][0]){const u=(t-P[k-1][0])/(P[k][0]-P[k-1][0]);return lerp(P[k-1][1],P[k][1],u*u*(3-2*u));}return P[P.length-1][1];}
+// big-scale course elevation: designed profile along the hole + ravine + rolling mounds on the fairway
+function elevBase(h,x,z,pi){pi=pi||pathInfo(h,x,z);let y=profAt(h,pi.t);
+ if(h.rav){const [tv,dep,w]=h.rav;const k=(pi.t-tv)/w;y-=dep*Math.exp(-k*k*2.2)*sstep(h.fw/2+70,h.fw/2+30,pi.d);}
+ if(h.mound){const fade=sstep(.04,.14,pi.t)*sstep(.97,.84,pi.t);y+=h.mound*fade*(Math.sin(pi.t*h.totL/19+h.seed)*.7+Math.sin(x*.09+z*.04+h.seed*3)*.5);}
+ return y;}
+function inRavine(h,x,z){if(!h.rav)return false;const pi=pathInfo(h,x,z);return Math.abs(pi.t-h.rav[0])<h.rav[2]*.75&&pi.d<h.fw/2+40;}
 function ptAt(h,t){const P=h.path;const seg=Math.min(2,Math.floor(t*3));const u=t*3-seg;return[lerp(P[seg][0],P[seg+1][0],u),lerp(P[seg][1],P[seg+1][1],u)];}
 function distPath(h,x,z){let best=1e9;const P=h.path;for(let k=0;k<P.length-1;k++){const ax=P[k][0],az=P[k][1],bx=P[k+1][0],bz=P[k+1][1];
  const dx=bx-ax,dz=bz-az;const t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);const ex=ax+dx*t-x,ez=az+dz*t-z;best=Math.min(best,ex*ex+ez*ez);}return Math.sqrt(best);}
 function ell(e,x,z){const c=Math.cos(e.a),s=Math.sin(e.a);const dx=x-e.x,dz=z-e.z;const u=(dx*c-dz*s)/e.rx,v=(dx*s+dz*c)/e.rz;return u*u+v*v;}
 function surfInfo(h,x,z){if(G.forceSurf)return G.forceSurf;
+ if(h.island){const dg0=Math.hypot(x-h.gx,z-h.gz);if(dg0<h.gr)return'green';if(dg0<h.gr+2.5)return'fringe';}
  for(const w of h.water)if(ell(w,x,z)<1)return'water';
  for(const b of h.bunkers)if(ell(b,x,z)<1)return'sand';
  const dg=Math.hypot(x-h.gx,z-h.gz);if(dg<h.gr)return'green';if(dg<h.gr+2.5)return'fringe';
  if(Math.abs(x)<4&&z>-3&&z<5)return'tee';
- const d=distPath(h,x,z);const half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed));if(d<half&&z<-12)return'fairway';
+ const d=distPath(h,x,z);const half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed));if(d<half&&z<-12&&!inRavine(h,x,z))return'fairway';
  return'rough';}
 function hgt(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.cos(z*.018+h.seed*2)+.8*Math.sin(z*.041+x*.012)+.4*Math.sin(x*.07-z*.05));
  const dt=Math.hypot(x,z-1);y*=sstep(6,25,dt);
- const dg=Math.hypot(x-h.gx,z-h.gz);const gw=sstep(h.gr+8,h.gr,dg);const yg=h.slope*(x-h.gx)*h.gr/2*.4+h.slope2*(z-h.gz)*h.gr/2*.4;y=lerp(y,yg+.3,gw);
- const d=distPath(h,x,z);y+=Math.min(22,Math.max(0,d-h.fw/2-28)*.13)+ (d>h.fw/2+28? 2*fbm(x*.02,z*.02):0);
+ const pi=pathInfo(h,x,z),d=pi.d;y+=elevBase(h,x,z,pi);
+ const dg=Math.hypot(x-h.gx,z-h.gz);const gw=sstep(h.gr+8,h.gr,dg);const yg=h.slope*(x-h.gx)*h.gr/2*.4+h.slope2*(z-h.gz)*h.gr/2*.4;
+ const tier=h.tier?h.tier*sstep(-1.6,1.6,(x-h.gx)*Math.cos(h.tierA)+(z-h.gz)*Math.sin(h.tierA)):0;y=lerp(y,h.Eg+yg+.3+tier,gw);
+ y+=Math.min(22,Math.max(0,d-h.fw/2-28)*.13)+ (d>h.fw/2+28? 2*fbm(x*.02,z*.02):0);
+ if(h.boss){const db=Math.hypot(x-h.gx,z-(h.gz-2.5));y=lerp(y,h.Eg+.3,sstep(38,23,db));}// flat boss arena
  for(const b of h.bunkers){y-=.55*sstep(1.15,.55,ell(b,x,z));}
- for(const w of h.water){y=lerp(y,-1.3,sstep(1.3,.85,ell(w,x,z)));}
+ for(const w of h.water){if(h.island&&dg<h.gr+3)continue;y=lerp(y,w.y-1.3,sstep(1.3,.85,ell(w,x,z)));}
  return y;}
 const WATER_Y=-.35;const CURVE=10.8,MPH=.44704,WINDK=.6,MAXPOW=1.1;
 const HX=150; // texture region half width
@@ -246,6 +286,10 @@ function buildHole(i){
  while(holeGroup.children.length){const o=holeGroup.children.pop();o.traverse(c=>{if(c.geometry)c.geometry.dispose();});}
  H=genHole(i);const h=H;const zmin=-h.L-90,zmax=60,Wd=HX*2,Ld=zmax-zmin;h.zmin=zmin;h.zmax=zmax;
  // paint texture
+ const SG=3,gnx=Math.ceil(Wd/SG)+2,gnz=Math.ceil(Ld/SG)+2,HG=new Float32Array(gnx*gnz);for(let j=0;j<gnz;j++)for(let k=0;k<gnx;k++)HG[j*gnx+k]=hgt(-HX+(k-.5)*SG,zmin+(j-.5)*SG);
+ let hmin=1e9,hmax=-1e9;for(const v of HG){hmin=Math.min(hmin,v);hmax=Math.max(hmax,v);}
+ const shadeAt=(x,z)=>{const fx=(x+HX)/SG+.5,fz=(z-zmin)/SG+.5;const k=clamp(Math.floor(fx),1,gnx-2),j=clamp(Math.floor(fz),1,gnz-2);const gx_=(HG[j*gnx+k+1]-HG[j*gnx+k-1])/(2*SG),gz_=(HG[(j+1)*gnx+k]-HG[(j-1)*gnx+k])/(2*SG);
+  const hh=HG[j*gnx+k];return clamp(1+(-gx_*.55+gz_*.75)*.9,.62,1.3)*(.93+.14*(hh-hmin)/Math.max(1,hmax-hmin));};
  const TW=1024,TH=Math.round(TW*Ld/Wd);const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const cx=cv.getContext('2d');const im=cx.createImageData(TW,TH);const D=im.data;
  const ang=Math.atan2(h.path[3][0]-h.path[0][0],-(h.path[3][1]));
  for(let j=0;j<TH;j++){const z=zmin+(j+.5)/TH*Ld;for(let k=0;k<TW;k++){const x=-HX+(k+.5)/TW*Wd;
@@ -257,6 +301,7 @@ function buildHole(i){
   else if(s==='sand'){let e=1;for(const bb of h.bunkers){const v=ell(bb,x,z);if(v<1)e=Math.min(e,v);}const lip=e>.82?.82:1;
    r=(228-n*25+n2*14)*lip;g=(208-n*25+n2*12)*lip;b=(165-n*25+n2*10)*lip;}
   else{r=40;g=55;b=50;}
+  {const sh=shadeAt(x,z);r*=sh;g*=sh;b*=sh;}
   const v=n2*8-4;const edge=Math.min(k,TW-1-k,j,TH-1-j);const ef=sstep(0,30,edge);
   if(ef<1&&s==='rough'){r=lerp(60,r,ef);g=lerp(112,g,ef);b=lerp(38,b,ef);}
   const q=(j*TW+k)*4;D[q]=r+v;D[q+1]=g+v;D[q+2]=b+v;D[q+3]=255;}}
@@ -271,12 +316,12 @@ function buildHole(i){
  const bt=bumpTex.clone();bt.needsUpdate=true;bt.repeat.set(Wd/3,Ld/3);
  groundMat=new THREE.MeshStandardMaterial({map:tex,bumpMap:bt,bumpScale:1.2,roughness:.95,metalness:0});
  const ground=new THREE.Mesh(geo,groundMat);ground.receiveShadow=true;holeGroup.add(ground);
- const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=21.5;holeGroup.add(outer);
+ const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=Math.min(21.5,hmin-4);holeGroup.add(outer);
  // water
  for(const w of h.water){const wg=new THREE.CircleGeometry(1,48);wg.rotateX(-Math.PI/2);
   const wn=wNorm.clone();wn.needsUpdate=true;wn.repeat.set(w.rx/6,w.rz/6);
   const wm=new THREE.MeshPhysicalMaterial({color:0x1d4f66,roughness:.06,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4,clearcoat:1});
-  const m=new THREE.Mesh(wg,wm);m.scale.set(w.rx*1.08,1,w.rz*1.08);m.rotation.y=-w.a;m.position.set(w.x,WATER_Y,w.z);m.receiveShadow=true;m.userData.water=wn;holeGroup.add(m);}
+  const m=new THREE.Mesh(wg,wm);m.scale.set(w.rx*1.08,1,w.rz*1.08);m.rotation.y=-w.a;m.position.set(w.x,w.y+WATER_Y,w.z);m.receiveShadow=true;m.userData.water=wn;holeGroup.add(m);}
  // trees
  buildTrees(h);
  // flag & cup
@@ -383,13 +428,15 @@ const P=()=>G.players[G.turn];
 function startHole(i){G.hole=i;buildHole(i);ball=null;trailPts=[];G.snapCam=true;
  G.players.forEach((p,k)=>{p.pos.set(k?1.2:-1.2,0,0);p.pos.y=hgt(p.pos.x,0)+.13;p.last.copy(p.pos);p.strokes=0;p.done=false;p.aim=Math.atan2(H.path[1][0],-H.path[1][1]);p.ball.position.copy(p.pos);p.ball.visible=true;});
  G.turn=0;G.boss=null;if(bossMesh){scene.remove(bossMesh);bossMesh=null;}
- const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,hp:b.hp,x:H.gx,z:H.gz-2.5};bossMesh=buildBoss(b);bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);bossMesh.rotation.y=0;scene.add(bossMesh);
+ const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
+  // every player has their OWN boss health on this hole; G.boss.hp always means the current (turn) player's boss
+  G.players.forEach(p=>p.bhp=b.hp);Object.defineProperty(G.boss,'hp',{get(){const q=P();return q?q.bhp:0;},set(v){const q=P();if(q)q.bhp=v;},enumerable:true});bossMesh=buildBoss(b);bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);bossMesh.rotation.y=0;scene.add(bossMesh);
   $('bossbar').style.display='block';$('bossname').textContent=b.ic+' '+b.name;updBoss();showBossIntro();}
  else $('bossbar').style.display='none';
  G.mode='aim';autoClub();updUI();say(`Hole ${i+1} · Par ${H.par}`);}
-function updBoss(){const b=G.boss;if(!b)return;$('bossfill').style.width=(100*b.hp/b.hpMax)+'%';}
+function updBoss(){const b=G.boss;if(!b)return;$('bossfill').style.width=(100*b.hp/b.hpMax)+'%';const two=G.players.length>1;$('bossname').textContent=b.ic+' '+b.name+(two?` — ${P().name}'s fight`:'')+(b.hp<=0?' ✅ beaten!':'');}
 function showBossIntro(){const b=G.boss;const el=k=>ELEMS[k].ic+' '+ELEMS[k].name;
- overlay(`<h1>${b.ic} BOSS: ${b.name}!</h1><p style="font-size:24px">The boss is guarding the cup! Hit shots near it (or right at it!) to do damage. Beat it, then sink the putt.</p>
+ overlay(`<h1>${b.ic} BOSS: ${b.name}!</h1><p style="font-size:24px">The boss is guarding the cup! Hit shots near it (or right at it!) to do damage. Beat it, then sink the putt.${G.players.length>1?'<br><b>Each player fights their own boss</b> — your win only unlocks <i>your</i> cup, and only the winner gets the prize!':''}</p>
  <p style="font-size:26px">💥 Weak to: <b style="color:#ffe14d">${b.weak.map(el).join(' &nbsp; ')}</b> (2× damage)</p>
  <p style="font-size:26px">🛡️ Resists: <b style="color:#9cf">${b.resist.map(el).join(' &nbsp; ')}</b> (½ damage)</p>
  <p>🎁 Beat it to earn the <b>${el(b.perk)}</b> perk!</p><p>Tip: open the 🛒 Shop to put the right attribute on your clubs.</p>
@@ -408,8 +455,9 @@ function clubIcon(cv,ci,el){const x=cv.getContext('2d');x.clearRect(0,0,cv.width
  const hw=[22,18,14,12,20][ci],hh=[14,11,8,8,6][ci];x.fillStyle=ci<2?'#334':'#bbc';x.beginPath();x.ellipse(hw/2-2,22,hw/2+2,hh/2,0,0,7);x.fill();
  if(el==='spikes'){x.fillStyle='#fff';for(let k=0;k<6;k++){const a=k/6*7;x.beginPath();x.moveTo(hw/2+Math.cos(a)*(hw/2+1),22+Math.sin(a)*hh/2);x.lineTo(hw/2+Math.cos(a)*(hw/2+9),22+Math.sin(a)*(hh/2+7));x.lineTo(hw/2+Math.cos(a+.3)*(hw/2+1),22+Math.sin(a+.3)*hh/2);x.fill();}}
  x.restore();}
-function updUI(){const p=P();if(!p||!H)return;{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
- $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; Par ${H.par}<br>${G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':''}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
+function elevTxt(p){const dy=hgt(H.gx,H.gz)-(p.pos.y-.13);if(Math.abs(dy)<1.5)return'<small>· level</small>';return dy>0?`<small style="color:#ffd27a">⬆️ +${dy.toFixed(0)} m uphill</small>`:`<small style="color:#9fe3ff">⬇️ ${dy.toFixed(0)} m downhill</small>`;}
+function updUI(){if(G.boss&&P())updBoss();const p=P();if(!p||!H)return;$('hint').innerHTML=G.online&&!myTurn()?`👀 Watching <b>${esc(p.name)}</b>'s turn…`:'Drag ⬇️ then flick ⬆️ on the course to swing!';{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
+ $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; Par ${H.par}<br>${G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':''}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m ${elevTxt(p)}<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
  $('tokens').textContent='🪙 '+pr.tokens;
  
  const cl=$('clubs');cl.innerHTML='';CLUBS.forEach((c,ci)=>{const e=eff(pr,ci);const d=document.createElement('div');d.className='club'+(ci===p.club?' sel':'')+(e.el?' e-'+e.el:'');
@@ -544,7 +592,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
   for(const t of H.trees){const dx=pos.x-t.x,dz=pos.z-t.z;if(dx*dx+dz*dz<t.r*t.r&&pos.y-hgt(t.x,t.z)<t.h&&pos.y-hgt(t.x,t.z)>1){v.x*=-.3;v.z*=-.3;v.y*=.3;pos.x+=v.x*dt*2;pos.z+=v.z*dt*2;if(!b.treeMsg){b.treeMsg=1;float('🌳 Bonk!');}break;}}
   bossHit(b);
   const gy=hgt(pos.x,pos.z)+R;if(pos.y<=gy){pos.y=gy;let s=surfInfo(H,pos.x,pos.z);if(s==='water'&&e.el==='ice')s='ice';
-   if(s==='water'){if(e.el==='bubble'&&!b.usedBubble){b.usedBubble=true;v.y=7;v.x*=.7;v.z*=.7;pos.y=WATER_Y+.3;float('🫧 Bubble bounce!');splash(pos,0x77ddff);return;}return penalty('💦 Splash! +1');}
+   if(s==='water'){if(e.el==='bubble'&&!b.usedBubble){b.usedBubble=true;v.y=7;v.x*=.7;v.z*=.7;pos.y=hgt(pos.x,pos.z)+1.3+WATER_Y+.3;float('🫧 Bubble bounce!');splash(pos,0x77ddff);return;}return penalty('💦 Splash! +1');}
    if(!b.landed){b.landed=true;bossSplash(b);}
    if(e.el==='spikes'){v.set(0,0,0);b.air=false;float('🦔 Stuck the landing!');return;}
    if(Math.abs(v.y)>2.5&&b.bounced<4){b.bounced++;const k=BOUNCE[s];v.y=-v.y*k;let keep=.8;const firm=s==='green'||s==='fringe'||s==='fairway'||s==='tee'||s==='ice';
@@ -572,15 +620,17 @@ function mult(el){const b=G.boss;if(!el)return 1;if(b.weak.includes(el))return 2
 function dealDamage(base,b){const B=G.boss;if(!B||B.hp<=0||b.hitBoss)return;b.hitBoss=true;const m=mult(b.e.el);const dmg=Math.max(1,Math.round(base*m*(1+.03*b.e.power)));B.hp=Math.max(0,B.hp-dmg);updBoss();
  splash(new THREE.Vector3(B.x,hgt(B.x,B.z)+2,B.z),b.e.el?ELEMS[b.e.el].col:0xffffff,40);bossFlash=.5;
  float(`💥 ${dmg} damage!${m>1?'<br>SUPER EFFECTIVE! '+ELEMS[b.e.el].ic:m<1?'<br>Not very effective…':''}`);
- if(B.hp<=0)setTimeout(()=>{say(`🏆 ${B.name} defeated!`,2500);bossDefeated();},900);}
+ if(B.hp<=0){const who=P(),ci=who.club;setTimeout(()=>{say(`🏆 ${B.name} defeated!`,2500);bossDefeated(ci,who);},900);}}
 function bossHit(b){const B=G.boss;if(!B||B.hp<=0)return;const pos=b.p.pos;const gy=hgt(B.x,B.z);if(pos.y-gy>3.8)return;
  const dx=pos.x-B.x,dz=pos.z-B.z,d=Math.hypot(dx,dz),R0=1.7;if(d>=R0)return;
  if(!b.bonk){b.bonk=1;float(G.boss.ic+' Boing! Reach the green to battle!');}
  const nx=d>1e-3?dx/d:0,nz=d>1e-3?dz/d:1;pos.x=B.x+nx*(R0+.02);pos.z=B.z+nz*(R0+.02);if(!b.air)pos.y=hgt(pos.x,pos.z)+R;
  const vn=b.v.x*nx+b.v.z*nz;if(vn<0){b.v.x-=1.5*vn*nx;b.v.z-=1.5*vn*nz;}b.v.x*=.6;b.v.z*=.6;b.bonks=(b.bonks||0)+1;if(b.bonks>40){b.v.set(0,0,0);b.air=false;}}
 function bossSplash(b){return;const B=G.boss;if(!B||B.hp<=0)return;const d=Math.hypot(b.p.pos.x-B.x,b.p.pos.z-B.z);if(d<35)dealDamage(6+20*(1-d/35),b);}
-function bossDefeated(){const B=G.boss;G.players.forEach(p=>{if(!p.prof.unlocked.includes(B.perk))p.prof.unlocked.push(B.perk);p.prof.tokens+=BOSS_BONUS;});persist();
- if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">Everyone earns <b>+${BOSS_BONUS} 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
+// boss perk: granted on the club used in the winning fight (every player gets it on that same club)
+// rewards go ONLY to the player who won their own fight
+function bossDefeated(ci,who){const B=G.boss;who=who||P();const club=CLUBS[ci==null?0:ci];{const p=who;const o=p.prof.owned[club.id]=p.prof.owned[club.id]||[];if(!o.includes(B.perk))o.push(B.perk);p.prof.tokens+=BOSS_BONUS;}persist();if(G.online&&who===G.players[G.localIdx])syncProf();const other=G.players.find(q=>q!==who&&q.bhp>0);
+ if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">${G.players.length>1?esc(who.name)+' earns':'You earn'} <b>+${BOSS_BONUS} 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk for the <b>${club.name}</b>!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳${other?`<br><small>${esc(other.name)} still has to beat their own ${B.name} (${other.bhp} HP)!</small>`:''}</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
 function stopBall(){if(ball.dry){ball.end='stop';ball=null;return;}const b=ball;ball=null;if(!b.landed)bossSplash(b);endShot();}
 function penalty(t){if(ball.dry){ball.end=/Splash/.test(t)?'water':'oob';ball=null;return;}const p=ball.p;ball=null;p.strokes++;p.pos.copy(p.last);float(t);splash(p.pos,0x88ccff);setTimeout(endShot,700);}
 function holed(){if(ball.dry){ball.end='holed';ball=null;return;}const p=ball.p;ball=null;p.done=true;p.ball.visible=false;const d=p.strokes-H.par;
@@ -596,7 +646,7 @@ function finishHole(){G.players.forEach(p=>{p.scores[G.hole]=p.strokes;});G.mode
  if(!G.online||G.online.host){save.hole=G.hole+1;persist();}showCard(true);}
 function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1><table class="sc"><tr><th>Hole</th>${PARS.map((_,i)=>`<th>${i+1}${BOSSES[i]?BOSSES[i].ic:''}</th>`).join('')}<th>Total</th></tr><tr><td>Par</td>${PARS.map(x=>`<td>${x}</td>`).join('')}<td>${PARS.reduce((a,b)=>a+b)}</td></tr>`;
  pl.forEach(p=>{let tot=0;t+=`<tr><td>${p.name}</td>${PARS.map((par,i)=>{const s=p.scores[i];if(s==null)return'<td></td>';tot+=s;const c=s<par?'#ffe14d':s>par?'#fbb':'#fff';return`<td style="color:${c}">${s}</td>`;}).join('')}<td><b>${tot}</b></td></tr>`;});
- t+='</table>';if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
+ t+='</table>';if(G.boss)t+=`<p>${G.boss.ic} <b>${G.boss.name}</b> — each player fights their own: ${pl.map(p=>`${esc(p.name)} ${p.bhp<=0?'✅ beaten':'❤️ '+p.bhp+'/'+G.boss.hpMax+' HP'}`).join(' · ')}</p>`;if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
   const last=G.hole>=NHOLES-1;const canNext=!G.online||G.online.host;
   t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
@@ -610,17 +660,17 @@ window.openShop=(pi)=>{if(pi!=null)shopP=pi;const locals=G.players.map((p,k)=>k)
  const row=(key,label,val)=>{const lv=l[key];return`<div class="statrow"><span class="nm">${label}</span>${bar(lv)}<span style="width:210px;white-space:nowrap">Lv ${lv}/${MAXLV} · ${val}</span>${lv<MAXLV?`<button class="sm" ${pr.tokens<upCost(c.id,lv)?'disabled':''} onclick="upg('${key}')">⬆ ${upCost(c.id,lv)} 🪙</button>`:'<b>MAX ⭐</b>'}</div>`;};
  let t=`<div class="shophead"><button class="shopx" id="shopX" title="Close (Esc)" onclick="closeShop()">✖</button><h1>🛒 Club Shop</h1>
  <div class="shopbar"><b style="color:#ffd84a;font-size:24px">${esc(p.name)}: 🪙 ${pr.tokens}</b><button class="big donebtn" id="shopDoneTop" onclick="closeShop()">Done ✅</button></div></div>${locals.length>1?'<div class="tabs">'+locals.map(k=>`<button class="sm ${k===shopP?'on':''}" onclick="openShop(${k})">${G.players[k].name}</button>`).join('')+'</div>':''}
- <div class="tabs">${CLUBS.map((cc,k)=>`<button class="sm ${k===shopC?'on':''}" onclick="shopC=${k};openShop()">${cc.name} ${pr.equip[cc.id]?ELEMS[pr.equip[cc.id]].ic:''}</button>`).join('')}</div>
+ <div class="tabs">${CLUBS.map((cc,k)=>`<button class="sm ${k===shopC?'on':''}" onclick="shopC=${k};openShop()">${cc.name} ${pr.equip[cc.id]?ELEMS[pr.equip[cc.id]].ic:''}${(pr.owned[cc.id]||[]).length?`<small> ✨${pr.owned[cc.id].length}</small>`:''}</button>`).join('')}</div>
  <div style="display:inline-block;margin:10px auto">${row('power','💪 Power',Math.round(fullCarry(e))+'m carry')}${row('acc','🎯 Accuracy',Math.round(e.acc*100)+'%')}${row('spin','🌀 Spin',Math.round(e.spinMul*100)+'% strength')}
  <div class="statrow"><span class="nm">📐 Loft</span>${bar(Math.round(c.loft/10),5)}<span>${c.loft}° (${c.loft>30?'high & soft':c.loft?'low & long':'rolls on ground'})</span></div></div>
- <h2>✨ Attributes for your ${c.name}</h2><div class="elems">${Object.entries(ELEMS).sort((a,b)=>ELCOST(a[0])-ELCOST(b[0])).map(([k,E])=>{const has=pr.unlocked.includes(k),on=pr.equip[c.id]===k;
-  return`<div class="elem" style="${on?'border-color:#ffe14d;background:#fff3':''}"><div class="ic">${E.ic}</div><b>${E.name}</b><br><small>${E.desc}</small><br>${has?(on?`<button class="sm" onclick="equip(null)">Remove</button>`:`<button class="sm" onclick="equip('${k}')">Equip</button>`):`<button class="sm" ${pr.tokens<ELCOST(k)?'disabled':''} onclick="unlock('${k}')">Unlock ${ELCOST(k)} 🪙</button>`}</div>`;}).join('')}</div>
- <p><small>Bosses drop free attribute perks!</small></p><button class="big" onclick="closeShop()">Done ✅</button>`;
+ <h2>✨ Attributes for your ${c.name}</h2><div class="elems">${Object.entries(ELEMS).sort((a,b)=>ELCOST(a[0])-ELCOST(b[0])).map(([k,E])=>{const has=owns(pr,c.id,k),on=pr.equip[c.id]===k&&has;const where=CLUBS.filter(cc=>owns(pr,cc.id,k)).map(cc=>cc.name);
+  return`<div class="elem" style="${on?'border-color:#ffe14d;background:#fff3':''}"><div class="ic">${E.ic}</div><b>${E.name}</b><br><small>${E.desc}</small><br><small style="color:#bff">${where.length?'Owned: '+where.join(', '):'Not owned yet'}</small><br>${has?(on?`<button class="sm" onclick="equip(null)">Remove</button>`:`<button class="sm" onclick="equip('${k}')">Equip</button>`):`<button class="sm" ${pr.tokens<ELCOST(k)?'disabled':''} onclick="unlock('${k}')">Unlock ${ELCOST(k)} 🪙</button>`}</div>`;}).join('')}</div>
+ <p><small>Attributes are bought for <b>one club at a time</b> — pick a club tab above. Bosses drop a free perk for the club you fought with!</small></p><button class="big" onclick="closeShop()">Done ✅</button>`;
  const oc=$('ovc'),keepScroll=G.inShop?oc.scrollTop:0;overlay(t);G.inShop=true;oc.classList.add('shopcard');oc.scrollTop=keepScroll;};
 window.closeShop=()=>{if(!G.inShop)return;G.inShop=false;$('ovc').classList.remove('shopcard');closeOv();if(G.mode==='arenaIntro')arenaIntro(P());else if(G.mode==='card')showCard(true);else if(G.boss&&G.boss.hp>0&&G.players.every(p=>p.strokes===0))showBossIntro();};
 window.upg=k=>{const pr=G.players[shopP].prof,l=pr.lv[CLUBS[shopC].id];if(l[k]>=MAXLV)return;const c=upCost(CLUBS[shopC].id,l[k]);if(pr.tokens>=c){pr.tokens-=c;l[k]++;persist();say('⬆ Upgraded!',900);}syncProf();openShop();updUI();};
-window.unlock=k=>{const pr=G.players[shopP].prof;if(pr.tokens>=ELCOST(k)&&!pr.unlocked.includes(k)){pr.tokens-=ELCOST(k);pr.unlocked.push(k);pr.equip[CLUBS[shopC].id]=k;persist();say(ELEMS[k].ic+' Unlocked!',900);}syncProf();openShop();updUI();};
-window.equip=k=>{const pr=G.players[shopP].prof;if(k)pr.equip[CLUBS[shopC].id]=k;else delete pr.equip[CLUBS[shopC].id];persist();syncProf();openShop();updUI();};
+window.unlock=k=>{const pr=G.players[shopP].prof,cid=CLUBS[shopC].id;if(pr.tokens>=ELCOST(k)&&!owns(pr,cid,k)){pr.tokens-=ELCOST(k);(pr.owned[cid]=pr.owned[cid]||[]).push(k);pr.equip[cid]=k;persist();say(`${ELEMS[k].icon||ELEMS[k].ic} Unlocked for your ${CLUBS[shopC].name}!`,1100);}syncProf();openShop();updUI();};
+window.equip=k=>{const pr=G.players[shopP].prof;if(k&&!owns(pr,CLUBS[shopC].id,k))return;if(k)pr.equip[CLUBS[shopC].id]=k;else delete pr.equip[CLUBS[shopC].id];persist();syncProf();openShop();updUI();};
 
 // ===== particles =====
 let bossFlash=0;const bursts=[];
@@ -631,19 +681,26 @@ const burstPts=new THREE.Points(burstG,new THREE.PointsMaterial({size:.5,map:DOT
 // ===== networking (PeerJS) =====
 function net(m){if(G.online&&G.online.conn&&G.online.conn.open)G.online.conn.send(m);}
 function syncProf(){const me=G.players[G.localIdx];if(G.online&&me)net({t:'prof',prof:me.prof});}
-function onNet(m){if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=m.prof;if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}
- else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=m.prof;updUI();}
+function onNet(m){if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}
+ else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
+ else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
+ else if(m.t==='aim'){if(!myTurn()&&P()&&G.mode==='aim')P().aim=m.a;}
  else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0)G.players.forEach(p=>p.scores=[]);startHole(m.n);}}
-function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',()=>say('🔌 Friend disconnected',3000));}
+function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
+function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
+ overlay(`<h1>🔌 Your friend disconnected</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
 function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpperCase();G.online={host:true,code};G.localIdx=0;
  G.players=[makePlayer(name,0xffffff),makePlayer('Friend',0xff5ab4,true)];
+ if(LOOP){G.__onLoopConn=c=>setupPeer(c);G.online.code=code;G.online.loop=loopConn(code,true);
+  overlay(`<h1>🌐 Online Room ${code}</h1><p id="pst">Loopback test mode — waiting…</p>`);return;}
  const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code;
  overlay(`<h1>🌐 Online Room ${code}</h1><p>Send this link to your friend:</p><p><input class="nm" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p id="pst">Connecting to matchmaker…</p>`);
  peer.on('open',()=>{const e=$('pst');if(e)e.textContent='Waiting for your friend to join… ⏳';});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Online error: '+err.type+'. Try local mode.';});
  peer.on('connection',c=>{setupPeer(c);});}
 function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players=[makePlayer('Host',0xffffff,true),makePlayer(name,0xff5ab4)];
+ if(LOOP){overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Loopback test mode</p>`);setupPeer(loopConn(code,false));return;}
  const peer=new Peer();G.online.peer=peer;overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Connecting…</p>`);
  peer.on('open',()=>{setupPeer(peer.connect('tinytee-'+code,{reliable:true}));setTimeout(()=>{if(!(G.online.conn&&G.online.conn.open)){const e=$('pst');if(e)e.innerHTML='Still connecting… Some school/work Wi-Fi blocks direct play. Try a home network, or play 2 Players on one screen. <br><button class="big" onclick="location.href=location.pathname">Back to menu</button>';}},20000);});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Could not join: '+err.type;});}
 
@@ -652,7 +709,7 @@ function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players
 const CLUB_DMG=[14,12,10,8,6],CLUB_CD=[.95,.85,.7,.55,.45],CLUB_RANGE=[3.6,3.4,3.1,2.9,2.8];
 const PROJ_G=new THREE.SphereGeometry(.45,14,10),RING_G=new THREE.RingGeometry(1.2,1.6,24);const arenaGroup=new THREE.Group();scene.add(arenaGroup);
 function arenaIntro(p){G.mode='arenaIntro';const B=G.boss;
- if(p.remote){overlay(`<h1>${B.ic} ${p.name} is battling ${B.name}!</h1><p style="font-size:24px">Cheer them on! 📣</p>`);G.arenaWaiting=p;return;}
+ if(p.remote){G.arenaWaiting=p;if(G.spec)return;overlay(`<h1>${B.ic} ${esc(p.name)} is getting ready to battle ${B.name}!</h1><p style="font-size:24px">You'll watch the fight live in a moment… 👀</p>`);G.arenaWaiting=p;return;}
  const tag=el=>!el?'':B.weak.includes(el)?' <b style="color:#ffe14d">2× 💥</b>':B.resist.includes(el)?' <b style="color:#9cf">½ 🛡️</b>':'';
  overlay(`<h1>⚔️ ${B.ic} ${B.name} blocks the green!</h1><p style="font-size:22px">${p.name}, pick a club to fight with!</p>
  <p>💥 Weak to ${B.weak.map(k=>ELEMS[k].ic).join(' ')} &nbsp; 🛡️ Resists ${B.resist.map(k=>ELEMS[k].ic).join(' ')}</p>
@@ -664,8 +721,12 @@ window.startArena=(ci)=>{closeOv();gs=null;gx.clearRect(0,0,gc.width,gc.height);
  const pp=c.clone().addScaledVector(dir,8);
  G.arena={ui:{},face:0,p,ci,e:eff(p.prof,ci),c,pos:pp,php:100,phpMax:100,bpos:c.clone(),cd:0,atk:0,dodge:0,dodgeCd:0,inv:0,block:false,state:'idle',st:1.5,tele:null,proj:[],burn:0,slow:0,hurt:0,mdir:new THREE.Vector3(),clock:0,face:0};
  G.mode='arena';$('arenaUI').style.display='block';$('clubs').style.display='none';$('power').style.display='none';$('spinBox').style.display='none';$('aimL').style.display='none';$('aimR').style.display='none';$('windp').style.display='none';$('carry').style.display='none';
- $('pbar').style.display='block';$('hint').style.display='none';updArenaBars();updClubFx();say('⚔️ FIGHT!',1200);};
+ $('pbar').style.display='block';$('hint').style.display='none';updArenaBars();updClubFx();say('⚔️ FIGHT!',1200);
+ Object.assign(G.arena,{boost:0,cheerHeal:0,cheerCd:0,cheerN:0,cheerName:'',hotCd:0,sendT:0});G.arena.aura=makeAura();arenaGroup.add(G.arena.aura);
+ const other=!G.online&&G.players.length===2?G.players.find(q=>q!==p):null;$('aCheer').style.display=other?'block':'none';if(other)$('aCheer').innerHTML=`📣 ${esc(other.name)}<br>cheers (C)`;
+ if(G.online)net({t:'arenaStart',ci,name:p.name});};
 function updArenaBars(){const A=G.arena;if(!A)return;$('pfill2').style.width=(100*A.php/A.phpMax)+'%';$('pname').textContent=`${A.p.name} ❤️`;updBoss();}
+function makeAura(){const m=new THREE.Mesh(new THREE.RingGeometry(2.2,3.1,40),new THREE.MeshBasicMaterial({color:0xffd23a,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;return m;}
 function arenaHurt(d){const A=G.arena;if(A.inv>0||A.dodge>0)return;if(A.block){d*=A.e.el==='bubble'?0:.2;float(A.e.el==='bubble'?'🫧 Bubble shield!':'🛡️ Blocked!');}
  d=Math.round(d);if(d<=0)return;A.php=Math.max(0,A.php-d);A.inv=.6;A.hurt=.3;splash(A.pos.clone().setY(A.pos.y+1),0xff4444,20);updArenaBars();if(A.php<=0)arenaEnd(false);}
 function bossDmg(base,crit){const A=G.arena,B=G.boss;const m=mult(A.e.el);let d=base*m*(crit?1.5:1);d=Math.max(1,Math.round(d));B.hp=Math.max(0,B.hp-d);bossFlash=.4;
@@ -708,7 +769,7 @@ function arenaSim(dt){const A=G.arena,B=G.boss;A.clock+=dt;
    else float('Whoosh! Get closer!');}}
  if(A.burn>0){A.burn-=dt;if(Math.floor((A.burn+dt)*2)!==Math.floor(A.burn*2)&&B.hp>0){B.hp=Math.max(0,B.hp-2);updBoss();splash(A.bpos.clone().setY(A.bpos.y+2.5),0xff6a00,10);if(B.hp<=0)return arenaEnd(true);}}
  // ---- boss AI: chase / circle / back off, then telegraphed attacks
- const rage=B.hp<B.hpMax*.4?1.5:1;const spd=(A.slow>0?.5:1)*rage;A.slow-=dt;A.st-=dt*spd;
+ A.boost=Math.max(0,(A.boost||0)-CHEER.decay*dt);A.cheerCd-=dt;A.hotCd-=dt;const rage=B.hp<B.hpMax*.4?1.5:1;const spd=(A.slow>0?.5:1)*rage*(1+A.boost);A.slow-=dt;A.st-=dt*spd;
  const bt=new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0);const bd=bt.length();bt.normalize();const tang=new THREE.Vector3(-bt.z,0,bt.x).multiplyScalar(A.circ||1);
  if(!A.bvel)A.bvel=new THREE.Vector3();const bv=_v2.set(0,0,0);
  if(A.state==='idle'){A.flip=(A.flip||0)-dt;if(A.flip<=0){A.flip=1.5+Math.random()*2;A.circ=Math.random()<.5?-1:1;}
@@ -748,10 +809,13 @@ function arenaRender(a,dt,t){const A=G.arena;const P0=_rp.copy(A.prevP).lerp(A.p
   A.hopR=A.hopR==null?hop:A.hopR+(hop-A.hopR)*Math.min(1,dt*20);bossMesh.position.y=Bp.y+A.hopR;
   const by=A.prevBYaw!=null&&A.bYaw!=null?A.prevBYaw+angDiff(A.prevBYaw,A.bYaw)*a:(A.bYaw||0);bossMesh.rotation.y=by;}
  arenaCamera(dt,t,P0,Bp);
+ if(A.aura){A.aura.position.set(Bp.x,Bp.y+.08,Bp.z);A.aura.material.opacity=Math.min(.85,A.boost/CHEER.maxBoost*.85);A.aura.rotation.z=t*3;A.aura.scale.setScalar(1+.08*Math.sin(t*10));}
+ if(bossMesh&&A.boost>0)bossMesh.traverse(o=>{if(o.isMesh&&o.material.emissive){o.material.emissive.setRGB(.5*A.boost/CHEER.maxBoost,.35*A.boost/CHEER.maxBoost,0);}});
+ if(G.online&&G.arena===A){A.sendT-=dt;if(A.sendT<=0){A.sendT=1/16;sendArenaState(A);}}
  sun.position.copy(P0).addScaledVector(sunDir,200);sun.target.position.copy(P0);}
 // third-person camera that always frames both the player and the boss — fully damped, no snapping
 const _cam=new THREE.PerspectiveCamera();
-function arenaCamera(dt,t,P0,Bp){const A=G.arena;if(!A)return;P0=P0||A.pos;Bp=Bp||A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
+function arenaCamera(dt,t,P0,Bp,AA){const A=AA||G.arena;if(!A)return;P0=P0||A.pos;Bp=Bp||A.bpos;const sep=Math.hypot(P0.x-Bp.x,P0.z-Bp.z);
  const want=Math.atan2(P0.x-Bp.x,P0.z-Bp.z);// camera behind the player, looking at the boss
  if(A.camYaw==null)A.camYaw=want;
  // yaw follows slowly; when the two are close together the direction is unstable, so follow even slower
@@ -773,18 +837,20 @@ function teleStart(A){let m;if(A.state==='stomp'){m=new THREE.Mesh(new THREE.Cir
  else if(A.state==='charge'){const g=new THREE.PlaneGeometry(2.4,13);g.rotateX(-Math.PI/2);m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
  if(m){arenaGroup.add(m);A.tele=m;}if(A.state==='stomp')float(G.boss.ic+' STOMP incoming!');}
 function teleEnd(A){if(A.tele)arenaGroup.remove(A.tele);A.tele=null;A.state='idle';A.st=1.2+Math.random()*1.3;}
-function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length)arenaGroup.remove(arenaGroup.children[0]);G.arena=null;
+function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length)arenaGroup.remove(arenaGroup.children[0]);G.arena=null;$('aCheer').style.display='none';$('specBan').style.display='none';
+ if(bossMesh)bossMesh.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setRGB(0,0,0);});
  $('arenaUI').style.display='none';$('pbar').style.display='none';['clubs','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
  if(bossMesh&&G.boss){bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);}}
 function arenaEnd(win){const A=G.arena;if(!A)return;const p=A.p;arenaCleanup();if(!win)p.strokes++;
- if(G.online)net({t:'arenaEnd',hp:G.boss.hp,win,strokes:p.strokes});
- if(win){bossDefeated();G.afterOv=()=>{G.skipArena=true;endShot();};}
+ if(G.online)net({t:'arenaEnd',hp:G.boss.hp,win,strokes:p.strokes,ci:A.ci});
+ if(win){bossDefeated(A.ci,p);G.afterOv=()=>{G.skipArena=true;endShot();};}
  else{overlay(`<h1>😵 Bonk!</h1><p style="font-size:24px">${G.boss.ic} ${G.boss.name} won this round (+1 stroke).<br>But it still has only <b>${G.boss.hp}</b> HP left — next time you reach the green, battle again!</p><button class="big" onclick="closeOv()">OK!</button>`);G.afterOv=()=>{G.skipArena=true;endShot();};}}
-function arenaRemoteEnd(m){const p=G.arenaWaiting;G.arenaWaiting=null;G.boss.hp=m.hp;updBoss();if(p)p.strokes=m.strokes;$('ov').style.display='none';G.ovOpen=false;
- if(m.win){bossDefeated();G.afterOv=()=>{G.skipArena=true;endShot();};}else{G.skipArena=true;endShot();}}
+function arenaRemoteEnd(m){if(G.spec)specEnd();const p=G.arenaWaiting;G.arenaWaiting=null;if(p)p.bhp=m.hp;else G.boss.hp=m.hp;updBoss();if(p)p.strokes=m.strokes;$('ov').style.display='none';G.ovOpen=false;
+ if(m.win){bossDefeated(m.ci,p);G.afterOv=()=>{G.skipArena=true;endShot();};}else{G.skipArena=true;endShot();}}
 addEventListener('keydown',e=>{keys[e.code]=true;if(!G.arena||G.ovOpen)return;const k=e.key;
  if(e.ctrlKey||e.metaKey||k==='Control'){e.preventDefault();}
  if(k===' '||k==='j'||k==='J'){e.preventDefault();playerAttack();}
+ if((k==='c'||k==='C')&&!e.repeat)hotSeatCheer();
  if(k==='Control'||k==='Shift'||k==='k'||k==='K'){e.preventDefault();if(!e.repeat)playerDodge();}
  if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();},{capture:true});
 addEventListener('keyup',e=>{keys[e.code]=false;});addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(G.arena)G.arena.mouseBlock=false;});
@@ -798,12 +864,78 @@ $('aAtk').onpointerdown=e=>{e.preventDefault();playerAttack();};$('aDodge').onpo
 $('aBlock').onpointerdown=e=>{e.preventDefault();if(G.arena)G.arena.uiBlock=true;};$('aBlock').onpointerup=$('aBlock').onpointerleave=()=>{if(G.arena)G.arena.uiBlock=false;};
 G.arenaIntro=arenaIntro;G.playerAttack=playerAttack;
 
+// ===== online spectator (watch the other player's boss fight) + cheering for the boss =====
+const CHEER={heal:.04,healCap:.25,boost:.1,maxBoost:.3,decay:.02,cd:3.5};// heal 4% max HP per cheer (cap 25%/fight), +10% speed per cheer (stacks to +30%, fades 2%/s), 3.5 s cooldown
+const r2=v=>Math.round(v*100)/100;
+function sendArenaState(A){const B=G.boss;net({t:'as',p:[r2(A.pos.x),r2(A.pos.y),r2(A.pos.z)],f:r2(A.face),atk:r2(Math.max(0,A.atk)),blk:A.block?1:0,dg:r2(Math.max(0,A.dodge)),hu:r2(Math.max(0,A.hurt)),
+ php:A.php,phpMax:A.phpMax,b:[r2(A.bpos.x),r2(A.bpos.y),r2(A.bpos.z)],by:r2(A.bYaw||0),hop:r2(A.hopR||0),bst:A.state,bhp:B.hp,boost:r2(A.boost||0),cn:A.cheerN,cname:A.cheerName,
+ tele:A.tele?{k:A.state,x:r2(A.tele.position.x),y:r2(A.tele.position.y),z:r2(A.tele.position.z),s:r2(A.tele.scale.x),r:r2(A.tele.rotation.y)}:null,
+ pr:A.proj.map(q=>[r2(q.m.position.x),r2(q.m.position.y),r2(q.m.position.z),r2(q.to.x),r2(q.to.z)])});}
+function applyCheer(name){const A=G.arena,B=G.boss;if(!A||!B||B.hp<=0)return false;if(A.cheerCd>0)return false;A.cheerCd=CHEER.cd;
+ const heal=Math.max(0,Math.min(Math.round(CHEER.heal*B.hpMax),Math.round(CHEER.healCap*B.hpMax-A.cheerHeal),B.hpMax-B.hp));A.cheerHeal+=heal;B.hp+=heal;updBoss();
+ A.boost=Math.min(CHEER.maxBoost,(A.boost||0)+CHEER.boost);A.cheerN++;A.cheerName=name;bossFlash=.4;splash(A.bpos.clone().setY(A.bpos.y+3),0xffd23a,40);
+ cheerFx(`📣 ${esc(name)} cheers for ${B.name}!${heal?` <b style="color:#7f7">+${heal} HP</b>`:''} <b style="color:#ffd23a">⚡ speed +${Math.round(A.boost*100)}%</b>`);return true;}
+function cheerFx(text){say(`<span style="font-size:.55em">${text}</span>`,2200);const em=['📣','🎉','👏','🙌','🥳','📯'];for(let k=0;k<10;k++){const sp=document.createElement('div');sp.className='cheerEmo';sp.textContent=em[k%em.length];
+  sp.style.left=(10+Math.random()*80)+'%';sp.style.animationDelay=(Math.random()*.35)+'s';document.body.appendChild(sp);setTimeout(()=>sp.remove(),2000);}}
+function hotSeatCheer(){const A=G.arena;if(!A||G.online||G.players.length!==2)return;const other=G.players.find(q=>q!==A.p);if(A.hotCd>0){say(`⏳ ${esc(other.name)} can cheer again in ${Math.ceil(A.hotCd)} s`,900);return;}
+ if(applyCheer(other.name))A.hotCd=CHEER.cd;}
+G.applyCheer=applyCheer;G.hotSeatCheer=hotSeatCheer;G.sendShot=s=>sendShot(s);$('aCheer').onpointerdown=e=>{e.preventDefault();hotSeatCheer();};
+// ---- spectator side
+function specStart(m){const p=G.arenaWaiting||P();closeOvSilently();G.spec={p,name:m.name||p.name,ci:m.ci,buf:[],last:null,cam:{},tele:null,proj:[],lastRecv:performance.now(),cheerCd:0,prevBhp:G.boss?G.boss.hp:0,prevPhp:100,prevCn:0};
+ G.mode='spectate';['clubs','power','spinBox','aimL','aimR','windp','carry','hint'].forEach(k=>$(k).style.display='none');$('pbar').style.display='block';$('pname').textContent=`${G.spec.name} ❤️`;$('pfill2').style.width='100%';
+ $('specBan').style.display='block';$('specName').textContent=G.spec.name;$('specCheer').disabled=false;G.spec.aura=makeAura();arenaGroup.add(G.spec.aura);golfer.visible=true;}
+function closeOvSilently(){$('ov').style.display='none';G.ovOpen=false;}
+function specState(m){const S=G.spec;if(!S)return;m.rt=performance.now();S.buf.push(m);if(S.buf.length>40)S.buf.shift();S.lastRecv=m.rt;}
+function specEnd(){const S=G.spec;if(!S)return;G.spec=null;arenaCleanup();}
+function specCheer(){const S=G.spec;if(!S||S.cheerCd>0)return;S.cheerCd=CHEER.cd;const me=G.players[G.localIdx];net({t:'cheer',name:me?me.name:'Friend'});say(`📣 You cheered for ${G.boss.name}!`,1200);$('specCheer').disabled=true;}
+window.specCheer=specCheer;G.specCheer=specCheer;
+const _sp=new THREE.Vector3(),_sb=new THREE.Vector3();
+function specTick(dt,t){const S=G.spec;const now=performance.now();S.cheerCd-=dt;if(S.cheerCd<=0&&$('specCheer').disabled)$('specCheer').disabled=false;
+ $('specWait').style.display=now-S.lastRecv>3000?'inline':'none';if(!S.buf.length)return;
+ // render ~120 ms behind the newest snapshot and interpolate between the two around that time
+ const rt=now-120;let a=S.buf[0],b=S.buf[S.buf.length-1];for(let k=S.buf.length-1;k>0;k--){if(S.buf[k-1].rt<=rt){a=S.buf[k-1];b=S.buf[k];break;}}
+ const u=b.rt>a.rt?clamp((rt-a.rt)/(b.rt-a.rt),0,1):1;const L=(x,y)=>x+(y-x)*u;
+ const P0=_sp.set(L(a.p[0],b.p[0]),L(a.p[1],b.p[1]),L(a.p[2],b.p[2])),Bp=_sb.set(L(a.b[0],b.b[0]),L(a.b[1],b.b[1]),L(a.b[2],b.b[2]));
+ const face=a.f+angDiff(a.f,b.f)*u,s=b;// discrete fields from the newest snapshot
+ const g=golfer.userData;golfer.visible=true;golfer.position.copy(P0);golfer.rotation.set(0,face,0);
+ if(s.atk>0){const k=1-s.atk/.35;g.arms.rotation.set(lerp(-2.6,1.0,k),0,0);g.torso.rotation.set(lerp(-.2,.4,k),0,0);}else if(s.blk){g.arms.rotation.set(-1.4,0,0);g.torso.rotation.set(0,0,0);}
+ else{const mv=Math.hypot(b.p[0]-a.p[0],b.p[2]-a.p[2])>.02?Math.sin(t*12)*.25:0;g.arms.rotation.set(-.6+mv,0,0);g.torso.rotation.set(.1+Math.abs(mv)*.3,0,0);}
+ if(s.dg>0)golfer.rotateZ(Math.sin(s.dg*20)*.5);if(s.hu>0)golfer.rotateX(-.3*s.hu/.3);
+ if(bossMesh){bossMesh.position.set(Bp.x,Bp.y+L(a.hop,b.hop),Bp.z);bossMesh.rotation.y=a.by+angDiff(a.by,b.by)*u;
+  const gl=s.boost/CHEER.maxBoost;bossMesh.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setRGB(.5*gl,.35*gl,0);});}
+ S.aura.position.set(Bp.x,Bp.y+.08,Bp.z);S.aura.material.opacity=Math.min(.85,s.boost/CHEER.maxBoost*.85);S.aura.rotation.z=t*3;
+ // health bars + hit effects from changes
+ if(G.boss){G.boss.hp=s.bhp;updBoss();}$('pfill2').style.width=(100*s.php/s.phpMax)+'%';
+ if(s.bhp<S.prevBhp){splash(Bp.clone().setY(Bp.y+2),0xffffff,30);say(`💥 ${S.prevBhp-s.bhp}`,700);}if(s.php<S.prevPhp)splash(P0.clone().setY(P0.y+1),0xff4444,20);
+ if(s.cn>S.prevCn)cheerFx(`📣 ${esc(s.cname)} cheers for ${G.boss.name}!`);S.prevBhp=s.bhp;S.prevPhp=s.php;S.prevCn=s.cn;
+ // telegraph + projectiles
+ if(s.tele){if(!S.tele||S.tele.userData.k!==s.tele.k){if(S.tele)arenaGroup.remove(S.tele);let m;
+   if(s.tele.k==='stomp'){m=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));m.rotation.x=-Math.PI/2;}
+   else{const gg=new THREE.PlaneGeometry(2.4,13);gg.rotateX(-Math.PI/2);m=new THREE.Mesh(gg,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
+   m.userData.k=s.tele.k;arenaGroup.add(m);S.tele=m;}
+  S.tele.position.set(s.tele.x,s.tele.y,s.tele.z);if(s.tele.k==='stomp')S.tele.scale.setScalar(s.tele.s);else S.tele.rotation.y=s.tele.r;}
+ else if(S.tele){arenaGroup.remove(S.tele);S.tele=null;}
+ while(S.proj.length<s.pr.length){const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:G.boss?G.boss.col:0x888888}));const mk=new THREE.Mesh(RING_G,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.7,side:THREE.DoubleSide}));mk.rotation.x=-Math.PI/2;arenaGroup.add(m,mk);S.proj.push({m,mk});}
+ while(S.proj.length>s.pr.length){const q=S.proj.pop();arenaGroup.remove(q.m,q.mk);}
+ s.pr.forEach((q,k)=>{S.proj[k].m.position.set(q[0],q[1],q[2]);S.proj[k].mk.position.set(q[3],hgt(q[3],q[4])+.08,q[4]);});
+ S.cam.hurt=s.hu;arenaCamera(dt,t,P0,Bp,S.cam);
+ sun.position.copy(P0).addScaledVector(sunDir,200);sun.target.position.copy(P0);}
+addEventListener('keydown',e=>{if(G.spec&&(e.key==='c'||e.key==='C')&&!e.repeat)specCheer();});
+// stream the shooter's aim so the watcher sees where they're lining up
+let aimSentT=0,aimSent=null;function aimStream(){if(!G.online||!myTurn()||G.mode!=='aim')return;const p=P();const n=performance.now();if(n-aimSentT<150||aimSent!=null&&Math.abs(p.aim-aimSent)<.002)return;aimSentT=n;aimSent=p.aim;net({t:'aim',a:+p.aim.toFixed(4)});}
+// ---- loopback transport for testing (same message code path as PeerJS, via BroadcastChannel): ?loop=1
+const LOOP=new URLSearchParams(location.search).get('loop')==='1';
+function loopConn(code,host){const bc=new BroadcastChannel('tth-'+code),h={};const c={open:false,on:(ev,f)=>{(h[ev]=h[ev]||[]).push(f);},send:m=>{bc.postMessage({_d:JSON.parse(JSON.stringify(m))});},close:()=>{bc.postMessage({_hs:'bye'});bc.close();},_h:h};
+ const fire=(ev,x)=>(h[ev]||[]).forEach(f=>f(x));bc.onmessage=e=>{const d=e.data;if(d._hs==='join'&&host&&!c.open){c.open=true;bc.postMessage({_hs:'ack'});G.__onLoopConn&&G.__onLoopConn(c);fire('open');}
+  else if(d._hs==='ack'&&!host&&!c.open){c.open=true;fire('open');}else if(d._hs==='bye'){c.open=false;fire('close');}else if(d._d)fire('data',d._d);};
+ if(!host){const ping=()=>{if(!c.open){bc.postMessage({_hs:'join'});setTimeout(ping,300);}};ping();}return c;}
+
 // ===== menu =====
 const room=new URLSearchParams(location.search).get('room');
 const RESET_Q=new URLSearchParams(location.search).get('reset')==='1';
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 function profSummary(pr){migrate(pr);let ups=0;for(const k in pr.lv)for(const st of['power','acc','spin'])ups+=pr.lv[k][st]||0;
- const at=(pr.unlocked||[]).map(k=>ELEMS[k]?ELEMS[k].ic:'').join(' ');return`🪙 ${pr.tokens} · ⬆️ ${ups} upgrade${ups===1?'':'s'} · ✨ ${at||'no attributes yet'}`;}
+ const at=ownedAll(pr).map(([c,k])=>ELEMS[k]?ELEMS[k].ic+'<small>'+c.name+'</small>':'').join(' ');return`🪙 ${pr.tokens} · ⬆️ ${ups} upgrade${ups===1?'':'s'} · ✨ ${at||'no attributes yet'}`;}
 const menuNames=()=>{const a=$('n1')?$('n1').value.trim().slice(0,14):'',b=$('n2')?$('n2').value.trim().slice(0,14):'';return[a||'Player 1',b];};
 // show Continue / Start Fresh for every typed name that has saved progress
 function updSaveInfo(){const el=$('saveInfo');if(!el)return;const [a,b]=menuNames();const rows=[];
@@ -931,7 +1063,7 @@ const camPos=new THREE.Vector3(0,5,10),camLook=new THREE.Vector3();
 function tick(){requestAnimationFrame(tick);try{tickInner();}catch(e){recover(e&&e.stack||e);}}
 function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  if(H){const p=P();
-  if(G.mode==='aim'&&myTurn()){if(aimHold){const tot=aimTurned((performance.now()-aimHold.t0)/1000);p.aim+=aimHold.dir*(tot-aimHold.done);aimHold.done=tot;}}else aimHold=null;
+  aimStream();if(G.mode==='aim'&&myTurn()){if(aimHold){const tot=aimTurned((performance.now()-aimHold.t0)/1000);p.aim+=aimHold.dir*(tot-aimHold.done);aimHold.done=tot;}}else aimHold=null;
   if(G.mode==='power'){power+=pdir*dt*.75;if(power>=MAXPOW){power=MAXPOW;pdir=-1;}if(power<=0){power=0;pdir=1;}$('pfill').style.height=(power/MAXPOW*100)+'%';$('pfill').style.filter=power>1?'hue-rotate(-40deg) saturate(2)':'';}
   if(G.swing){const w=G.swing;w.t+=dt;const T1=.14,T2=.5;if(w.t>=T1&&!w.fired){w.fired=true;doShot(w.shot);}if(w.t>T2+.4)G.swing=null;}
   if(ball){G.acc=(G.acc||0)+dt;let n=0;while(ball&&G.acc>=1/120&&n<12){stepBall(1/120);G.acc-=1/120;n++;}}else G.acc=0;
@@ -940,9 +1072,9 @@ function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const
   if(p){const dir=new THREE.Vector3(Math.sin(p.aim),0,-Math.cos(p.aim));let tp,tl;
    if(ball){const v=ball.v;const fl=new THREE.Vector3(v.x,0,v.z);if(fl.length()<.5)fl.copy(dir);fl.normalize();tp=p.pos.clone().addScaledVector(fl,-9).add(new THREE.Vector3(0,3.5,0));tl=p.pos.clone();
     camPos.lerp(tp,1-Math.pow(.02,dt));camLook.lerp(tl,1-Math.pow(.0001,dt));}
-   else{const putt=p.club===4;tp=p.pos.clone().addScaledVector(dir,putt?-4:-6.5).add(new THREE.Vector3(0,putt?1.6:2.3,0));tl=p.pos.clone().addScaledVector(dir,putt?8:28).add(new THREE.Vector3(0,.4,0));
+   else{const putt=p.club===4;tp=p.pos.clone().addScaledVector(dir,putt?-4:-6.5).add(new THREE.Vector3(0,putt?1.6:2.3,0));tl=p.pos.clone().addScaledVector(dir,putt?8:28).add(new THREE.Vector3(0,.4,0));tl.y=lerp(p.pos.y,hgt(tl.x,tl.z),putt?.3:.55)+.4;
     camPos.lerp(tp,1-Math.pow(.003,dt));camLook.lerp(tl,1-Math.pow(.003,dt));}
-   if(G.arena){arenaTick(dt,t);}else{
+   if(G.arena){arenaTick(dt,t);}else if(G.spec){specTick(dt,t);}else{
    if(G.snapCam&&!ball){camPos.copy(tp);camLook.copy(tl);G.snapCam=false;}const gy=hgt(camPos.x,camPos.z)+1.2;if(camPos.y<gy)camPos.y=gy;camera.position.copy(camPos);camera.lookAt(camLook);
    // club
    golfer.visible=!p.done||!!G.swing;
@@ -972,11 +1104,12 @@ function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const
   for(const tk of H.tokens)if(tk.mesh){tk.mesh.rotation.y=t*2;tk.mesh.position.y=tk.y+Math.sin(t*2+tk.x)*.2;}
   holeGroup.children.forEach(o=>{if(o.userData.water){o.userData.water.offset.set(t*.02,t*.013);}});
   if(bossMesh&&!G.arena){bossMesh.position.y=hgt(G.boss.x,G.boss.z)+Math.abs(Math.sin(t*2.5))*.4;if(p)bossMesh.rotation.y=Math.atan2(p.pos.x-G.boss.x,p.pos.z-G.boss.z);
-   if(bossFlash>0){bossFlash-=dt;bossMesh.scale.setScalar(1+bossFlash*.3);}if(bossMesh.userData.dying){bossMesh.scale.multiplyScalar(1-dt*2);if(bossMesh.scale.x<.05){scene.remove(bossMesh);bossMesh=null;}}}
+   if(bossFlash>0){bossFlash-=dt;bossMesh.scale.setScalar(1+bossFlash*.3);}if(bossMesh.userData.dying){bossMesh.scale.multiplyScalar(1-dt*2);if(bossMesh.scale.x<.05){bossMesh.userData.dying=0;bossMesh.visible=false;}}
+   else if(G.boss.hp>0){if(!bossMesh.visible){bossMesh.visible=true;bossMesh.scale.setScalar(1);}}else bossMesh.visible=false;}
   clouds.children.forEach((c,k)=>{c.position.x+=dt*(2+k%3);if(c.position.x>2200)c.position.x=-2200;});
   sky.position.copy(camera.position);clouds.position.set(camera.position.x,0,camera.position.z);farGroup.position.set(camera.position.x,0,camera.position.z);
   updWind(dt,t);updLanding();drawWind(t);drawMini();drawGesture();if(G.mode==='aim')drawSpin();}
- renderer.render(scene,camera);}
+ if(G.camOverride){camera.position.copy(G.camOverride.pos);camera.lookAt(G.camOverride.look);}renderer.render(scene,camera);}
 // title backdrop
 buildHole(0);G.players=[];camPos.set(-20,9,25);camLook.set(0,0,-120);
 menu();tick();
