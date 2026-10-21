@@ -31,6 +31,7 @@ canvas#c{display:block;width:100%;height:100%}
 .shophead h1{margin:0 0 4px}.shopbar{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}.shopbar .donebtn{margin:0;padding:8px 22px;font-size:22px}
 .shopx{position:absolute;top:10px;right:12px;width:42px;height:42px;border-radius:50%;border:3px solid #fff;background:#e55;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
 #windp.nowind canvas{opacity:.3;filter:grayscale(1)}
+.startrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:6px 0}.startrow button.big{min-width:230px;line-height:1.15}.startrow small{font-size:15px;font-weight:normal}
 .overlay{position:absolute;inset:0;background:rgba(0,30,10,.8);display:none;align-items:center;justify-content:center;z-index:10}
 .card{background:linear-gradient(#2d8a4e,#175c33);border:5px solid #fff;border-radius:24px;padding:22px 30px;max-width:960px;max-height:92vh;overflow:auto;text-align:center;font-size:20px}
 .card h1{margin:4px 0 12px;font-size:40px;color:#ffe14d;text-shadow:3px 3px 0 #0006}
@@ -54,7 +55,7 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 <div id="info" class="panel"></div>
 <div id="turn" class="panel"></div>
 <div id="windp" class="panel" style="top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;text-align:center"><div style="font-size:14px;font-weight:bold">💨 WIND</div><canvas id="wcomp" width="160" height="160"></canvas><div id="windNote" style="display:none;font-size:15px;font-weight:bold;color:#bff">⛳ No wind on putts!</div></div>
-<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><button class="sm" id="shopBtn" style="margin-top:6px">🛒 Shop</button> <button class="sm" id="cardBtn">📋 Card</button></div>
+<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><button class="sm" id="shopBtn" style="margin-top:6px">🛒 Shop</button> <button class="sm" id="cardBtn">📋 Card</button> <button class="sm" id="homeBtn" title="Start screen">🏠</button></div>
 <div id="bossbar"><div id="bossname"></div><div class="bar"><div id="bossfill"></div></div></div>
 <div id="clubs" class="panel"></div>
 <div id="power"><div id="pfill"></div><div id="pmark"></div></div><div id="ppct"></div>
@@ -447,6 +448,7 @@ addEventListener('keydown',e=>{keys[e.key]=true;if(G.ovOpen)return;if(e.key===' 
 addEventListener('keyup',e=>{keys[e.key]=false;});
 
 $('shopBtn').onclick=()=>openShop();$('cardBtn').onclick=()=>showCard(false);
+$('homeBtn').onclick=()=>{if(G.ovOpen||G.arena)return;overlay(`<h1>🏠 Go to the start screen?</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" id="homeYes" onclick="toMenu()">🏠 Yes</button><button class="big" style="background:#7d7" onclick="closeOv()">⛳ Keep playing</button>`);};
 // gesture swing
 const gc=$('gest'),gx=gc.getContext('2d');function sizeG(){gc.width=innerWidth;gc.height=innerHeight;}addEventListener('resize',sizeG);sizeG();
 let gs=null;G.backAng=0;
@@ -585,7 +587,7 @@ function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' 
  pl.forEach(p=>{let tot=0;t+=`<tr><td>${p.name}</td>${PARS.map((par,i)=>{const s=p.scores[i];if(s==null)return'<td></td>';tot+=s;const c=s<par?'#ffe14d':s>par?'#fbb':'#fff';return`<td style="color:${c}">${s}</td>`;}).join('')}<td><b>${tot}</b></td></tr>`;});
  t+='</table>';if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
   const last=G.hole>=NHOLES-1;const canNext=!G.online||G.online.host;
-  t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
+  t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
 window.nextHole=(h)=>{const n=h===0?0:G.hole+1;if(n===0)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n});};
 
@@ -807,12 +809,25 @@ window.askFresh=i=>{const n=menuNames()[i-1];if(!n||!save.profiles[n])return;con
 window.doFresh=i=>{const n=G.freshName;if(!n)return;delete save.profiles[n];delete save.hole;persist();G.freshName=null;menu();say(`🧹 ${n} is starting fresh! 🪙 20`,2200);};
 function menu(){G.mode='menu';const last=save.lastNames||['Player 1','Player 2'];
  if(room){overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:24px">Your friend invited you to room <b>${esc(room)}</b>!</p><input class="nm" id="n1" value="${esc(last[1])}" oninput="updSaveInfo()"><div id="saveInfo"></div><br><button class="big" onclick="go('join')">Join Game 🌐</button>`);updSaveInfo();return;}
+ const nSaved=Object.keys(save.profiles).length;
  overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">9 holes · 3 bosses · upgrade your clubs with tokens!</p>
+ <div class="startrow"><button class="big" id="btnContinue" onclick="continueGame()">▶️ Continue<br><small>${nSaved?`keep your stuff${save.hole?' · hole '+(Math.min(save.hole,NHOLES-1)+1):''}`:'no saved game yet'}</small></button><button class="big" id="btnNewGame" style="background:#ff8a7a" onclick="askNewGame()">🆕 New Game<br><small>fresh start, 🪙 20</small></button></div>
  <input class="nm" id="n1" value="${esc(last[0])}" oninput="updSaveInfo()"><input class="nm" id="n2" value="${esc(last[1])}" placeholder="Player 2 (optional)" oninput="updSaveInfo()"><div id="saveInfo"></div>
  <button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
  <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);updSaveInfo();}
 window.updSaveInfo=updSaveInfo;
-window.go=(m,cont)=>{const n1=($('n1').value.trim()||'Player 1').slice(0,14),n2=$('n2')?($('n2').value.trim()||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
+window.continueGame=()=>{const [a,b]=menuNames();const m=save.lastMode===2&&b?2:1;go(m,save.hole?1:0);};
+window.askNewGame=()=>{const [a,b]=menuNames();save.lastNames=[a,b||'Player 2'];persist();const n=Object.keys(save.profiles).length;
+ overlay(`<h1>🆕 Start a brand-new game?</h1><p style="font-size:24px">This erases <b>everyone's</b> saved 🪙 tokens, ⬆️ club upgrades,<br>✨ attributes and boss powers${n?` (${n} saved player${n===1?'':'s'})`:''}, and goes back to hole 1.</p>
+ <p style="font-size:20px">Everybody starts again with <b>🪙 20</b> tokens and brand-new clubs.</p>
+ <button class="big" id="newYes" onclick="doNewGame()">🆕 Yes, new game!</button><button class="big" id="newNo" style="background:#7d7" onclick="menu()">🙅 No, go back</button>`);};
+window.doNewGame=()=>{save.profiles={};delete save.hole;persist();G.keep={};
+ // in-memory too: any players still loaded get fresh profiles
+ G.players.forEach(p=>{if(!p.remote)p.prof=getProfile(p.name);});persist();menu();say('🆕 New game! Everyone starts with 🪙 20',2200);};
+// back to the start screen mid-session
+window.toMenu=()=>{if(G.arena)arenaCleanup();ball=null;G.swing=null;gs=null;G.afterOv=null;if(G.players)G.players.forEach(p=>{if(p.ball)scene.remove(p.ball);});G.players=[];
+ if(G.online){try{G.online.conn&&G.online.conn.close();G.online.peer&&G.online.peer.destroy();}catch(e){}G.online=null;}menu();};
+window.go=(m,cont)=>{if(m===1||m===2)save.lastMode=m;const n1=($('n1').value.trim()||'Player 1').slice(0,14),n2=$('n2')?($('n2').value.trim()||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
  const start=cont?Math.min(save.hole||0,NHOLES-1):0;
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
