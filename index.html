@@ -30,6 +30,7 @@ canvas#c{display:block;width:100%;height:100%}
 .shophead{position:sticky;top:-22px;margin:-22px -30px 10px;padding:12px 56px 10px;background:linear-gradient(#2d8a4e,#24794a);border-bottom:3px solid #fff8;border-radius:19px 19px 0 0;z-index:3;box-shadow:0 4px 10px #0005}
 .shophead h1{margin:0 0 4px}.shopbar{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}.shopbar .donebtn{margin:0;padding:8px 22px;font-size:22px}
 .shopx{position:absolute;top:10px;right:12px;width:42px;height:42px;border-radius:50%;border:3px solid #fff;background:#e55;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
+#windp.nowind canvas{opacity:.3;filter:grayscale(1)}
 .overlay{position:absolute;inset:0;background:rgba(0,30,10,.8);display:none;align-items:center;justify-content:center;z-index:10}
 .card{background:linear-gradient(#2d8a4e,#175c33);border:5px solid #fff;border-radius:24px;padding:22px 30px;max-width:960px;max-height:92vh;overflow:auto;text-align:center;font-size:20px}
 .card h1{margin:4px 0 12px;font-size:40px;color:#ffe14d;text-shadow:3px 3px 0 #0006}
@@ -52,7 +53,7 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 <canvas id="c"></canvas>
 <div id="info" class="panel"></div>
 <div id="turn" class="panel"></div>
-<div id="windp" class="panel" style="top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;text-align:center"><div style="font-size:14px;font-weight:bold">💨 WIND</div><canvas id="wcomp" width="160" height="160"></canvas></div>
+<div id="windp" class="panel" style="top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;text-align:center"><div style="font-size:14px;font-weight:bold">💨 WIND</div><canvas id="wcomp" width="160" height="160"></canvas><div id="windNote" style="display:none;font-size:15px;font-weight:bold;color:#bff">⛳ No wind on putts!</div></div>
 <div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><button class="sm" id="shopBtn" style="margin-top:6px">🛒 Shop</button> <button class="sm" id="cardBtn">📋 Card</button></div>
 <div id="bossbar"><div id="bossname"></div><div class="bar"><div id="bossfill"></div></div></div>
 <div id="clubs" class="panel"></div>
@@ -406,7 +407,7 @@ function clubIcon(cv,ci,el){const x=cv.getContext('2d');x.clearRect(0,0,cv.width
  const hw=[22,18,14,12,20][ci],hh=[14,11,8,8,6][ci];x.fillStyle=ci<2?'#334':'#bbc';x.beginPath();x.ellipse(hw/2-2,22,hw/2+2,hh/2,0,0,7);x.fill();
  if(el==='spikes'){x.fillStyle='#fff';for(let k=0;k<6;k++){const a=k/6*7;x.beginPath();x.moveTo(hw/2+Math.cos(a)*(hw/2+1),22+Math.sin(a)*hh/2);x.lineTo(hw/2+Math.cos(a)*(hw/2+9),22+Math.sin(a)*(hh/2+7));x.lineTo(hw/2+Math.cos(a+.3)*(hw/2+1),22+Math.sin(a+.3)*hh/2);x.fill();}}
  x.restore();}
-function updUI(){const p=P();if(!p||!H)return;const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
+function updUI(){const p=P();if(!p||!H)return;{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
  $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; Par ${H.par}<br>${G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':''}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
  $('tokens').textContent='🪙 '+pr.tokens;
  
@@ -524,7 +525,7 @@ const FR={green:.95,fringe:1.8,fairway:2.1,tee:2.1,rough:ROUGH_FR,sand:10,ice:.6
 const BOUNCE={green:.3,fringe:.3,fairway:.35,tee:.35,rough:.18,sand:.04,ice:.4};
 function grad(x,z){const e=.5;return[(hgt(x+e,z)-hgt(x-e,z))/(2*e),(hgt(x,z+e)-hgt(x,z-e))/(2*e)];}
 function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30){pos.y=hgt(pos.x,pos.z)+R;return stopBall();}
- if(b.air){v.y-=GRAV*dt;const hf=clamp(pos.y-hgt(pos.x,pos.z),0,30)/30+.3;v.x+=b.w.x*WINDK*hf*dt;v.z+=b.w.y*WINDK*hf*dt;v.multiplyScalar(1-.04*dt);
+ if(b.air){v.y-=GRAV*dt;const hf=clamp(pos.y-hgt(pos.x,pos.z),0,30)/30+.3;if(e.loft>0){v.x+=b.w.x*WINDK*hf*dt;v.z+=b.w.y*WINDK*hf*dt;}// wind only acts on lofted shots in the air — never on putts or rolling ballsv.multiplyScalar(1-.04*dt);
   {const hs=Math.hypot(v.x,v.z);if(hs>1&&b.sx){const k=b.sx*CURVE*(.35+.65*Math.min(1,b.t/1.2))*dt;const vx=v.x;v.x+=-v.z/hs*k;v.z+=vx/hs*k;}}
   pos.addScaledVector(v,dt);
   for(const t of H.trees){const dx=pos.x-t.x,dz=pos.z-t.z;if(dx*dx+dz*dz<t.r*t.r&&pos.y-hgt(t.x,t.z)<t.h&&pos.y-hgt(t.x,t.z)>1){v.x*=-.3;v.z*=-.3;v.y*=.3;pos.x+=v.x*dt*2;pos.z+=v.z*dt*2;if(!b.treeMsg){b.treeMsg=1;float('🌳 Bonk!');}break;}}
@@ -816,7 +817,7 @@ window.go=(m,cont)=>{const n1=($('n1').value.trim()||'Player 1').slice(0,14),n2=
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
  else if(m==='host')hostOnline(n1);else if(m==='join')joinOnline(n1,room);};
-G.dbg=()=>({gv:golfer.visible,gp:golfer.position.toArray().map(v=>+v.toFixed(1)),cam:camera.position.toArray().map(v=>+v.toFixed(1)),ap:G.arena&&G.arena.pos.toArray().map(v=>+v.toFixed(1)),bp:G.arena&&G.arena.bpos.toArray().map(v=>+v.toFixed(1)),arms:golfer.userData.arms.children.length});window.__eff=eff;window.__surf=(x,z)=>surfInfo(H,x,z);window.__sim=(p,s)=>simulateShot(p,s,new THREE.Vector2());window.__pred=predictLanding;G.doShotFull=(sh)=>{window.__apex=0;const sy0=P().pos.y;doShot(sh);let n=0;window.__lastLand=null;while(ball&&n<20000){const wasAir=ball.air;stepBall(1/120);n++;if(ball){window.__apex=Math.max(window.__apex||0,P().pos.y-sy0);}if(ball&&wasAir&&!window.__lastLand&&ball.landed)window.__lastLand=P().pos.clone();}};window.__land=()=>window.__lastLand;G.doShot=(c,pw)=>{const p=P();doShot({aim:0,power:pw,club:c,dev:0,e:eff(p.prof,c),spin:p.spin});};G.arenaStep=(n,dt)=>{for(let k=0;k<n&&G.arena;k++)arenaTick(dt,k*dt);};G.sim=()=>{let n=0;while(ball&&n<20000){stepBall(1/120);n++;}return n;};G.startHole=startHole;G.makePlayer=makePlayer;
+G.dbg=()=>({gv:golfer.visible,gp:golfer.position.toArray().map(v=>+v.toFixed(1)),cam:camera.position.toArray().map(v=>+v.toFixed(1)),ap:G.arena&&G.arena.pos.toArray().map(v=>+v.toFixed(1)),bp:G.arena&&G.arena.bpos.toArray().map(v=>+v.toFixed(1)),arms:golfer.userData.arms.children.length});window.__eff=eff;window.__surf=(x,z)=>surfInfo(H,x,z);window.__sim=(p,s)=>simulateShot(p,s,new THREE.Vector2());window.__simW=(p,s,w)=>simulateShot(p,s,new THREE.Vector2(w[0],w[1]));G.updUI=updUI;window.__pred=predictLanding;G.doShotFull=(sh)=>{window.__apex=0;const sy0=P().pos.y;doShot(sh);let n=0;window.__lastLand=null;while(ball&&n<20000){const wasAir=ball.air;stepBall(1/120);n++;if(ball){window.__apex=Math.max(window.__apex||0,P().pos.y-sy0);}if(ball&&wasAir&&!window.__lastLand&&ball.landed)window.__lastLand=P().pos.clone();}};window.__land=()=>window.__lastLand;G.doShot=(c,pw)=>{const p=P();doShot({aim:0,power:pw,club:c,dev:0,e:eff(p.prof,c),spin:p.spin});};G.arenaStep=(n,dt)=>{for(let k=0;k<n&&G.arena;k++)arenaTick(dt,k*dt);};G.sim=()=>{let n=0;while(ball&&n<20000){stepBall(1/120);n++;}return n;};G.startHole=startHole;G.makePlayer=makePlayer;
 
 
 // ===== landing zone marker, carry readout, wind HUD & FX =====
