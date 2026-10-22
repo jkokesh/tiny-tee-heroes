@@ -606,7 +606,7 @@ let DRY=false;
 function simulateShot(p,s,wind){const saveBall=ball;const fake={pos:p.pos.clone(),last:p.pos.clone(),prof:p.prof,strokes:0};const e=s.e;const v=launchVel(fake,s);const sp=s.spin||{x:0,y:0};
  const b={p:fake,v,e,w:wind.clone(),sx:e.loft?sp.x*spinScale(e):0,sy:e.loft?sp.y*spinScale(e):0,bk:e.loft?clamp(-sp.y,0,1):0,air:e.loft>0,bounced:0,usedBubble:false,t:0,dry:true,path:[p.pos.clone()],bonk:1,blk:1,treeMsg:1};
  ball=b;DRY=true;try{let n=0;while(ball===b&&n<5000){stepBall(1/120);n++;}}finally{DRY=false;ball=saveBall;}
- b.path.push(fake.pos.clone());return{path:b.path,carry:b.carryPt||fake.pos.clone(),rest:fake.pos.clone(),end:b.end||'stop'};}
+ b.path.push(fake.pos.clone());return{path:b.path,carry:b.carryPt||fake.pos.clone(),rest:fake.pos.clone(),end:b.end||'stop',treeT:b.treeT,landT:b.landT,t:b.t};}
 // calm, flat full-swing carry for labels
 const carryCache={};function fullCarry(e){const key=[e.dist,e.loft].join();if(carryCache[key])return carryCache[key];
  if(e.loft===0)return carryCache[key]=e.dist;const th=e.loft*Math.PI/180;const v0=Math.sqrt(e.dist*.86*GRAV/Math.sin(2*th));let x=0,y=0,vx=v0*Math.cos(th),vy=v0*Math.sin(th);const dt=1/120;
@@ -625,11 +625,19 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
  if(b.air){v.y-=GRAV*dt;const hf=clamp(pos.y-hgt(pos.x,pos.z),0,30)/30+.3;if(e.loft>0){v.x+=b.w.x*WINDK*hf*dt;v.z+=b.w.y*WINDK*hf*dt;}// wind only acts on lofted shots in the air — never on putts or rolling ballsv.multiplyScalar(1-.04*dt);
   {const hs=Math.hypot(v.x,v.z);if(hs>1&&b.sx){const k=b.sx*CURVE*(.35+.65*Math.min(1,b.t/1.2))*dt;const vx=v.x;v.x+=-v.z/hs*k;v.z+=vx/hs*k;}}
   pos.addScaledVector(v,dt);
-  for(const t of H.trees){const dx=pos.x-t.x,dz=pos.z-t.z;if(dx*dx+dz*dz<t.r*t.r&&pos.y-hgt(t.x,t.z)<t.h&&pos.y-hgt(t.x,t.z)>1){v.x*=-.3;v.z*=-.3;v.y*=.3;pos.x+=v.x*dt*2;pos.z+=v.z*dt*2;if(!b.treeMsg){b.treeMsg=1;float('🌳 Bonk!');}break;}}
+  // trees: deflect ONCE when the ball enters a canopy, then let gravity pull it down through/off the leaves.
+  // (old bug: every 1/120 s step inside the collider multiplied v.y by .3 and flipped horizontal speed, so the ball hovered in the tree for up to 30 s)
+  {let inT=null;for(const t of H.trees){const dx=pos.x-t.x,dz=pos.z-t.z,d2=dx*dx+dz*dz,hy=pos.y-hgt(t.x,t.z);if(d2<t.r*t.r&&hy<t.h&&hy>1){inT=t;
+    if(b.inTree!==t){const d=Math.sqrt(d2)||1e-3,nx=dx/d,nz=dz/d,vr=v.x*nx+v.z*nz;if(vr<0){v.x-=1.3*vr*nx;v.z-=1.3*vr*nz;}// bounce off the canopy
+     v.x*=.35;v.z*=.35;v.y=Math.min(v.y,0)*.4-1;b.inTree=t;if(!b.treeMsg){b.treeMsg=1;float('🌳 Bonk!');}if(b.treeT==null)b.treeT=b.t;if(!b.dry)sfx('land',{vol:.5,rate:1.3});}
+    else{v.x*=1-1.5*dt;v.z*=1-1.5*dt;}// leaves drag a little while falling through
+    break;}}if(!inT)b.inTree=null;}
+  // failsafe: an airborne ball that is barely moving above the ground for >1 s drops straight down
+  {const hs=v.length(),above=pos.y-hgt(pos.x,pos.z);if(hs<2.5&&above>.4){b.slowAir=(b.slowAir||0)+dt;if(b.slowAir>1)v.y=Math.min(v.y,-8);}else b.slowAir=0;}
   bossHit(b);
   const gy=hgt(pos.x,pos.z)+R;if(pos.y<=gy){pos.y=gy;let s=surfInfo(H,pos.x,pos.z);if(s==='water'&&e.el==='ice')s='ice';
    if(s==='water'){if(e.el==='bubble'&&!b.usedBubble){b.usedBubble=true;v.y=7;v.x*=.7;v.z*=.7;pos.y=hgt(pos.x,pos.z)+1.3+WATER_Y+.3;float('🫧 Bubble bounce!');splash(pos,0x77ddff);if(!b.dry)sfx('splash2',{vol:.6});return;}return penalty('💦 Splash! +1');}
-   if(!b.landed){b.landed=true;bossSplash(b);if(!b.dry)sfx(s==='sand'?'sand':Math.abs(v.y)>14?'land_hard':'land',{vol:Math.min(1,.4+Math.abs(v.y)/18)});}
+   if(!b.landed){b.landed=true;b.landT=b.t;bossSplash(b);if(!b.dry)sfx(s==='sand'?'sand':Math.abs(v.y)>14?'land_hard':'land',{vol:Math.min(1,.4+Math.abs(v.y)/18)});}
    if(e.el==='spikes'){v.set(0,0,0);b.air=false;float('🦔 Stuck the landing!');return;}
    if(Math.abs(v.y)>2.5&&b.bounced<4){b.bounced++;const k=BOUNCE[s];v.y=-v.y*k;let keep=.8;const firm=s==='green'||s==='fringe'||s==='fairway'||s==='tee'||s==='ice';
     if(b.bounced===1){keep=.42-.15*e.spin;if(b.sy>0)keep+=.12*b.sy;}
@@ -1152,5 +1160,8 @@ function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const
 buildHole(0);G.players=[];camPos.set(-20,9,25);camLook.set(0,0,-120);
 menu();tick();
 G.sendShot=sendShot;G.getH=()=>H;G.effOf=(p,c)=>eff(p.prof,c);
+
+G.simShot=simulateShot;G.effOf2=eff;
+G.hgt=hgt;
 </script>
 </body></html>
