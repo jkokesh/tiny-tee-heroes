@@ -269,7 +269,10 @@ function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  // bunkers
  const nb=1+Math.min(7,i+1);for(let k=0;k<nb;k++){let t=r(),x,z;if(k<2){const a=r()*Math.PI*2;x=gx+Math.cos(a)*(gr+5);z=-L+Math.sin(a)*(gr+5)*.8;if(z<-L-gr)z+=8;}
   else{t=.45+r()*.45;const p=ptAt(h,t);x=p[0]+(r()<.5?-1:1)*(fw*.45+r()*6);z=p[1];}
-  h.bunkers.push({x,z,rx:4+r()*5,rz:3+r()*4,a:r()*3});}
+  const bk={x,z,rx:4+r()*5,rz:3+r()*4,a:r()*3};
+  // never on the green: the whole bunker sits outside green + fringe (2.5 m) + a 2.5 m grass gap
+  {const R0=Math.max(bk.rx,bk.rz),need=gr+2.5+2.5+R0;let dx=bk.x-gx,dz=bk.z+L;const d=Math.hypot(dx,dz)||1;if(d<need){if(d<.5){dx=0;dz=1;}bk.x=gx+dx/d*need;bk.z=-L+dz/d*need;}}
+  h.bunkers.push(bk);}
  // water
  if(i>=2){const nw=i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):.8;const p=ptAt(h,t);
   const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+i*.6:14+r()*10,a:0});}}
@@ -277,7 +280,8 @@ function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  Object.assign(h,ELEV[i]||ELEV[0]);h.boss=!!BOSSES[i];h.segL=[];h.totL=0;for(let k=0;k<3;k++){const l=Math.hypot(path[k+1][0]-path[k][0],path[k+1][1]-path[k][1]);h.segL.push(l);h.totL+=l;}
  h.tierA=r()*Math.PI;
  if(h.island){h.water.push({x:gx-side*(gr+6),z:-L+gr*.4,rx:9,rz:gr+12,a:0});}
- h.Eg=elevBase(h,gx,-L);for(const w of h.water)w.y=elevBase(h,w.x,w.z);
+ h.Eg=elevBase(h,gx,-L);for(const w of h.water){{const need=gr+4+Math.max(w.rx,w.rz)*1.2;let dx=w.x-gx,dz=w.z+L;const d=Math.hypot(dx,dz)||1;if(d<need){if(d<.5){dx=0;dz=1;}w.x=gx+dx/d*need;w.z=-L+dz/d*need;}}// ponds never overlap green+fringe
+ w.y=elevBase(h,w.x,w.z);w.ph=r()*6.28;w.ph2=r()*6.28;w.ph3=r()*6.28;}
  // tokens
  for(let k=0;k<N_COINS;k++){const p=ptAt(h,.2+k*.15);h.tokens.push({x:p[0]+(r()-.5)*fw*.7,z:p[1],got:false});}
  return h;}
@@ -296,31 +300,54 @@ function inRavine(h,x,z){if(!h.rav)return false;const pi=pathInfo(h,x,z);return 
 function ptAt(h,t){const P=h.path;const seg=Math.min(2,Math.floor(t*3));const u=t*3-seg;return[lerp(P[seg][0],P[seg+1][0],u),lerp(P[seg][1],P[seg+1][1],u)];}
 function distPath(h,x,z){let best=1e9;const P=h.path;for(let k=0;k<P.length-1;k++){const ax=P[k][0],az=P[k][1],bx=P[k+1][0],bz=P[k+1][1];
  const dx=bx-ax,dz=bz-az;const t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);const ex=ax+dx*t-x,ez=az+dz*t-z;best=Math.min(best,ex*ex+ez*ez);}return Math.sqrt(best);}
+// organic water outline: ellipse radius wobbled by low-frequency waves around the shore. q<1 is water.
+function waterQ(w,x,z){const c=Math.cos(w.a),s=Math.sin(w.a);const dx=x-w.x,dz=z-w.z;const u=(dx*c-dz*s)/w.rx,v=(dx*s+dz*c)/w.rz;const th=Math.atan2(v,u);
+ return Math.sqrt(u*u+v*v)/(1+.09*Math.sin(2*th+(w.ph||0))+.07*Math.sin(3*th+(w.ph2||0))+.04*Math.sin(5*th+(w.ph3||0)));}
+function waterEdge(w,th,k=1){const wob=1+.09*Math.sin(2*th+(w.ph||0))+.07*Math.sin(3*th+(w.ph2||0))+.04*Math.sin(5*th+(w.ph3||0));const U=Math.cos(th)*wob*k*w.rx,V=Math.sin(th)*wob*k*w.rz;const c=Math.cos(w.a),s=Math.sin(w.a);return[w.x+U*c+V*s,w.z-U*s+V*c];}
 function ell(e,x,z){const c=Math.cos(e.a),s=Math.sin(e.a);const dx=x-e.x,dz=z-e.z;const u=(dx*c-dz*s)/e.rx,v=(dx*s+dz*c)/e.rz;return u*u+v*v;}
 function surfInfo(h,x,z){if(G.forceSurf)return G.forceSurf;
  if(h.island){const dg0=Math.hypot(x-h.gx,z-h.gz);if(dg0<h.gr)return'green';if(dg0<h.gr+2.5)return'fringe';}
- for(const w of h.water)if(ell(w,x,z)<1)return'water';
+ for(const w of h.water)if(waterQ(w,x,z)<1)return'water';
  for(const b of h.bunkers)if(ell(b,x,z)<1)return'sand';
  const dg=Math.hypot(x-h.gx,z-h.gz);if(dg<h.gr)return'green';if(dg<h.gr+2.5)return'fringe';
  if(Math.abs(x)<4&&z>-3&&z<5)return'tee';
  const d=distPath(h,x,z);const half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed));if(d<half&&z<-12&&!inRavine(h,x,z))return'fairway';
  return'rough';}
-function hgt(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.cos(z*.018+h.seed*2)+.8*Math.sin(z*.041+x*.012)+.4*Math.sin(x*.07-z*.05));
+function hgtBase(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.cos(z*.018+h.seed*2)+.8*Math.sin(z*.041+x*.012)+.4*Math.sin(x*.07-z*.05));
  const dt=Math.hypot(x,z-1);y*=sstep(6,25,dt);
  const pi=pathInfo(h,x,z),d=pi.d;y+=elevBase(h,x,z,pi);
  const dg=Math.hypot(x-h.gx,z-h.gz);const gw=sstep(h.gr+8,h.gr,dg);const yg=h.slope*(x-h.gx)*h.gr/2*.4+h.slope2*(z-h.gz)*h.gr/2*.4;
- const tier=h.tier?h.tier*sstep(-1.6,1.6,(x-h.gx)*Math.cos(h.tierA)+(z-h.gz)*Math.sin(h.tierA)):0;y=lerp(y,h.Eg+yg+.3+tier,gw);
+ const gT=(px,pz)=>{const dx=px-h.gx,dz=pz-h.gz;const tr=h.tier?Math.min(.5,h.tier*.42)*sstep(-4.5,4.5,dx*Math.cos(h.tierA)+dz*Math.sin(h.tierA)+1.5):0;
+  return tr+.2*Math.sin(dx*.21+h.tierA*3)*Math.cos(dz*.17+h.seed)+.12*Math.sin((dx+dz)*.13+h.seed*2);};// low-frequency breaks
+ const fc=sstep(1.3,3.8,dg);const gc=gT(h.gx,h.gz);const tier=gc+(gT(x,z)-gc)*fc;y=lerp(y,h.Eg+yg+.3+tier,gw);
  y+=Math.min(22,Math.max(0,d-h.fw/2-28)*.13)+ (d>h.fw/2+28? 2*fbm(x*.02,z*.02):0);
  if(h.boss){const db=Math.hypot(x-h.gx,z-(h.gz-2.5));y=lerp(y,h.Eg+.3,sstep(38,23,db));}// flat boss arena
  for(const b of h.bunkers){y-=.55*sstep(1.15,.55,ell(b,x,z));}
- for(const w of h.water){if(h.island&&dg<h.gr+3)continue;y=lerp(y,w.y-1.3,sstep(1.3,.85,ell(w,x,z)));}
  return y;}
+// water basins: smooth banks carved into the terrain. Water level (w.wl) is set below the lowest bank around the lake,
+// the shoreline (terrain == level) is exactly the q=1 outline, so visible water == water detection.
+const BANK=3.2,WDEPTH=1.7;
+function hgt(x,z){let y=hgtBase(x,z);const h=H;if(!h.water.length)return y;
+ let qs=null;if(h.water.length>1)qs=h.water.map(w=>w.wl==null?9:waterQ(w,x,z));
+ for(let wi=0;wi<h.water.length;wi++){const w=h.water[wi];if(w.wl==null)continue;if(h.island&&Math.hypot(x-h.gx,z-h.gz)<h.gr+3)continue;const q=qs?qs[wi]:waterQ(w,x,z);if(q>=1.5)continue;
+  if(q>=1&&qs&&qs.some((o,j)=>j!==wi&&o<1))continue;// inside a neighbouring pond of the same lake: no bank ridge
+  const bank=Math.max(w.wl-WDEPTH,w.wl+(q-1)*BANK);
+  if(q<1)y=Math.min(y,lerp(bank,w.wl-WDEPTH,sstep(.75,.2,q)*.4));
+  else{const k=sstep(1.5,1.0,q);y=Math.max(lerp(y,Math.min(y,bank+.25),k),w.wl+.04+(q-1)*.6*k);}}
+ return y;}
+function waterLevels(h){for(const w of h.water){w.wl=null;let mn=1e9;for(let k=0;k<160;k++){const th=k/160*Math.PI*2;for(const kk of [1,1.15,1.3,1.5]){const [x,z]=waterEdge(w,th,kk);
+  if(h.island&&Math.hypot(x-h.gx,z-h.gz)<h.gr+3)continue;mn=Math.min(mn,hgtBase(x,z));}}w.wl=mn-.45;}
+ // overlapping ponds form one lake: share the lowest level so there is no step in the surface
+ for(let it=0;it<3;it++)for(const a of h.water)for(const b of h.water){if(a===b||a.wl==null||b.wl==null)continue;let ov=false;for(let k=0;k<48&&!ov;k++){const e=waterEdge(a,k/48*6.2832,.98);if(waterQ(b,e[0],e[1])<1)ov=true;}if(ov){const m=Math.min(a.wl,b.wl);a.wl=b.wl=m;}}}
 const WATER_Y=-.35;const CURVE=10.8,MPH=.44704,WINDK=.6,MAXPOW=1.1;
 const HX=150; // texture region half width
 let groundMat;
-function buildHole(i){
- while(holeGroup.children.length){const o=holeGroup.children.pop();o.traverse(c=>{if(c.geometry)c.geometry.dispose();});}
- H=genHole(i);const h=H;const zmin=-h.L-90,zmax=60,Wd=HX*2,Ld=zmax-zmin;h.zmin=zmin;h.zmax=zmax;
+// free GPU memory of an object tree (geometries, materials and their textures), skipping shared resources
+const KEEP=new Set();function disposeTree(o){o.traverse(c=>{if(c.geometry&&!KEEP.has(c.geometry))c.geometry.dispose();const ms=c.material?(Array.isArray(c.material)?c.material:[c.material]):[];
+ for(const m of ms){if(KEEP.has(m))continue;for(const k in m){const v=m[k];if(v&&v.isTexture&&!KEEP.has(v))v.dispose();}m.dispose();}});}
+function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(wNorm);KEEP.add(DOT);
+ while(holeGroup.children.length){const o=holeGroup.children.pop();disposeTree(o);}
+ H=genHole(i);const h=H;waterLevels(h);const zmin=-h.L-90,zmax=60,Wd=HX*2,Ld=zmax-zmin;h.zmin=zmin;h.zmax=zmax;
  // paint texture
  const SG=3,gnx=Math.ceil(Wd/SG)+2,gnz=Math.ceil(Ld/SG)+2,HG=new Float32Array(gnx*gnz);for(let j=0;j<gnz;j++)for(let k=0;k<gnx;k++)HG[j*gnx+k]=hgt(-HX+(k-.5)*SG,zmin+(j-.5)*SG);
  let hmin=1e9,hmax=-1e9;for(const v of HG){hmin=Math.min(hmin,v);hmax=Math.max(hmax,v);}
@@ -336,7 +363,9 @@ function buildHole(i){
   else if(s==='fringe'||s==='tee'){r=78+n*12;g=150+n*14;b=56;}
   else if(s==='sand'){let e=1;for(const bb of h.bunkers){const v=ell(bb,x,z);if(v<1)e=Math.min(e,v);}const lip=e>.82?.82:1;
    r=(228-n*25+n2*14)*lip;g=(208-n*25+n2*12)*lip;b=(165-n*25+n2*10)*lip;}
-  else{r=40;g=55;b=50;}
+  else{// lake bed: wet sand at the shore fading to deep teal
+   let q=9;for(const w of h.water)q=Math.min(q,waterQ(w,x,z));const k2=sstep(.98,.6,q);r=lerp(150,30,k2)+n*10;g=lerp(135,62,k2)+n*10;b=lerp(95,60,k2)+n*6;}
+  if(s==='rough'||s==='fairway'){let q=9;for(const w of h.water)q=Math.min(q,waterQ(w,x,z));if(q<1.12){const k3=sstep(1.12,1,q);r=lerp(r,112,k3*.6);g=lerp(g,110,k3*.5);b=lerp(b,72,k3*.5);}}
   {const sh=shadeAt(x,z);r*=sh;g*=sh;b*=sh;}
   const v=n2*8-4;const edge=Math.min(k,TW-1-k,j,TH-1-j);const ef=sstep(0,30,edge);
   if(ef<1&&s==='rough'){r=lerp(60,r,ef);g=lerp(112,g,ef);b=lerp(38,b,ef);}
@@ -354,10 +383,11 @@ function buildHole(i){
  const ground=new THREE.Mesh(geo,groundMat);ground.receiveShadow=true;holeGroup.add(ground);
  const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=Math.min(21.5,hmin-4);holeGroup.add(outer);
  // water
- for(const w of h.water){const wg=new THREE.CircleGeometry(1,48);wg.rotateX(-Math.PI/2);
-  const wn=wNorm.clone();wn.needsUpdate=true;wn.repeat.set(w.rx/6,w.rz/6);
+ for(const w of h.water){const sh=new THREE.Shape();for(let k=0;k<=160;k++){const [ex,ez]=waterEdge(w,k/160*Math.PI*2,1.012);const px=ex-w.x,pz=-(ez-w.z);k?sh.lineTo(px,pz):sh.moveTo(px,pz);}
+  const wg=new THREE.ShapeGeometry(sh,4);wg.rotateX(-Math.PI/2);
+  const wn=wNorm.clone();wn.needsUpdate=true;wn.repeat.set(1/6,1/6);
   const wm=new THREE.MeshPhysicalMaterial({color:0x1d4f66,roughness:.06,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4,clearcoat:1});
-  const m=new THREE.Mesh(wg,wm);m.scale.set(w.rx*1.08,1,w.rz*1.08);m.rotation.y=-w.a;m.position.set(w.x,w.y+WATER_Y,w.z);m.receiveShadow=true;m.userData.water=wn;holeGroup.add(m);}
+  const m=new THREE.Mesh(wg,wm);m.position.set(w.x,w.wl,w.z);m.receiveShadow=true;m.userData.water=wn;holeGroup.add(m);}
  // trees
  buildTrees(h);
  // flag & cup
@@ -375,7 +405,7 @@ function buildHole(i){
  drawMiniBase();}
 function buildTrees(h){const r=rng(300+h.i);const trees=[];
  const ok=(x,z)=>{const s=surfInfo(h,x,z);if(s!=='rough')return false;if(Math.hypot(x-h.gx,z-h.gz)<h.gr+8)return false;if(Math.hypot(x,z)<12)return false;
-  for(const w of h.water)if(ell(w,x,z)<1.6)return false;return true;};
+  for(const w of h.water)if(waterQ(w,x,z)<1.6)return false;return true;};
  // near-fairway trees (closer when harder)
  const near=18+h.i*6;for(let k=0;k<near*3&&trees.length<near;k++){const t=.15+r()*.8;const p=ptAt(h,t);const off=(h.fw/2+3+r()*(30-h.i*1.5))*(r()<.5?-1:1);
   const x=p[0]+off,z=p[1]+(r()-.5)*20;if(ok(x,z))trees.push([x,z]);}
@@ -463,7 +493,7 @@ const P=()=>G.players[G.turn];
 // ===== hole start =====
 function startHole(i){G.hole=i;G.holeT0=clock.elapsedTime;buildHole(i);ball=null;trailPts=[];G.snapCam=true;
  G.players.forEach((p,k)=>{p.pos.set(k?1.2:-1.2,0,0);p.pos.y=hgt(p.pos.x,0)+.13;p.last.copy(p.pos);p.strokes=0;p.done=false;p.aim=Math.atan2(H.path[1][0],-H.path[1][1]);p.ball.position.copy(p.pos);p.ball.visible=true;});
- G.turn=0;G.boss=null;if(bossMesh){scene.remove(bossMesh);bossMesh=null;}
+ G.turn=0;G.boss=null;if(bossMesh){scene.remove(bossMesh);disposeTree(bossMesh);bossMesh=null;}
  const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
   // every player has their OWN boss health on this hole; G.boss.hp always means the current (turn) player's boss
   G.players.forEach(p=>p.bhp=b.hp);Object.defineProperty(G.boss,'hp',{get(){const q=P();return q?q.bhp:0;},set(v){const q=P();if(q)q.bhp=v;},enumerable:true});bossMesh=buildBoss(b);bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);bossMesh.rotation.y=0;scene.add(bossMesh);
@@ -517,7 +547,7 @@ function drawMini(){const cv=$('mini'),x=cv.getContext('2d');if(!H||!H.canvas)re
  const zr=H.zmax-H.zmin;const sc=Math.min(W/(HX*2),Hh/zr);x.fillStyle='#3d6a28';x.fillRect(0,0,W,Hh);
  const ox=W/2,dw=HX*2*sc,dh=zr*sc,oy=(Hh-dh)/2;x.drawImage(H.canvas,ox-dw/2,oy,dw,dh);
  const M=(px,pz)=>[ox+px*sc,oy+(pz-H.zmin)*sc];
- for(const w of H.water){const[a,b]=M(w.x,w.z);x.fillStyle='#2b7fb5';x.beginPath();x.ellipse(a,b,w.rx*sc,w.rz*sc,-w.a,0,7);x.fill();}
+ for(const w of H.water){x.fillStyle='#2b7fb5';x.beginPath();for(let k=0;k<=48;k++){const [ex,ez]=waterEdge(w,k/48*Math.PI*2);const[a,b]=M(ex,ez);k?x.lineTo(a,b):x.moveTo(a,b);}x.fill();}
  x.fillStyle='#163';for(const t of H.trees){if(Math.abs(t.x)<HX){const[a,b]=M(t.x,t.z);x.beginPath();x.arc(a,b,1.6,0,7);x.fill();}}
  x.fillStyle='#fd2';for(const t of H.tokens)if(!t.got){const[a,b]=M(t.x,t.z);x.beginPath();x.arc(a,b,2.5,0,7);x.fill();}
  const[fx,fz]=M(H.gx,H.gz);x.fillStyle='red';x.fillRect(fx,fz-9,7,5);x.fillStyle='#fff';x.fillRect(fx-1,fz-9,2,10);
@@ -637,7 +667,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
   {const hs=v.length(),above=pos.y-hgt(pos.x,pos.z);if(hs<2.5&&above>.4){b.slowAir=(b.slowAir||0)+dt;if(b.slowAir>1)v.y=Math.min(v.y,-8);}else b.slowAir=0;}
   bossHit(b);
   const gy=hgt(pos.x,pos.z)+R;if(pos.y<=gy){pos.y=gy;let s=surfInfo(H,pos.x,pos.z);if(s==='water'&&e.el==='ice')s='ice';
-   if(s==='water'){if(e.el==='bubble'&&!b.usedBubble){b.usedBubble=true;v.y=7;v.x*=.7;v.z*=.7;pos.y=hgt(pos.x,pos.z)+1.3+WATER_Y+.3;float('🫧 Bubble bounce!');splash(pos,0x77ddff);if(!b.dry)sfx('splash2',{vol:.6});return;}return penalty('💦 Splash! +1');}
+   if(s==='water'){if(e.el==='bubble'&&!b.usedBubble){b.usedBubble=true;v.y=7;v.x*=.7;v.z*=.7;{let wl=-1e9;for(const w of H.water)if(waterQ(w,pos.x,pos.z)<1.05)wl=Math.max(wl,w.wl);pos.y=Math.max(hgt(pos.x,pos.z),wl)+.35;}float('🫧 Bubble bounce!');splash(pos,0x77ddff);if(!b.dry)sfx('splash2',{vol:.6});return;}return penalty('💦 Splash! +1');}
    if(!b.landed){b.landed=true;b.landT=b.t;bossSplash(b);if(!b.dry)sfx(s==='sand'?'sand':Math.abs(v.y)>14?'land_hard':'land',{vol:Math.min(1,.4+Math.abs(v.y)/18)});}
    if(e.el==='spikes'){v.set(0,0,0);b.air=false;float('🦔 Stuck the landing!');return;}
    if(Math.abs(v.y)>2.5&&b.bounced<4){b.bounced++;const k=BOUNCE[s];v.y=-v.y*k;let keep=.8;const firm=s==='green'||s==='fringe'||s==='fairway'||s==='tee'||s==='ice';
@@ -749,12 +779,14 @@ function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;co
  if(NETQ_T[m.t]&&(G.netQ.length||netBusy())){G.netQ.push(m);return;}
  handleNet(m);}
 function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
- if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}
+ if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
+  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1});net(mkSync(0));}
+  else{G.online.started=true;net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}}
  else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
  else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
- else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0)G.players.forEach(p=>p.scores=[]);startHole(m.n);}}
+ else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n);}}
 function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
 function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
  overlay(`<h1>🔌 Your friend disconnected</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
@@ -774,7 +806,7 @@ function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players
 
 // ===== boss melee arena =====
 const CLUB_DMG=[14,12,10,8,6],CLUB_CD=[.95,.85,.7,.55,.45],CLUB_RANGE=[3.6,3.4,3.1,2.9,2.8];
-const PROJ_G=new THREE.SphereGeometry(.45,14,10),RING_G=new THREE.RingGeometry(1.2,1.6,24);const arenaGroup=new THREE.Group();scene.add(arenaGroup);
+const PROJ_G=new THREE.SphereGeometry(.45,14,10),RING_G=new THREE.RingGeometry(1.2,1.6,24);KEEP.add(PROJ_G);KEEP.add(RING_G);const arenaGroup=new THREE.Group();scene.add(arenaGroup);
 function arenaIntro(p){G.mode='arenaIntro';const B=G.boss;
  if(p.remote){G.arenaWaiting=p;if(G.spec)return;overlay(`<h1>${B.ic} ${esc(p.name)} is getting ready to battle ${B.name}!</h1><p style="font-size:24px">You'll watch the fight live in a moment… 👀</p>`);G.arenaWaiting=p;return;}
  const tag=el=>!el?'':B.weak.includes(el)?' <b style="color:#ffe14d">2× 💥</b>':B.resist.includes(el)?' <b style="color:#9cf">½ 🛡️</b>':'';
@@ -904,7 +936,7 @@ function teleStart(A){let m;if(A.state==='stomp'){m=new THREE.Mesh(new THREE.Cir
  else if(A.state==='charge'){const g=new THREE.PlaneGeometry(2.4,13);g.rotateX(-Math.PI/2);m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
  if(m){arenaGroup.add(m);A.tele=m;}if(A.state==='stomp')float(G.boss.ic+' STOMP incoming!');}
 function teleEnd(A){if(A.tele)arenaGroup.remove(A.tele);A.tele=null;A.state='idle';A.st=1.2+Math.random()*1.3;}
-function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length)arenaGroup.remove(arenaGroup.children[0]);G.arena=null;$('aCheer').style.display='none';$('specBan').style.display='none';
+function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length){const o=arenaGroup.children[0];arenaGroup.remove(o);disposeTree(o);}G.arena=null;$('aCheer').style.display='none';$('specBan').style.display='none';
  if(bossMesh)bossMesh.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setRGB(0,0,0);});
  $('arenaUI').style.display='none';$('pbar').style.display='none';['clubs','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
  if(bossMesh&&G.boss){bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);}}
@@ -997,8 +1029,10 @@ const LOOP=new URLSearchParams(location.search).get('loop')==='1';
 // test knobs: &lat=MIN-MAX (ms, random per message, order preserved like a reliable channel) &bunch=MS (deliver in bursts)
 const LQ=new URLSearchParams(location.search);const LAT=(LQ.get('lat')||'0-0').split('-').map(Number),BUNCH=+LQ.get('bunch')||0;let lastDel=0;
 function deliver(f){if(!LAT[1]&&!BUNCH)return f();const now=performance.now();let at=Math.max(lastDel,now+LAT[0]+Math.random()*((LAT[1]||LAT[0])-LAT[0]));if(BUNCH)at=Math.ceil(at/BUNCH)*BUNCH;lastDel=at;setTimeout(f,at-now);}
-function loopConn(code,host){const bc=new BroadcastChannel('tth-'+code),h={};const c={open:false,on:(ev,f)=>{(h[ev]=h[ev]||[]).push(f);},send:m=>{bc.postMessage({_d:JSON.parse(JSON.stringify(m))});},close:()=>{bc.postMessage({_hs:'bye'});bc.close();},_h:h};
- const fire=(ev,x)=>(h[ev]||[]).forEach(f=>f(x));bc.onmessage=e=>{const d=e.data;if(d._hs==='join'&&host&&!c.open){c.open=true;bc.postMessage({_hs:'ack'});G.__onLoopConn&&G.__onLoopConn(c);fire('open');}
+function loopConn(code,host){// test relay across separate browser profiles (window.__tthRelay injected by the test harness), else BroadcastChannel
+ const bc=window.__tthRelay?{postMessage:m=>window.__tthRelay(JSON.stringify(m)),close(){}}:new BroadcastChannel('tth-'+code),h={};if(window.__tthRelay)window.__tthRelayIn=d=>bc.onmessage&&bc.onmessage({data:JSON.parse(d)});const c={open:false,on:(ev,f)=>{(h[ev]=h[ev]||[]).push(f);},send:m=>{bc.postMessage({_d:JSON.parse(JSON.stringify(m))});},close:()=>{bc.postMessage({_hs:'bye'});bc.close();},_h:h};
+ const fire=(ev,x)=>(h[ev]||[]).forEach(f=>f(x));bc.onmessage=e=>{const d=e.data;if(d._hs==='join'&&host&&(!c.open||performance.now()-(c._jt||0)>2000)){c._jt=performance.now();// a re-join while open = guest refreshed without saying bye: treat as a fresh connection
+  for(const k in h)delete h[k];c.open=true;bc.postMessage({_hs:'ack'});G.__onLoopConn&&G.__onLoopConn(c);fire('open');}
   else if(d._hs==='ack'&&!host&&!c.open){c.open=true;fire('open');}else if(d._hs==='bye'){c.open=false;fire('close');}else if(d._d)deliver(()=>fire('data',d._d));};
  if(!host){const ping=()=>{if(!c.open){bc.postMessage({_hs:'join'});setTimeout(ping,300);}};ping();}return c;}
 
@@ -1006,6 +1040,14 @@ function loopConn(code,host){const bc=new BroadcastChannel('tth-'+code),h={};con
 const room=new URLSearchParams(location.search).get('room');
 const RESET_Q=new URLSearchParams(location.search).get('reset')==='1';
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+// invite-link join screen: pick one of this browser's saved players (their own clubs/levels/tokens) or make a new one
+function joinScreen(){let rj=null;try{rj=JSON.parse(sessionStorage.getItem('tth.rejoin')||'null');}catch(e){}
+ const names=Object.keys(save.profiles||{});if(rj&&rj.room===room&&names.includes(rj.name)){names.splice(names.indexOf(rj.name),1);names.unshift(rj.name);}
+ const lvl=pr=>{migrate(pr);let u=0;for(const k in pr.lv)for(const st of['power','acc','spin'])u+=pr.lv[k][st]||0;return(u/(CLUBS.length*3)).toFixed(1);};
+ const cards=names.map(n=>{const pr=save.profiles[n];const re=rj&&rj.room===room&&rj.name===n;return`<div class="savecard"><b style="font-size:22px">🧑 ${esc(n)}</b> <small>avg club level ${lvl(pr)}</small><br><small>${profSummary(pr)}</small><br><button class="big" data-n="${esc(n)}" onclick="joinAs(this.dataset.n)">${re?'🔁 Rejoin':'▶️ Continue'} as ${esc(n)}</button></div>`;}).join('');
+ overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">Your friend invited you to room <b>${esc(room)}</b>!</p>${names.length?`<h3>Play as one of your saved players</h3><div id="joinList" style="max-height:44vh;overflow:auto">${cards}</div>`:''}
+ <h3>${names.length?'…or a new player':'Who is playing?'}</h3><input class="nm" id="n1" placeholder="Your name" maxlength="14"><br><button class="big" onclick="joinAs(($('n1').value.trim()||'Player 2').slice(0,14))">🆕 Join as new player 🌐</button>`);}
+window.joinAs=name=>{save.lastNames=[name,(save.lastNames||[])[1]||'Player 2'];persist();try{sessionStorage.setItem('tth.rejoin',JSON.stringify({room,name}));}catch(e){}joinOnline(name,room);};
 function profSummary(pr){migrate(pr);let ups=0;for(const k in pr.lv)for(const st of['power','acc','spin'])ups+=pr.lv[k][st]||0;
  const at=ownedAll(pr).map(([c,k])=>ELEMS[k]?ELEMS[k].ic+'<small>'+c.name+'</small>':'').join(' ');return`🪙 ${pr.tokens} · ⬆️ ${ups} upgrade${ups===1?'':'s'} · ✨ ${at||'no attributes yet'}`;}
 const menuNames=()=>{const a=$('n1')?$('n1').value.trim().slice(0,14):'',b=$('n2')?$('n2').value.trim().slice(0,14):'';return[a||'Player 1',b];};
@@ -1023,7 +1065,7 @@ window.askFresh=i=>{const n=menuNames()[i-1];if(!n||!save.profiles[n])return;con
  <button class="big" id="freshYes" onclick="doFresh(${i})">🧹 Yes, start fresh!</button><button class="big" id="freshNo" style="background:#7d7" onclick="menu()">🙅 No, keep my stuff!</button>`);G.freshName=n;};
 window.doFresh=i=>{const n=G.freshName;if(!n)return;delete save.profiles[n];delete save.hole;persist();G.freshName=null;menu();say(`🧹 ${n} is starting fresh! 🪙 20`,2200);};
 function menu(){G.mode='menu';const last=save.lastNames||['Player 1','Player 2'];
- if(room){overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:24px">Your friend invited you to room <b>${esc(room)}</b>!</p><input class="nm" id="n1" value="${esc(last[1])}" oninput="updSaveInfo()"><div id="saveInfo"></div><br><button class="big" onclick="go('join')">Join Game 🌐</button>`);updSaveInfo();return;}
+ if(room){joinScreen();return;}
  const nSaved=Object.keys(save.profiles).length;
  overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">9 holes · 3 bosses · upgrade your clubs with tokens!</p>
  <div class="startrow"><button class="big" id="btnContinue" onclick="continueGame()">▶️ Continue<br><small>${nSaved?`keep your stuff${save.hole?' · hole '+(Math.min(save.hole,NHOLES-1)+1):''}`:'no saved game yet'}</small></button><button class="big" id="btnNewGame" style="background:#ff8a7a" onclick="askNewGame()">🆕 New Game<br><small>fresh start, 🪙 20</small></button></div>
@@ -1135,7 +1177,7 @@ const clock=new THREE.Clock();let swingT=0;
 const camPos=new THREE.Vector3(0,5,10),camLook=new THREE.Vector3();
 // lightweight per-section timing (ms totals) for profiling: __golf.perf
 const PERF={frames:0,ms:{},t:(k,f)=>{const t0=performance.now();f();PERF.ms[k]=(PERF.ms[k]||0)+performance.now()-t0;},reset:()=>{PERF.frames=0;PERF.ms={};}};G.perf=PERF;
-function tick(){requestAnimationFrame(tick);try{tickInner();}catch(e){recover(e&&e.stack||e);}}
+function tick(){requestAnimationFrame(tick);try{PERF.t('frame',tickInner);}catch(e){recover(e&&e.stack||e);}}
 function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  if(H){const p=P();
   aimStream();if(G.mode==='aim'&&myTurn()){if(aimHold){const tot=aimTurned((performance.now()-aimHold.t0)/1000);p.aim+=aimHold.dir*(tot-aimHold.done);aimHold.done=tot;}}else aimHold=null;
@@ -1221,5 +1263,7 @@ function flyTick(dt){const F=G.fly;if(!F){$('flyBtn').disabled=!flyCan();$('flyB
  const gy=hgt(camera.position.x,camera.position.z)+3;if(camera.position.y<gy)camera.position.y=gy;}
 window.flyStart=flyStart;G.flyStart=flyStart;
 ['pointerdown','keydown','wheel','touchstart'].forEach(ev=>addEventListener(ev,e=>{if(G.fly&&(ev==='keydown'||!(e.target&&e.target.closest&&e.target.closest('#flyBtn'))))G.fly=null;},true));
+G.ellF=ell;G.surf=(x,z)=>surfInfo(H,x,z);
+G.waterQ=waterQ;
 </script>
 </body></html>
