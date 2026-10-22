@@ -31,6 +31,7 @@ canvas#c{display:block;width:100%;height:100%}
 .shophead h1{margin:0 0 4px}.shopbar{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}.shopbar .donebtn{margin:0;padding:8px 22px;font-size:22px}
 .shopx{position:absolute;top:10px;right:12px;width:42px;height:42px;border-radius:50%;border:3px solid #fff;background:#e55;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
 #windp.nowind canvas{opacity:.3;filter:grayscale(1)}
+#flyBtn.on{background:#ffe14d}#flyBtn:disabled{opacity:.45}
 .sndrow{display:flex;align-items:center;gap:10px;justify-content:center;margin:10px 0;font-size:20px}.sndrow input{width:200px}.sndrow b{min-width:160px;text-align:right}
 .startrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:6px 0}.startrow button.big{min-width:230px;line-height:1.15}.startrow small{font-size:15px;font-weight:normal}
 .cheerEmo{position:fixed;bottom:10%;font-size:44px;pointer-events:none;z-index:20;animation:cheerUp 1.6s ease-out forwards}@keyframes cheerUp{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translateY(-55vh) scale(1.3) rotate(20deg);opacity:0}}
@@ -58,7 +59,7 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 <div id="info" class="panel"></div>
 <div id="turn" class="panel"></div>
 <div id="windp" class="panel" style="top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;text-align:center"><div style="font-size:14px;font-weight:bold">💨 WIND</div><canvas id="wcomp" width="160" height="160"></canvas><div id="windNote" style="display:none;font-size:15px;font-weight:bold;color:#bff">⛳ No wind on putts!</div></div>
-<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><button class="sm" id="shopBtn" style="margin-top:6px">🛒 Shop</button> <button class="sm" id="cardBtn">📋 Card</button> <button class="sm" id="sndBtn" title="Sound &amp; credits" onclick="openSound()">🔊</button> <button class="sm" id="homeBtn" title="Start screen">🏠</button></div>
+<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><button class="sm" id="shopBtn" style="margin-top:6px">🛒 Shop</button> <button class="sm" id="cardBtn">📋 Card</button> <button class="sm" id="flyBtn" title="Fly over this hole" onclick="flyStart()">🚁 Flyover</button> <button class="sm" id="sndBtn" title="Sound &amp; credits" onclick="openSound()">🔊</button> <button class="sm" id="homeBtn" title="Start screen">🏠</button></div>
 <div id="bossbar"><div id="bossname"></div><div class="bar"><div id="bossfill"></div></div></div>
 <div id="clubs" class="panel"></div>
 <div id="power"><div id="pfill"></div><div id="pmark"></div></div><div id="ppct"></div>
@@ -460,7 +461,7 @@ function makePlayer(name,col,remote){return{name,prof:remote?newProfile(name):ge
 const P=()=>G.players[G.turn];
 
 // ===== hole start =====
-function startHole(i){G.hole=i;buildHole(i);ball=null;trailPts=[];G.snapCam=true;
+function startHole(i){G.hole=i;G.holeT0=clock.elapsedTime;buildHole(i);ball=null;trailPts=[];G.snapCam=true;
  G.players.forEach((p,k)=>{p.pos.set(k?1.2:-1.2,0,0);p.pos.y=hgt(p.pos.x,0)+.13;p.last.copy(p.pos);p.strokes=0;p.done=false;p.aim=Math.atan2(H.path[1][0],-H.path[1][1]);p.ball.position.copy(p.pos);p.ball.visible=true;});
  G.turn=0;G.boss=null;if(bossMesh){scene.remove(bossMesh);bossMesh=null;}
  const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
@@ -549,7 +550,7 @@ function finishGesture(e){const g=gs;gs=null;gx.clearRect(0,0,gc.width,gc.height
  const pv=(Math.random()-.5)*2*(1-ef.acc)*(p.club===4?.3:.06);
  sendShot({aim:p.aim,power:pw,club:p.club,dev,pv,e:ef,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});
  say(`${pw>1.005?'💥 Overswing! ':''}${Math.round(pw*100)}% ${Math.abs(crooked)<.15?'· Straight! 🎯':crooked>0?'· pushed right ➡️':'· pulled left ⬅️'}`,1200);}
-function sendShot(shot){performShot(shot);if(G.online)net({t:'shot',shot});}
+function sendShot(shot){performShot(shot);if(G.online){net({t:'shot',shot});G.pendSync=true;}}
 function performShot(s){G.swing={t:0,from:G.backAng||-2,shot:s,fired:false};G.mode='swinging';G.backAng=0;}
 function drawGesture(){gx.clearRect(0,0,gc.width,gc.height);if(!gs)return;gx.lineWidth=10;gx.lineCap='round';gx.strokeStyle='rgba(255,255,255,.8)';gx.beginPath();gs.pts.forEach((q,k)=>k?gx.lineTo(q[0],q[1]):gx.moveTo(q[0],q[1]));gx.stroke();
  gx.fillStyle='#ffe14d';gx.font='bold 26px Trebuchet MS';gx.fillText(gs.phase==='back'?'⬇️ backswing…':'⬆️ FLICK!',gs.x0+20,gs.y0);}
@@ -611,7 +612,7 @@ function simulateShot(p,s,wind){const saveBall=ball;const fake={pos:p.pos.clone(
 const carryCache={};function fullCarry(e){const key=[e.dist,e.loft].join();if(carryCache[key])return carryCache[key];
  if(e.loft===0)return carryCache[key]=e.dist;const th=e.loft*Math.PI/180;const v0=Math.sqrt(e.dist*.86*GRAV/Math.sin(2*th));let x=0,y=0,vx=v0*Math.cos(th),vy=v0*Math.sin(th);const dt=1/120;
  for(let k=0;k<4000;k++){vy-=GRAV*dt;vx*=1-.04*dt;vy*=1-.04*dt;x+=vx*dt;y+=vy*dt;if(k>3&&y<=0)break;}return carryCache[key]=x;}
-function doShot(s){const p=P();p.club=s.club;const e=s.e;p.last.copy(p.pos);p.strokes++;G.mode='flight';$('pfill').style.height='0';
+function doShot(s){const p=P();p.club=s.club;p.aimT=null;const e=s.e;p.last.copy(p.pos);p.strokes++;G.mode='flight';$('pfill').style.height='0';
  const v=launchVel(p,s);const w=s.wind?new THREE.Vector2(s.wind[0],s.wind[1]):G.windV.clone();
  const sp=s.spin||{x:0,y:0};{const kind=e.loft===0?'putt':s.club===0||s.club===1?'hit_driver':s.club===2?'hit_iron':'hit_wedge';if(kind!=='putt')sfx(Math.random()<.5?'swing1':'swing2',{vol:.5+.5*Math.min(1,s.power||1)});setTimeout(()=>sfx(kind,{vol:kind==='putt'?.5+.5*Math.min(1,s.power||.6):1,rate:.94+Math.random()*.12}),kind==='putt'?0:90);if(e.el==='fire')sfx('fire',{vol:.6});}
  ball={p,v,e,w,sx:e.loft?sp.x*spinScale(e):0,sy:e.loft?sp.y*spinScale(e):0,bk:e.loft?clamp(-sp.y,0,1):0,air:e.loft>0,bounced:0,usedBubble:false,hitBoss:false,t:0};swingT=.4;trailPts=[];
@@ -627,7 +628,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
   pos.addScaledVector(v,dt);
   // trees: deflect ONCE when the ball enters a canopy, then let gravity pull it down through/off the leaves.
   // (old bug: every 1/120 s step inside the collider multiplied v.y by .3 and flipped horizontal speed, so the ball hovered in the tree for up to 30 s)
-  {let inT=null;for(const t of H.trees){const dx=pos.x-t.x,dz=pos.z-t.z,d2=dx*dx+dz*dz,hy=pos.y-hgt(t.x,t.z);if(d2<t.r*t.r&&hy<t.h&&hy>1){inT=t;
+  {let inT=null;for(const t of H.trees){const dx=pos.x-t.x;if(dx>t.r||dx<-t.r)continue;const dz=pos.z-t.z,d2=dx*dx+dz*dz;if(d2>=t.r*t.r)continue;if(t.gy==null)t.gy=hgt(t.x,t.z);const hy=pos.y-t.gy;if(hy<t.h&&hy>1){inT=t;
     if(b.inTree!==t){const d=Math.sqrt(d2)||1e-3,nx=dx/d,nz=dz/d,vr=v.x*nx+v.z*nz;if(vr<0){v.x-=1.3*vr*nx;v.z-=1.3*vr*nz;}// bounce off the canopy
      v.x*=.35;v.z*=.35;v.y=Math.min(v.y,0)*.4-1;b.inTree=t;if(!b.treeMsg){b.treeMsg=1;float('🌳 Bonk!');}if(b.treeT==null)b.treeT=b.t;if(!b.dry)sfx('land',{vol:.5,rate:1.3});}
     else{v.x*=1-1.5*dt;v.z*=1-1.5*dt;}// leaves drag a little while falling through
@@ -724,14 +725,35 @@ const burstG=new THREE.BufferGeometry();const BN=400;burstG.setAttribute('positi
 const burstPts=new THREE.Points(burstG,new THREE.PointsMaterial({size:.5,map:DOT,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(burstPts);
 
 // ===== networking (PeerJS) =====
-function net(m){if(G.online&&G.online.conn&&G.online.conn.open)G.online.conn.send(m);}
+function net(m){if(G.online&&G.online.conn&&G.online.conn.open){m.st=Math.round(performance.now()*10)/10;G.online.conn.send(m);}}
+// ---- online robustness: ordered inbound queue, catch-up, authoritative resync ----
+// Messages that change game flow are applied only when this client has finished replaying earlier events,
+// so a slow / lagging guest never starts a new shot or fight on top of one it is still animating.
+const NETQ_T={shot:1,hole:1,arenaStart:1,arenaEnd:1,sync:1};G.netQ=[];G.netFixes=0;
+function netBusy(){return !!(ball||G.swing||G.mode==='flight'||G.mode==='swinging'||G.mode==='arena'||(G.mode==='arenaIntro'&&!G.arenaWaiting)||G.afterOv);}
+function netPump(){let n=0;while(G.netQ.length&&!netBusy()&&n++<50)handleNet(G.netQ.shift());}
+function mkSync(periodic){return{t:'sync',periodic:periodic?1:0,from:G.localIdx,hole:G.hole,turn:G.turn,mode:G.mode,pl:G.players.map(p=>({pos:p.pos.toArray().map(v=>+v.toFixed(3)),last:p.last.toArray().map(v=>+v.toFixed(3)),st:p.strokes,done:p.done?1:0,bhp:p.bhp,sc:p.scores||[],tok:p.prof.tokens}))};}
+function applySync(m){if(m.hole!==G.hole||!H)return;if(G.mode==='card'&&m.mode!=='card')return;let fixed=0;
+ m.pl.forEach((q,i)=>{const p=G.players[i];if(!p)return;const d=Math.hypot(p.pos.x-q.pos[0],p.pos.y-q.pos[1],p.pos.z-q.pos[2]);
+  if(d>.05||p.strokes!==q.st||!!p.done!==!!q.done||(q.bhp!=null&&p.bhp!==q.bhp))fixed++;
+  p.pos.fromArray(q.pos);p.last.fromArray(q.last);p.strokes=q.st;p.done=!!q.done;p.ball.visible=!p.done;if(q.bhp!=null)p.bhp=q.bhp;p.scores=q.sc.slice();
+  if(i===m.from&&i!==G.localIdx)p.prof.tokens=q.tok;});
+ // host decides whose turn it is; on a shot-end sync the shooter's view (which already advanced the turn) is used
+ if((!G.online.host||!m.periodic)&&G.turn!==m.turn&&G.players[m.turn]&&!G.players[m.turn].done){G.turn=m.turn;fixed++;if(G.mode==='aim')autoClub();}
+ if(fixed){G.netFixes+=fixed;G.snapCam=false;}updUI();}
 function syncProf(){const me=G.players[G.localIdx];if(G.online&&me)net({t:'prof',prof:me.prof});}
-function onNet(m){if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}
+function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;const smp=now-m.st;G.netOff=o==null?smp:Math.min(smp,o+.02*16);G.netJit=(G.netJit||20)*.9+.1*Math.abs(smp-G.netOff);}
+ if(m.t==='aim'){if(P()&&!myTurn())P().aimT=m.a;return;}
+ if(m.t==='sync'&&m.periodic&&(netBusy()||G.netQ.length))return;// stale periodic snapshots are simply dropped
+ if(m.t==='as'&&!G.spec&&G.netQ.some(q=>q.t==='arenaStart')){G.netQ.push(m);return;}
+ if(NETQ_T[m.t]&&(G.netQ.length||netBusy())){G.netQ.push(m);return;}
+ handleNet(m);}
+function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
+ if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}
  else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
  else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
- else if(m.t==='aim'){if(!myTurn()&&P()&&G.mode==='aim')P().aim=m.a;}
  else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0)G.players.forEach(p=>p.scores=[]);startHole(m.n);}}
 function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
 function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
@@ -887,11 +909,11 @@ function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length)arenaGr
  $('arenaUI').style.display='none';$('pbar').style.display='none';['clubs','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
  if(bossMesh&&G.boss){bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);}}
 function arenaEnd(win){const A=G.arena;if(!A)return;if(win){sfx('boss_defeat');setTimeout(()=>sfx('victory'),900);}else sfx('defeat');const p=A.p;arenaCleanup();if(!win)p.strokes++;
- if(G.online)net({t:'arenaEnd',hp:G.boss.hp,win,strokes:p.strokes,ci:A.ci});
+ if(G.online){net({t:'arenaEnd',hp:G.boss.hp,win,strokes:p.strokes,ci:A.ci});G.pendSync=true;}
  if(win){bossDefeated(A.ci,p);G.afterOv=()=>{G.skipArena=true;endShot();};}
  else{overlay(`<h1>😵 Bonk!</h1><p style="font-size:24px">${G.boss.ic} ${G.boss.name} won this round (+1 stroke).<br>But it still has only <b>${G.boss.hp}</b> HP left — next time you reach the green, battle again!</p><button class="big" onclick="closeOv()">OK!</button>`);G.afterOv=()=>{G.skipArena=true;endShot();};}}
 function arenaRemoteEnd(m){sfx(m.win?'victory':'defeat');if(G.spec)specEnd();const p=G.arenaWaiting;G.arenaWaiting=null;if(p)p.bhp=m.hp;else G.boss.hp=m.hp;updBoss();if(p)p.strokes=m.strokes;$('ov').style.display='none';G.ovOpen=false;
- if(m.win){bossDefeated(m.ci,p);G.afterOv=()=>{G.skipArena=true;endShot();};}else{G.skipArena=true;endShot();}}
+ if(m.win){bossDefeated(m.ci,p);G.afterOv=null;}G.skipArena=true;endShot();}
 addEventListener('keydown',e=>{keys[e.code]=true;if(!G.arena||G.ovOpen)return;const k=e.key;
  if(e.ctrlKey||e.metaKey||k==='Control'){e.preventDefault();}
  if(k===' '||k==='j'||k==='J'){e.preventDefault();playerAttack();}
@@ -930,7 +952,7 @@ function specStart(m){sfx('roar');const p=G.arenaWaiting||P();closeOvSilently();
  G.mode='spectate';['clubs','power','spinBox','aimL','aimR','windp','carry','hint'].forEach(k=>$(k).style.display='none');$('pbar').style.display='block';$('pname').textContent=`${G.spec.name} ❤️`;$('pfill2').style.width='100%';
  $('specBan').style.display='block';$('specName').textContent=G.spec.name;$('specCheer').disabled=false;G.spec.aura=makeAura();arenaGroup.add(G.spec.aura);golfer.visible=true;}
 function closeOvSilently(){$('ov').style.display='none';G.ovOpen=false;}
-function specState(m){const S=G.spec;if(!S)return;m.rt=performance.now();S.buf.push(m);if(S.buf.length>40)S.buf.shift();S.lastRecv=m.rt;}
+function specState(m){const S=G.spec;if(!S)return;m.rt=performance.now();if(m.st==null)m.st=m.rt;const L=S.buf[S.buf.length-1];if(L&&m.st<=L.st)return;S.buf.push(m);if(S.buf.length>60)S.buf.shift();S.lastRecv=m.rt;}
 function specEnd(){const S=G.spec;if(!S)return;G.spec=null;arenaCleanup();}
 function specCheer(){const S=G.spec;if(!S||S.cheerCd>0)return;S.cheerCd=CHEER.cd;const me=G.players[G.localIdx];net({t:'cheer',name:me?me.name:'Friend'});say(`📣 You cheered for ${G.boss.name}!`,1200);$('specCheer').disabled=true;}
 window.specCheer=specCheer;G.specCheer=specCheer;
@@ -938,8 +960,10 @@ const _sp=new THREE.Vector3(),_sb=new THREE.Vector3();
 function specTick(dt,t){const S=G.spec;const now=performance.now();S.cheerCd-=dt;if(S.cheerCd<=0&&$('specCheer').disabled)$('specCheer').disabled=false;
  $('specWait').style.display=now-S.lastRecv>3000?'inline':'none';if(!S.buf.length)return;
  // render ~120 ms behind the newest snapshot and interpolate between the two around that time
- const rt=now-120;let a=S.buf[0],b=S.buf[S.buf.length-1];for(let k=S.buf.length-1;k>0;k--){if(S.buf[k-1].rt<=rt){a=S.buf[k-1];b=S.buf[k];break;}}
- const u=b.rt>a.rt?clamp((rt-a.rt)/(b.rt-a.rt),0,1):1;const L=(x,y)=>x+(y-x)*u;
+ // render on the sender's clock, a little behind: delay adapts to measured jitter (bunched/late packets) and never jumps
+ const want=clamp(90+2.5*(G.netJit||20),110,480);S.delay=S.delay==null?want:S.delay+(want-S.delay)*Math.min(1,dt*(want>S.delay?4:.5));
+ const rt=now-(G.netOff||0)-S.delay;let a=S.buf[0],b=S.buf[S.buf.length-1];for(let k=S.buf.length-1;k>0;k--){if(S.buf[k-1].st<=rt){a=S.buf[k-1];b=S.buf[k];break;}}
+ const u=b.st>a.st?clamp((rt-a.st)/(b.st-a.st),0,1.25):1;const L=(x,y)=>x+(y-x)*u;
  const P0=_sp.set(L(a.p[0],b.p[0]),L(a.p[1],b.p[1]),L(a.p[2],b.p[2])),Bp=_sb.set(L(a.b[0],b.b[0]),L(a.b[1],b.b[1]),L(a.b[2],b.b[2]));
  const face=a.f+angDiff(a.f,b.f)*u,s=b;// discrete fields from the newest snapshot
  const g=golfer.userData;golfer.visible=true;golfer.position.copy(P0);golfer.rotation.set(0,face,0);
@@ -970,9 +994,12 @@ addEventListener('keydown',e=>{if(G.spec&&(e.key==='c'||e.key==='C')&&!e.repeat)
 let aimSentT=0,aimSent=null;function aimStream(){if(!G.online||!myTurn()||G.mode!=='aim')return;const p=P();const n=performance.now();if(n-aimSentT<150||aimSent!=null&&Math.abs(p.aim-aimSent)<.002)return;aimSentT=n;aimSent=p.aim;net({t:'aim',a:+p.aim.toFixed(4)});}
 // ---- loopback transport for testing (same message code path as PeerJS, via BroadcastChannel): ?loop=1
 const LOOP=new URLSearchParams(location.search).get('loop')==='1';
+// test knobs: &lat=MIN-MAX (ms, random per message, order preserved like a reliable channel) &bunch=MS (deliver in bursts)
+const LQ=new URLSearchParams(location.search);const LAT=(LQ.get('lat')||'0-0').split('-').map(Number),BUNCH=+LQ.get('bunch')||0;let lastDel=0;
+function deliver(f){if(!LAT[1]&&!BUNCH)return f();const now=performance.now();let at=Math.max(lastDel,now+LAT[0]+Math.random()*((LAT[1]||LAT[0])-LAT[0]));if(BUNCH)at=Math.ceil(at/BUNCH)*BUNCH;lastDel=at;setTimeout(f,at-now);}
 function loopConn(code,host){const bc=new BroadcastChannel('tth-'+code),h={};const c={open:false,on:(ev,f)=>{(h[ev]=h[ev]||[]).push(f);},send:m=>{bc.postMessage({_d:JSON.parse(JSON.stringify(m))});},close:()=>{bc.postMessage({_hs:'bye'});bc.close();},_h:h};
  const fire=(ev,x)=>(h[ev]||[]).forEach(f=>f(x));bc.onmessage=e=>{const d=e.data;if(d._hs==='join'&&host&&!c.open){c.open=true;bc.postMessage({_hs:'ack'});G.__onLoopConn&&G.__onLoopConn(c);fire('open');}
-  else if(d._hs==='ack'&&!host&&!c.open){c.open=true;fire('open');}else if(d._hs==='bye'){c.open=false;fire('close');}else if(d._d)fire('data',d._d);};
+  else if(d._hs==='ack'&&!host&&!c.open){c.open=true;fire('open');}else if(d._hs==='bye'){c.open=false;fire('close');}else if(d._d)deliver(()=>fire('data',d._d));};
  if(!host){const ping=()=>{if(!c.open){bc.postMessage({_hs:'join'});setTimeout(ping,300);}};ping();}return c;}
 
 // ===== menu =====
@@ -1082,7 +1109,7 @@ const LN=220,leafG=new THREE.BufferGeometry();leafG.setAttribute('position',new 
 const leafCols=new Float32Array(LN*3);const leafData=[];{const C=new THREE.Color();for(let k=0;k<LN;k++){C.setHSL(.12+Math.random()*.16,.7,.35+Math.random()*.2);leafCols.set([C.r,C.g,C.b],k*3);leafData.push({x:0,y:-999,z:0,ph:Math.random()*7});}}
 leafG.setAttribute('color',new THREE.Float32BufferAttribute(leafCols,3));
 const leaves=new THREE.Points(leafG,new THREE.PointsMaterial({size:.32,vertexColors:true,map:DOT,transparent:true,depthWrite:false,alphaTest:.1}));leaves.frustumCulled=false;scene.add(leaves);
-function updWind(dt,t){if(G.windBase==null)return;const sd=G.gustSeed||0;const f=1+.16*Math.sin(t*.55+sd)+.09*Math.sin(t*1.9+sd*2);const ang=G.windDir+.1*Math.sin(t*.37+sd);
+function updWind(dt,t){if(G.windBase==null)return;t=t-(G.holeT0||0);const sd=G.gustSeed||0;const f=1+.16*Math.sin(t*.55+sd)+.09*Math.sin(t*1.9+sd*2);const ang=G.windDir+.1*Math.sin(t*.37+sd);
  G.windV.set(Math.sin(ang)*G.windBase*f,-Math.cos(ang)*G.windBase*f);WIND_U.uTime.value=t;WIND_U.uWind.value.copy(G.windV);
  const n=Math.round(LN*clamp(G.windMph/18,.08,1));leafG.setDrawRange(0,n);const pa=leafG.attributes.position.array,c=camera.position;const sp=G.windV.length();
  for(let k=0;k<n;k++){const q=leafData[k];const dx=q.x-c.x,dz=q.z-c.z;if(q.y<-900||Math.abs(dx)>40||Math.abs(dz)>40||q.y<hgt(q.x,q.z)-.5||q.y>c.y+14){
@@ -1106,13 +1133,21 @@ addEventListener('error',e=>recover(e.message||e.error));addEventListener('unhan
 // ===== loop =====
 const clock=new THREE.Clock();let swingT=0;
 const camPos=new THREE.Vector3(0,5,10),camLook=new THREE.Vector3();
+// lightweight per-section timing (ms totals) for profiling: __golf.perf
+const PERF={frames:0,ms:{},t:(k,f)=>{const t0=performance.now();f();PERF.ms[k]=(PERF.ms[k]||0)+performance.now()-t0;},reset:()=>{PERF.frames=0;PERF.ms={};}};G.perf=PERF;
 function tick(){requestAnimationFrame(tick);try{tickInner();}catch(e){recover(e&&e.stack||e);}}
 function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
  if(H){const p=P();
   aimStream();if(G.mode==='aim'&&myTurn()){if(aimHold){const tot=aimTurned((performance.now()-aimHold.t0)/1000);p.aim+=aimHold.dir*(tot-aimHold.done);aimHold.done=tot;}}else aimHold=null;
   if(G.mode==='power'){power+=pdir*dt*.75;if(power>=MAXPOW){power=MAXPOW;pdir=-1;}if(power<=0){power=0;pdir=1;}$('pfill').style.height=(power/MAXPOW*100)+'%';$('pfill').style.filter=power>1?'hue-rotate(-40deg) saturate(2)':'';}
   if(G.swing){const w=G.swing;w.t+=dt;const T1=.14,T2=.5;if(w.t>=T1&&!w.fired){w.fired=true;doShot(w.shot);}if(w.t>T2+.4)G.swing=null;}
-  if(ball){G.acc=(G.acc||0)+dt;let n=0;while(ball&&G.acc>=1/120&&n<12){stepBall(1/120);G.acc-=1/120;n++;}}else G.acc=0;
+  if(G.online){if(p&&!myTurn()&&p.aimT!=null&&G.mode==='aim'){p.aim+=angDiff(p.aim,p.aimT)*Math.min(1,dt*12);}
+   netPump();
+   if(G.pendSync&&!netBusy()){G.pendSync=false;net(mkSync(0));}
+   if(G.online.host&&!netBusy()&&!G.netQ.length&&G.mode==='aim'){G.syncT=(G.syncT||0)-dt;if(G.syncT<=0){G.syncT=3;net(mkSync(1));}}}
+  // replay faster when this client has fallen behind the other player (queued events waiting)
+  const catchUp=G.netQ&&G.netQ.length?3:1;
+  if(ball){G.acc=(G.acc||0)+dt*catchUp;let n=0;while(ball&&G.acc>=1/120&&n<12*catchUp){stepBall(1/120);G.acc-=1/120;n++;}}else G.acc=0;
   G.players.forEach(q=>q.ball.position.copy(q.pos));
   // camera
   if(p){const dir=new THREE.Vector3(Math.sin(p.aim),0,-Math.cos(p.aim));let tp,tl;
@@ -1154,8 +1189,9 @@ function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const
    else if(G.boss.hp>0){if(!bossMesh.visible){bossMesh.visible=true;bossMesh.scale.setScalar(1);}}else bossMesh.visible=false;}
   clouds.children.forEach((c,k)=>{c.position.x+=dt*(2+k%3);if(c.position.x>2200)c.position.x=-2200;});
   sky.position.copy(camera.position);clouds.position.set(camera.position.x,0,camera.position.z);farGroup.position.set(camera.position.x,0,camera.position.z);
-  updWind(dt,t);updLanding();drawWind(t);drawMini();drawGesture();if(G.mode==='aim')drawSpin();}
- if(G.camOverride){camera.position.copy(G.camOverride.pos);camera.lookAt(G.camOverride.look);}renderer.render(scene,camera);}
+  {const T=PERF.t;T('wind',()=>updWind(dt,t));T('landing',updLanding);T('windHud',()=>drawWind(t));T('mini',drawMini);drawGesture();if(G.mode==='aim')drawSpin();}}
+ flyTick(dt);
+ if(G.camOverride){camera.position.copy(G.camOverride.pos);camera.lookAt(G.camOverride.look);}PERF.t('render',()=>renderer.render(scene,camera));PERF.frames++;}
 // title backdrop
 buildHole(0);G.players=[];camPos.set(-20,9,25);camLook.set(0,0,-120);
 menu();tick();
@@ -1163,5 +1199,27 @@ G.sendShot=sendShot;G.getH=()=>H;G.effOf=(p,c)=>eff(p.prof,c);
 
 G.simShot=simulateShot;G.effOf2=eff;
 G.hgt=hgt;
+
+// ===== 🚁 hole flyover (local camera only, never networked) =====
+const FLY_DUR=3.2;const _fp=new THREE.Vector3(),_fl=new THREE.Vector3(),_cq=new THREE.Quaternion(),_cp=new THREE.Vector3();
+function flyCan(){return !!(H&&G.mode==='aim'&&!ball&&!G.swing&&!G.arena&&!G.spec&&!G.ovOpen);}
+function flyStart(){if(G.fly){G.fly=null;return;}if(!flyCan())return;
+ const pts=H.path.map(([x,z])=>new THREE.Vector3(x,0,z));const tee=pts[0],gr=new THREE.Vector3(H.gx,0,H.gz);
+ // camera route: behind & above the tee, along the hole, finishing above/short of the green
+ const back=tee.clone().sub(pts[1]).setY(0).normalize();const route=[tee.clone().addScaledVector(back,25),...pts.slice(0,-1),gr.clone().addScaledVector(back,-0).add(new THREE.Vector3(0,0,0))];
+ const top=Math.max(...route.map(v=>hgt(v.x,v.z)));route.forEach((v,k)=>{v.y=Math.max(hgt(v.x,v.z),top*.7)+lerp(50,34,k/(route.length-1));});
+ const look=[...pts,gr].map(v=>new THREE.Vector3(v.x,hgt(v.x,v.z),v.z));
+ G.fly={t:0,cam:new THREE.CatmullRomCurve3(route,false,'centripetal'),look:new THREE.CatmullRomCurve3(look,false,'centripetal')};$('flyBtn').classList.add('on');}
+function flyTick(dt){const F=G.fly;if(!F){$('flyBtn').disabled=!flyCan();$('flyBtn').classList.remove('on');return;}
+ if(!flyCan()){G.fly=null;return;}F.t+=dt;const k=F.t/FLY_DUR;if(k>=1){G.fly=null;return;}
+ const e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;// ease in-out cubic along the route
+ F.cam.getPointAt(Math.min(1,e*.97),_fp);F.look.getPointAt(Math.min(1,e*.6+.4),_fl);
+ // blend in from / out to the normal shot camera so it starts and ends seamlessly
+ const w=Math.min(1,Math.min(k,1-k)/.18);const ws=w*w*(3-2*w);
+ _cp.copy(camera.position);_cq.copy(camera.quaternion);camera.position.copy(_fp);camera.lookAt(_fl);
+ const fq=camera.quaternion.clone();camera.position.lerpVectors(_cp,_fp,ws);camera.quaternion.copy(_cq).slerp(fq,ws);
+ const gy=hgt(camera.position.x,camera.position.z)+3;if(camera.position.y<gy)camera.position.y=gy;}
+window.flyStart=flyStart;G.flyStart=flyStart;
+['pointerdown','keydown','wheel','touchstart'].forEach(ev=>addEventListener(ev,e=>{if(G.fly&&(ev==='keydown'||!(e.target&&e.target.closest&&e.target.closest('#flyBtn'))))G.fly=null;},true));
 </script>
 </body></html>
