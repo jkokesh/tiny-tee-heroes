@@ -1,4 +1,6 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1f7a45"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Tee Heroes"><meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Tiny Tee Heroes - Kids Golf</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:"Trebuchet MS","Comic Sans MS",Arial,sans-serif;color:#fff;user-select:none}
@@ -54,12 +56,98 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 #turn{position:absolute;top:185px;left:12px;font-size:22px;display:none}
 @media (max-width:700px){.card{padding:14px 12px;font-size:16px}.shophead{top:-14px;margin:-14px -12px 8px;padding:8px 50px}.shophead h1{font-size:24px}
  .statrow{flex-wrap:wrap;justify-content:center;gap:6px}.statrow .nm{width:auto}.bar5 i{width:11px}.elem{width:42%}}
+
+#joyZone,#rotHint{display:none}
+html.touch.inArena #ppct,html.touch.inArena #rbtns{display:none!important}
+#rbtns{display:inline}
+.gfxrow button.sm.on{background:#7d7}
+/* ===== touch devices (phones/tablets) — desktop never gets html.touch ===== */
+html.touch,html.touch body{position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;-webkit-text-size-adjust:100%}
+html.touch canvas#c{touch-action:none}
+html.touch button,html.touch .club,html.touch #spinBall{touch-action:manipulation}
+html.touch .aimb,html.touch .ab,html.touch #joyZone{touch-action:none}
+html.touch input,html.touch textarea{-webkit-user-select:text;user-select:text;touch-action:manipulation;font-size:max(16px,1em)}
+html.touch .card,html.touch #joinList,html.touch .scrolly{touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+html.touch button.sm{min-height:44px;min-width:44px}
+html.touch .overlay{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+html.touch .card{max-height:calc(100% - 16px)}
+html.touch #joyZone{display:block;position:absolute;left:0;bottom:0;width:46vw;height:72vh}
+html.touch #dpad{display:none!important}
+#joyBase{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,255,255,.16);border:4px solid rgba(255,255,255,.55);box-shadow:0 0 0 3px rgba(0,0,0,.15) inset;pointer-events:none;transition:background .15s}
+#joyBase.on{background:rgba(255,255,255,.28)}
+#joyKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:radial-gradient(#fff,#bde);border:3px solid #fff;box-shadow:0 3px 8px #0006}
+#joyTip{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:calc(8px + env(safe-area-inset-bottom));font-size:14px;opacity:.75;text-shadow:1px 1px 2px #000;pointer-events:none}
+html.touch #abtns{right:calc(14px + env(safe-area-inset-right))!important;bottom:calc(14px + env(safe-area-inset-bottom))!important}
+#rotHint{position:absolute;left:50%;top:calc(40% + env(safe-area-inset-top));transform:translateX(-50%);z-index:8;font-size:17px;text-align:center;width:min(86vw,330px);cursor:pointer}
+/* compact HUD: phone landscape (short) or phone portrait (narrow) */
+@media (max-height:520px),(max-width:540px){
+ html.touch #info{top:calc(6px + env(safe-area-inset-top));left:calc(6px + env(safe-area-inset-left));font-size:13px;line-height:1.3;padding:4px 9px;border-width:2px;border-radius:12px;max-width:42vw}
+ html.touch #info b{font-size:16px}
+ html.touch .panel{border-width:2px;border-radius:12px}
+ html.touch #windp{top:calc(6px + env(safe-area-inset-top))!important;padding:2px 6px!important}
+ html.touch #windp>div:first-child{font-size:10px!important}html.touch #wcomp{width:74px;height:74px}html.touch #windNote{font-size:11px!important}
+ html.touch #right{top:calc(6px + env(safe-area-inset-top));right:calc(6px + env(safe-area-inset-right));padding:4px}
+ html.touch #mini{width:80px;height:113px;margin:0 auto}
+ html.touch #tokens{font-size:15px;margin:2px 0}
+ html.touch #rbtns{display:grid;grid-template-columns:44px 44px 44px;gap:4px;justify-content:center}
+ html.touch #rbtns button.sm{margin:0!important;padding:0;font-size:20px;width:44px;height:44px}
+ html.touch .lbl{display:none}
+ html.touch #clubs{bottom:calc(4px + env(safe-area-inset-bottom));gap:4px;padding:4px;border-radius:12px}
+ html.touch .club{width:58px;height:60px;font-size:11px;padding-top:0;border-width:2px;border-radius:10px;line-height:1.05}
+ html.touch .club canvas{width:32px;height:32px}html.touch .club small{font-size:10px}
+ html.touch .club.sel{transform:translateY(-4px)}html.touch .club .badge{font-size:17px;top:-8px;right:-6px}
+ html.touch #power{left:calc(12px + env(safe-area-inset-left));bottom:calc(76px + env(safe-area-inset-bottom));width:26px;height:130px;border-width:3px;border-radius:12px}
+ html.touch #pmark::after{left:26px;font-size:10px}
+ html.touch #ppct{left:calc(2px + env(safe-area-inset-left));bottom:calc(212px + env(safe-area-inset-bottom));width:46px;font-size:14px}
+ html.touch .aimb{width:56px;height:56px;font-size:24px;bottom:calc(8px + env(safe-area-inset-bottom))}
+ html.touch #aimL{left:calc(8px + env(safe-area-inset-left))!important}html.touch #aimR{left:calc(70px + env(safe-area-inset-left))!important}
+ html.touch #hint{left:50%!important;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom))!important;font-size:13px!important;white-space:nowrap}
+ html.touch #carry{bottom:calc(96px + env(safe-area-inset-bottom));font-size:13px;padding:3px 10px;max-width:70vw;white-space:normal;text-align:center}
+ html.touch #spinBox{right:calc(6px + env(safe-area-inset-right))!important;bottom:calc(6px + env(safe-area-inset-bottom))!important;padding:2px 5px!important}
+ html.touch #spinBox>div:first-child{font-size:10px!important}html.touch #spinBall{width:58px;height:58px}html.touch #spinLab{font-size:10px!important}
+ html.touch #msg{font-size:34px;top:24%}
+ html.touch #bossbar{top:calc(96px + env(safe-area-inset-top));width:38vw;font-size:13px}html.touch #bossbar .bar{height:13px;border-width:2px}
+ html.touch #turn{top:calc(112px + env(safe-area-inset-top));left:calc(6px + env(safe-area-inset-left));font-size:13px;padding:3px 8px}
+ html.touch #pbar{width:38vw!important;font-size:13px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important}html.touch #pbar .bar{height:13px!important}
+ html.touch #specBan{top:calc(52px + env(safe-area-inset-top))!important;font-size:14px!important;padding:4px 10px!important}html.touch #specCheer{font-size:15px!important;padding:6px 12px!important}
+ html.touch .ab{width:64px;height:64px;font-size:17px;border-width:3px}
+ html.touch #aBlock,html.touch #aDodge{width:74px!important;height:74px!important;font-size:16px}
+ html.touch #aAtk{width:104px!important;height:104px!important;font-size:24px!important}
+ html.touch #aCheer{width:80px!important;height:74px!important}
+ html.touch .card{padding:12px 14px;font-size:16px;border-width:3px;border-radius:18px;max-width:calc(100vw - 12px)}
+ html.touch .card h1{font-size:26px;margin:2px 0 8px}
+ html.touch button.big{font-size:18px;padding:9px 16px;margin:5px;min-height:44px;border-width:3px}
+ html.touch .startrow button.big{min-width:170px}
+ html.touch input.nm{font-size:18px;padding:6px;width:180px;margin:4px}
+ html.touch .shophead{top:-12px;margin:-12px -14px 8px;padding:6px 52px}html.touch .shophead h1{font-size:22px}
+ html.touch .shopx{width:44px;height:44px;top:6px;right:8px}
+ html.touch .sndrow{font-size:16px;flex-wrap:wrap}html.touch .sndrow b{min-width:0}html.touch .sndrow input{width:150px;height:30px}
+ html.touch table.sc{font-size:14px}html.touch table.sc td,html.touch table.sc th{padding:3px 5px}
+ html.touch .savecard{font-size:15px}
+}
+/* phone portrait: stack the left-hand controls above the club row */
+@media (orientation:portrait) and (max-width:540px){
+ html.touch #windp{left:calc(6px + env(safe-area-inset-left))!important;transform:none!important;top:calc(118px + env(safe-area-inset-top))!important}
+ html.touch #info{max-width:56vw}
+ html.touch #rbtns{grid-template-columns:44px 44px}
+ html.touch #turn{top:calc(224px + env(safe-area-inset-top))}
+ html.touch #bossbar{top:calc(300px + env(safe-area-inset-top));width:70vw}
+ html.touch .aimb{bottom:calc(80px + env(safe-area-inset-bottom))}
+ html.touch #power{bottom:calc(148px + env(safe-area-inset-bottom))}
+ html.touch #ppct{bottom:calc(284px + env(safe-area-inset-bottom))}
+ html.touch #spinBox{bottom:calc(80px + env(safe-area-inset-bottom))!important}
+ html.touch #hint{bottom:calc(150px + env(safe-area-inset-bottom))!important;white-space:normal;width:52vw;text-align:center}
+ html.touch #carry{bottom:calc(196px + env(safe-area-inset-bottom))}
+ html.touch #joyZone{width:55vw;height:55vh}
+ html.touch #abtns{flex-wrap:wrap;justify-content:flex-end;width:190px}
+ html.touch #pbar{width:60vw!important;bottom:calc(240px + env(safe-area-inset-bottom))!important}
+}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="info" class="panel"></div>
 <div id="turn" class="panel"></div>
 <div id="windp" class="panel" style="top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;text-align:center"><div style="font-size:14px;font-weight:bold">💨 WIND</div><canvas id="wcomp" width="160" height="160"></canvas><div id="windNote" style="display:none;font-size:15px;font-weight:bold;color:#bff">⛳ No wind on putts!</div></div>
-<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><button class="sm" id="shopBtn" style="margin-top:6px">🛒 Shop</button> <button class="sm" id="cardBtn">📋 Card</button> <button class="sm" id="flyBtn" title="Fly over this hole" onclick="flyStart()">🚁 Flyover</button> <button class="sm" id="sndBtn" title="Sound &amp; credits" onclick="openSound()">🔊</button> <button class="sm" id="homeBtn" title="Start screen">🏠</button></div>
+<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><div id="rbtns"><button class="sm" id="shopBtn" style="margin-top:6px" aria-label="Shop">🛒<span class="lbl"> Shop</span></button> <button class="sm" id="cardBtn" aria-label="Scorecard">📋<span class="lbl"> Card</span></button> <button class="sm" id="flyBtn" title="Fly over this hole" aria-label="Flyover" onclick="flyStart()">🚁<span class="lbl"> Flyover</span></button> <button class="sm" id="sndBtn" title="Sound, graphics &amp; credits" aria-label="Settings" onclick="openSound()">🔊</button> <button class="sm" id="homeBtn" title="Start screen" aria-label="Start screen">🏠</button></div></div>
 <div id="bossbar"><div id="bossname"></div><div class="bar"><div id="bossfill"></div></div></div>
 <div id="clubs" class="panel"></div>
 <div id="power"><div id="pfill"></div><div id="pmark"></div></div><div id="ppct"></div>
@@ -71,10 +159,11 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 <button id="aimL" class="aimb" style="left:16px">◀</button><button id="aimR" class="aimb" style="left:96px">▶</button>
 <div id="hint" style="position:absolute;bottom:185px;left:72px;font-size:16px;text-shadow:1px 1px 2px #000">Drag ⬇️ then flick ⬆️ on the course to swing!</div>
 <div id="pbar" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:380px;display:none;text-align:center;font-size:20px;font-weight:bold"><div id="pname"></div><div class="bar" style="height:22px;border:3px solid #fff;border-radius:12px;background:#033;overflow:hidden"><div id="pfill2" style="height:100%;width:100%;background:linear-gradient(#6f6,#1a1)"></div></div></div>
-<div id="arenaUI" style="display:none"><div style="position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:70px 70px 70px;gap:6px">
+<div id="arenaUI" style="display:none"><div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div><div id="joyTip">🕹️ move</div></div><div id="dpad" style="position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:70px 70px 70px;gap:6px">
 <span></span><button class="ab" id="aU">▲</button><span></span><button class="ab" id="aLf">◀</button><button class="ab" id="aD">▼</button><button class="ab" id="aRt">▶</button></div>
-<div style="position:absolute;right:20px;bottom:20px;display:flex;gap:10px;align-items:flex-end"><button class="ab" id="aBlock" style="width:90px;height:90px">🛡️<br>Block</button><button class="ab" id="aDodge" style="width:90px;height:90px">💨<br>Dodge</button><button class="ab" id="aCheer" style="display:none;width:100px;height:90px;font-size:15px;background:radial-gradient(#ffe98a,#e8a400)">📣 cheer</button><button class="ab" id="aAtk" style="width:130px;height:130px;font-size:30px;background:radial-gradient(#ff7,#f60)">⚔️<br>HIT</button></div></div>
+<div id="abtns" style="position:absolute;right:20px;bottom:20px;display:flex;gap:10px;align-items:flex-end"><button class="ab" id="aBlock" style="width:90px;height:90px">🛡️<br>Block</button><button class="ab" id="aDodge" style="width:90px;height:90px">💨<br>Dodge</button><button class="ab" id="aCheer" style="display:none;width:100px;height:90px;font-size:15px;background:radial-gradient(#ffe98a,#e8a400)">📣 cheer</button><button class="ab" id="aAtk" style="width:130px;height:130px;font-size:30px;background:radial-gradient(#ff7,#f60)">⚔️<br>HIT</button></div></div>
 <div id="specBan" class="panel" style="display:none;top:84px;left:50%;transform:translateX(-50%);padding:8px 16px;text-align:center;font-size:20px;z-index:5"><b>👀 Watching <span id="specName"></span> fight!</b> <span id="specWait" style="display:none;color:#ffb">⏳ waiting for friend…</span><br><button class="big" id="specCheer" style="margin:6px 0 0;font-size:20px;padding:8px 18px" onclick="specCheer()">📣 Cheer for the Boss! (C)</button></div>
+<div id="rotHint" class="panel" onclick="this.style.display='none'"><span style="font-size:26px">📱↻</span> Turn your phone sideways for a bigger view <b>✕</b></div>
 <div id="ov" class="overlay"><div class="card" id="ovc"></div></div>
 <script>console.warn('Scripts "build/three.js" and "build/three.min.js" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation'),
 /**
@@ -101,20 +190,37 @@ const AU=(()=>{let st={music:.45,sfx:.8,mOn:true,sOn:true};try{Object.assign(st,
  let unlocked=false,order=[],oi=0,mus=null,pools={},played={},lastT={};
  const shuffle=()=>{order=MUSIC.map((_,i)=>i);for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}oi=0;};
  function nextTrack(){if(!order.length||oi>=order.length)shuffle();const t=MUSIC[order[oi++]];mus.src='audio/music/'+t[0]+'.mp3';mus.dataset.title=t[1];mus.volume=st.mOn?st.music:0;if(st.mOn)mus.play().catch(()=>{});const n=document.getElementById('nowPlaying');if(n)n.textContent='🎵 '+t[1]+' — Kevin MacLeod';}
- function unlock(){if(unlocked)return;unlocked=true;mus=new Audio();mus.preload='auto';mus.addEventListener('ended',nextTrack);nextTrack();}
+ // SFX play through Web Audio (decoded recorded clips): works on iOS once unlocked by the first touch, low latency, no element pools.
+ // Falls back to <audio> elements where Web Audio is missing.
+ const AC=window.AudioContext||window.webkitAudioContext;let ctx=null,gain=null;const bufs={},loading={};
+ function load(name){if(!ctx||bufs[name]||loading[name])return loading[name];loading[name]=fetch('audio/sfx/'+name+'.mp3').then(r=>r.arrayBuffer()).then(ab=>new Promise((res,rej)=>ctx.decodeAudioData(ab,res,rej))).then(b=>{bufs[name]=b;return b;}).catch(()=>{delete loading[name];});return loading[name];}
+ function unlock(){if(!ctx&&AC){try{ctx=new AC();gain=ctx.createGain();gain.connect(ctx.destination);
+   // iOS: playing a silent buffer inside the gesture unlocks the context
+   const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(gain);sb.start(0);Object.keys(SFXV).forEach(load);}catch(e){ctx=null;}}
+  if(ctx&&ctx.state!=='running'&&!document.hidden)ctx.resume().catch(()=>{});
+  if(unlocked)return;unlocked=true;mus=new Audio();mus.preload='auto';mus.setAttribute('playsinline','');mus.addEventListener('ended',nextTrack);nextTrack();}
  function play(name,{vol=1,rate=1,minGap=.04}={}){played[name]=(played[name]||0)+1;if(!unlocked||!st.sOn||st.sfx<=0)return;const now=performance.now()/1000;if(now-(lastT[name]||0)<minGap)return;lastT[name]=now;
+  const v=Math.min(1,st.sfx*(SFXV[name]||.7)*vol);
+  if(ctx){const b=bufs[name];if(!b){load(name);return;}const src=ctx.createBufferSource();src.buffer=b;src.playbackRate.value=rate;const g=ctx.createGain();g.gain.value=v;src.connect(g);g.connect(gain);src.start();return;}
   const pool=pools[name]=pools[name]||[];let a=pool.find(x=>x.paused||x.ended);if(!a){if(pool.length>=6)a=pool[0];else{a=new Audio('audio/sfx/'+name+'.mp3');a.preload='auto';pool.push(a);}}
-  try{a.currentTime=0;}catch(e){}a.volume=Math.min(1,st.sfx*(SFXV[name]||.7)*vol);a.playbackRate=rate;a.preservesPitch=false;a.play().catch(()=>{});}
- function set(k,v){st[k]=v;save();if(mus){mus.volume=st.mOn?st.music:0;if(st.mOn&&mus.paused&&unlocked)mus.play().catch(()=>{});if(!st.mOn)mus.pause();}}
- ['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,unlock,{capture:true}));
+  try{a.currentTime=0;}catch(e){}a.volume=v;a.playbackRate=rate;a.preservesPitch=false;a.play().catch(()=>{});}
+ function set(k,v){st[k]=v;save();if(mus){mus.volume=st.mOn?st.music:0;if(st.mOn&&mus.paused&&unlocked&&!document.hidden)mus.play().catch(()=>{});if(!st.mOn)mus.pause();}}
+ ['pointerdown','keydown','touchstart','touchend','click'].forEach(ev=>window.addEventListener(ev,unlock,{capture:true}));
+ // pause everything while the tab/app is in the background; resume when it comes back
+ function vis(){if(document.hidden){if(mus)mus.pause();if(ctx&&ctx.state==='running')ctx.suspend().catch(()=>{});}
+  else{if(mus&&st.mOn&&unlocked)mus.play().catch(()=>{});if(ctx&&ctx.state!=='running')ctx.resume().catch(()=>{});}}
+ document.addEventListener('visibilitychange',vis);window.addEventListener('pagehide',()=>{if(mus)mus.pause();});window.addEventListener('pageshow',vis);
  // UI click sound on any button
  document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b&&!b.disabled&&!b.dataset.nosfx)play('click');},true);
- return{play,set,st,unlock,skip:()=>{if(mus)nextTrack();},get unlocked(){return unlocked},played,get track(){return mus?mus.dataset.title:null},get music(){return mus}};})();
+ return{play,set,st,unlock,get ctx(){return ctx},bufs,skip:()=>{if(mus)nextTrack();},get unlocked(){return unlocked},played,get track(){return mus?mus.dataset.title:null},get music(){return mus}};})();
 window.AU=AU;
 const sfx=(n,o)=>{if(typeof DRY!=='undefined'&&DRY)return;AU.play(n,o);};
 function soundMenu(){const s=AU.st;const row=(k,on,lbl)=>`<div class="sndrow"><b>${lbl}</b><button class="sm" data-nosfx="1" onclick="sndToggle('${on}')">${s[on]?'🔊 On':'🔇 Off'}</button><input type="range" min="0" max="100" value="${Math.round(s[k]*100)}" oninput="AU.set('${k}',this.value/100)" onchange="sfx('coin')"><span>${Math.round(s[k]*100)}%</span></div>`;
- overlay(`<h1>🔊 Sound</h1>${row('music','mOn','🎵 Music')}${row('sfx','sOn','💥 Sound effects')}<p id="nowPlaying" style="font-size:16px">${AU.track?'🎵 '+AU.track+' — Kevin MacLeod':'🎵 Music starts after your first click'}</p><button class="sm" onclick="AU.skip()">⏭️ Next song</button>
+ overlay(`<h1>🔊 Sound &amp; ⚙️ Settings</h1>${row('music','mOn','🎵 Music')}${row('sfx','sOn','💥 Sound effects')}<p id="nowPlaying" style="font-size:16px">${AU.track?'🎵 '+AU.track+' — Kevin MacLeod':'🎵 Music starts after your first click'}</p><button class="sm" onclick="AU.skip()">⏭️ Next song</button>
+ <div class="sndrow gfxrow"><b>🖥️ Graphics</b>${['auto','low','high'].map(v=>`<button class="sm${gfxPref===v?' on':''}" data-gfx="${v}" onclick="gfxSet('${v}')">${{auto:'🤖 Auto',low:'🔋 Low',high:'✨ High'}[v]}</button>`).join(' ')}</div>
+ <p style="font-size:14px;margin:2px">${gfxPref==='auto'?`Auto picked <b>${MOBILE?'Low':'High'}</b> for this ${MOBILE?'phone/tablet':'computer'}. `:''}Trees &amp; ground detail update on the next hole. Graphics never change how the ball flies.</p>
  <button class="big" onclick="showCredits()">📜 Credits</button><button class="big" onclick="sndBack()">Done ✅</button>`);document.querySelectorAll('.sndrow input').forEach(i=>i.addEventListener('input',()=>i.nextElementSibling.textContent=i.value+'%'));}
+window.gfxSet=v=>{setGfx(v);soundMenu();};
 window.sndToggle=k=>{AU.set(k,!AU.st[k]);soundMenu();};
 window.sndBack=()=>{closeOv();if(G.sndFromMenu){G.sndFromMenu=false;menu();}};
 window.openSound=fromMenu=>{G.sndFromMenu=!!fromMenu;soundMenu();};
@@ -187,9 +293,23 @@ window.__golf=G;
 
 // ===== renderer / scene =====
 const canvas=$('c');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+// ===== device + graphics quality (visual only: physics never reads any of this) =====
+const QS=new URLSearchParams(location.search);
+const TOUCH=QS.get('touch')==='1'||(QS.get('touch')!=='0'&&(matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0&&!matchMedia('(pointer:fine)').matches));
+const SMALL=()=>Math.min(innerWidth,innerHeight)<=540||Math.max(innerWidth,innerHeight)<=950&&TOUCH;
+const MOBILE=TOUCH&&(Math.min(screen.width,screen.height)<=900||SMALL());
+document.documentElement.classList.toggle('touch',TOUCH);
+const GFX_KEY='tinyTeeHeroes.gfx';let gfxPref='auto';try{gfxPref=localStorage.getItem(GFX_KEY)||'auto';}catch(e){}if(QS.get('gfx'))gfxPref=QS.get('gfx');
+const gfxLow=()=>gfxPref==='low'||(gfxPref==='auto'&&MOBILE);
+const LOW0=gfxLow();// settings the renderer is created with (antialias / drawing buffer) need a reload to change
+const renderer=new THREE.WebGLRenderer({canvas,antialias:!LOW0,preserveDrawingBuffer:!LOW0||QS.has('pdb'),powerPreference:'high-performance'});
+renderer.shadowMap.enabled=true;
+function applyGfx(){const low=gfxLow();G.gfxLow=low;renderer.setPixelRatio(Math.min(devicePixelRatio,low?1.5:2));
+ const st=low?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;if(renderer.shadowMap.type!==st){renderer.shadowMap.type=st;scene&&scene.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>m.needsUpdate=true);});}
+ if(typeof sun!=='undefined'){const ms=low?1024:2048;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}}
+ if(typeof clouds!=='undefined')clouds.children.forEach((c,k)=>c.visible=!low||k%2===0);
+ if(typeof resize==='function')resize();}
+window.setGfx=v=>{gfxPref=v;try{localStorage.setItem(GFX_KEY,v);}catch(e){}applyGfx();};
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 const scene=new THREE.Scene();
@@ -223,6 +343,7 @@ const hemi=new THREE.HemisphereLight(0xbfdcff,0x4a6a2a,.75);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff2dd,2.6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
 Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:400});sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;
 scene.add(sun);scene.add(sun.target);
+applyGfx();
 // distant hills rings
 function ring(R,base,amp,freq,col,seed){const N=200,pos=[],idx=[];const r=rng(seed);const ph=r()*10;
  for(let i=0;i<=N;i++){const a=i/N*Math.PI*2;const h=base+amp*(fbm(Math.cos(a)*freq+ph,Math.sin(a)*freq+ph));
@@ -353,7 +474,7 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
  let hmin=1e9,hmax=-1e9;for(const v of HG){hmin=Math.min(hmin,v);hmax=Math.max(hmax,v);}
  const shadeAt=(x,z)=>{const fx=(x+HX)/SG+.5,fz=(z-zmin)/SG+.5;const k=clamp(Math.floor(fx),1,gnx-2),j=clamp(Math.floor(fz),1,gnz-2);const gx_=(HG[j*gnx+k+1]-HG[j*gnx+k-1])/(2*SG),gz_=(HG[(j+1)*gnx+k]-HG[(j-1)*gnx+k])/(2*SG);
   const hh=HG[j*gnx+k];return clamp(1+(-gx_*.55+gz_*.75)*.9,.62,1.3)*(.93+.14*(hh-hmin)/Math.max(1,hmax-hmin));};
- const TW=1024,TH=Math.round(TW*Ld/Wd);const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const cx=cv.getContext('2d');const im=cx.createImageData(TW,TH);const D=im.data;
+ const TW=G.gfxLow?640:1024,TH=Math.round(TW*Ld/Wd);const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const cx=cv.getContext('2d');const im=cx.createImageData(TW,TH);const D=im.data;
  const ang=Math.atan2(h.path[3][0]-h.path[0][0],-(h.path[3][1]));
  for(let j=0;j<TH;j++){const z=zmin+(j+.5)/TH*Ld;for(let k=0;k<TW;k++){const x=-HX+(k+.5)/TW*Wd;
   const s=surfInfo(h,x,z);const n=fbm(x*.08,z*.08),n2=hash2(k,j);let r,g,b;
@@ -373,20 +494,20 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
  cx.putImageData(im,0,0);h.canvas=cv;
  const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
  // terrain mesh
- const MW=700,MZ0=zmax+250,MZ1=zmin-300,ML=MZ0-MZ1,seg=2.5;const sx=Math.round(MW/seg),sz=Math.round(ML/seg);
+ const MW=700,MZ0=zmax+250,MZ1=zmin-300,ML=MZ0-MZ1,seg=G.gfxLow?3.5:2.5;/* mesh resolution is visual only (physics uses hgt()) */const sx=Math.round(MW/seg),sz=Math.round(ML/seg);
  const geo=new THREE.PlaneGeometry(MW,ML,sx,sz);geo.rotateX(-Math.PI/2);geo.translate(0,0,(MZ0+MZ1)/2);
  const p=geo.attributes.position,uv=geo.attributes.uv;
  for(let k=0;k<p.count;k++){const x=p.getX(k),z=p.getZ(k);p.setY(k,hgt(x,z));uv.setXY(k,(x+HX)/Wd,1-(z-zmin)/Ld);}
  geo.computeVertexNormals();
  const bt=bumpTex.clone();bt.needsUpdate=true;bt.repeat.set(Wd/3,Ld/3);
- groundMat=new THREE.MeshStandardMaterial({map:tex,bumpMap:bt,bumpScale:1.2,roughness:.95,metalness:0});
+ groundMat=G.gfxLow?new THREE.MeshLambertMaterial({map:tex}):new THREE.MeshStandardMaterial({map:tex,bumpMap:bt,bumpScale:1.2,roughness:.95,metalness:0});
  const ground=new THREE.Mesh(geo,groundMat);ground.receiveShadow=true;holeGroup.add(ground);
  const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=Math.min(21.5,hmin-4);holeGroup.add(outer);
  // water
  for(const w of h.water){const sh=new THREE.Shape();for(let k=0;k<=160;k++){const [ex,ez]=waterEdge(w,k/160*Math.PI*2,1.012);const px=ex-w.x,pz=-(ez-w.z);k?sh.lineTo(px,pz):sh.moveTo(px,pz);}
   const wg=new THREE.ShapeGeometry(sh,4);wg.rotateX(-Math.PI/2);
   const wn=wNorm.clone();wn.needsUpdate=true;wn.repeat.set(1/6,1/6);
-  const wm=new THREE.MeshPhysicalMaterial({color:0x1d4f66,roughness:.06,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4,clearcoat:1});
+  const wm=G.gfxLow?new THREE.MeshStandardMaterial({color:0x1d4f66,roughness:.12,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4}):new THREE.MeshPhysicalMaterial({color:0x1d4f66,roughness:.06,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4,clearcoat:1});
   const m=new THREE.Mesh(wg,wm);m.position.set(w.x,w.wl,w.z);m.receiveShadow=true;m.userData.water=wn;holeGroup.add(m);}
  // trees
  buildTrees(h);
@@ -415,9 +536,9 @@ function buildTrees(h){const r=rng(300+h.i);const trees=[];
  function ok2(x,z){return Math.hypot(x,z)>25&&Math.hypot(x-h.gx,z-h.gz)>h.gr+20;}
  const n=trees.length;
  const pineProf=[];const lv=4;pineProf.push(new THREE.Vector2(0,0));for(let k=0;k<lv;k++){const y0=k/lv,y1=(k+1)/lv;pineProf.push(new THREE.Vector2((1-y0)*.9+.1,y0+.02));pineProf.push(new THREE.Vector2((1-y1)*.5,y1));}pineProf.push(new THREE.Vector2(0,1));
- const pineG=new THREE.LatheGeometry(pineProf,9);
- const blobG=new THREE.IcosahedronGeometry(1,2);{const pp=blobG.attributes.position;for(let k=0;k<pp.count;k++){const v=new THREE.Vector3().fromBufferAttribute(pp,k);const s=1+.22*(vnoise(v.x*2+5,v.y*2+v.z*2)-.5)*2;v.multiplyScalar(s);pp.setXYZ(k,v.x,v.y,v.z);}blobG.computeVertexNormals();}
- const trunkG=new THREE.CylinderGeometry(.18,.3,1,6);trunkG.translate(0,.5,0);
+ const LO=G.gfxLow;const pineG=new THREE.LatheGeometry(pineProf,LO?6:9);
+ const blobG=new THREE.IcosahedronGeometry(1,LO?1:2);{const pp=blobG.attributes.position;for(let k=0;k<pp.count;k++){const v=new THREE.Vector3().fromBufferAttribute(pp,k);const s=1+.22*(vnoise(v.x*2+5,v.y*2+v.z*2)-.5)*2;v.multiplyScalar(s);pp.setXYZ(k,v.x,v.y,v.z);}blobG.computeVertexNormals();}
+ const trunkG=new THREE.CylinderGeometry(.18,.3,1,LO?4:6);trunkG.translate(0,.5,0);
  const fm=new THREE.MeshStandardMaterial({roughness:.9});fm.onBeforeCompile=sh=>{sh.uniforms.uTime=WIND_U.uTime;sh.uniforms.uWind=WIND_U.uWind;
  sh.vertexShader='uniform float uTime;uniform vec2 uWind;\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 mvPosition=vec4(transformed,1.0);
 #ifdef USE_INSTANCING
@@ -431,8 +552,8 @@ mvPosition=modelViewMatrix*mvPosition;gl_Position=projectionMatrix*mvPosition;`)
  trees.forEach(([x,z],k)=>{const y=hgt(x,z)-.2;const tall=7+r()*9;const pine=r()<.45;h.trees.push({x,z,h:tall,r:pine?tall*.18:tall*.28});
   M.compose(P.set(x,y,z),Q.setFromAxisAngle(new THREE.Vector3(0,1,0),r()*6),S.set(1,tall*(pine?.35:.45),1));trunks.setMatrixAt(k,M);
   if(pine){M.compose(P.set(x,y+tall*.2,z),Q,S.set(tall*.24,tall*.85,tall*.24));pines.setMatrixAt(np,M);pines.setColorAt(np,C.setHSL(.3+r()*.05,.45,.15+r()*.08));np++;}
-  else{for(let b=0;b<3;b++){const s=tall*(.22+r()*.1);M.compose(P.set(x+(r()-.5)*tall*.25,y+tall*(.55+b*.12),z+(r()-.5)*tall*.25),Q,S.set(s,s*.85,s));blobs.setMatrixAt(nbl,M);blobs.setColorAt(nbl,C.setHSL(.22+r()*.08,.5,.2+r()*.1));nbl++;}}});
- pines.count=np;blobs.count=nbl;[pines,blobs,trunks].forEach(m=>{m.castShadow=true;m.receiveShadow=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;holeGroup.add(m);});}
+  else{for(let b=0;b<3;b++){const s=tall*(.22+r()*.1);M.compose(P.set(x+(r()-.5)*tall*.25,y+tall*(.55+b*.12),z+(r()-.5)*tall*.25),Q,LO?S.set(s*1.35,s*1.25,s*1.35):S.set(s,s*.85,s));C.setHSL(.22+r()*.08,.5,.2+r()*.1);if(LO&&b!==1)continue;blobs.setMatrixAt(nbl,M);blobs.setColorAt(nbl,C);nbl++;}}});
+ pines.count=np;blobs.count=nbl;[pines,blobs,trunks].forEach(m=>{m.castShadow=!LO;m.receiveShadow=!LO;if(m.instanceColor)m.instanceColor.needsUpdate=true;holeGroup.add(m);});}
 
 // ===== balls, club, effects =====
 const ballG=new THREE.SphereGeometry(.13,20,14);
@@ -556,6 +677,12 @@ function drawMini(){const cv=$('mini'),x=cv.getContext('2d');if(!H||!H.canvas)re
  const p=P();if(p&&G.landPt){const[lx,lz]=M(G.landPt.x,G.landPt.z);x.strokeStyle='#ff0';x.lineWidth=1.8;x.setLineDash([4,3]);x.beginPath();(G.landPath||[]).forEach((q,k)=>{const[u,w]=M(q.x,q.z);k?x.lineTo(u,w):x.moveTo(u,w);});x.stroke();if(G.restPt){const[u,w]=M(G.restPt.x,G.restPt.z);x.fillStyle='#fff';x.beginPath();x.arc(u,w,2.5,0,7);x.fill();}x.setLineDash([]);x.lineWidth=2.5;x.beginPath();x.arc(lx,lz,4.5,0,7);x.stroke();x.lineWidth=1;}}
 
 // ===== input =====
+// phones: no page scroll / pinch-zoom / pull-to-refresh / long-press menus during play. Menus & the shop still scroll inside themselves.
+if(TOUCH){const scrollable=el=>{for(let e=el;e&&e!==document.body;e=e.parentElement){if(e.matches&&e.matches('input,textarea,select,.card,#joinList,.scrolly')){if(e.scrollHeight>e.clientHeight+1||e.scrollWidth>e.clientWidth+1||e.matches('input,textarea,select'))return true;}}return false;};
+ document.addEventListener('touchmove',e=>{if(e.touches.length>1||!scrollable(e.target))e.preventDefault();},{passive:false});
+ ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+ addEventListener('contextmenu',e=>{if(!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault();});
+ addEventListener('selectstart',e=>{if(!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault();});}
 const keys={};let power=0,pdir=1,charging=false;
 addEventListener('keydown',e=>{keys[e.key]=true;if(G.ovOpen)return;if(e.key===' '&&!G.arena)e.preventDefault();// Space no longer swings: golf shots are drag-gesture only
  if(e.key>='1'&&e.key<='5'&&myTurn()&&G.mode==='aim'){P().club=+e.key-1;updUI();}});
@@ -566,15 +693,18 @@ $('homeBtn').onclick=()=>{if(G.ovOpen||G.arena)return;overlay(`<h1>🏠 Go to th
 // gesture swing
 const gc=$('gest'),gx=gc.getContext('2d');function sizeG(){gc.width=innerWidth;gc.height=innerHeight;}addEventListener('resize',sizeG);sizeG();
 let gs=null;G.backAng=0;
-canvas.addEventListener('pointerdown',e=>{if(G.mode!=='aim'||!myTurn()||G.ovOpen||(e.pointerType==='mouse'&&e.button!==0))return;gs={x0:e.clientX,y0:e.clientY,maxY:e.clientY,maxX:e.clientX,phase:'back',pts:[[e.clientX,e.clientY,performance.now()]]};G.mode='gesture';});
-addEventListener('pointermove',e=>{if(!gs)return;const now=performance.now();gs.pts.push([e.clientX,e.clientY,now]);
+// full backswing = GS px of drag: 200 px on desktop, shorter on small phone screens (same 0-100% power range)
+const GS=()=>TOUCH?clamp(innerHeight*.3,110,200):200;
+canvas.addEventListener('pointerdown',e=>{if(gs||G.mode!=='aim'||!myTurn()||G.ovOpen||(e.pointerType==='mouse'&&e.button!==0))return;if(e.pointerType!=='mouse'){e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(_){}}gs={id:e.pointerId,x0:e.clientX,y0:e.clientY,maxY:e.clientY,maxX:e.clientX,phase:'back',pts:[[e.clientX,e.clientY,performance.now()]]};G.mode='gesture';});
+addEventListener('pointermove',e=>{if(!gs||e.pointerId!==gs.id)return;const now=performance.now();gs.pts.push([e.clientX,e.clientY,now]);
  if(gs.phase==='back'){if(e.clientY>gs.maxY){gs.maxY=e.clientY;gs.maxX=e.clientX;gs.tTop=now;}if(gs.maxY-gs.y0>25&&e.clientY<gs.maxY-25){gs.phase='fwd';gs.tf=now;}}
- G.backAng=-clamp((gs.maxY-gs.y0)/200,0,1)*2.3;G.livePow=clamp((gs.maxY-gs.y0)/200,.05,MAXPOW);if(gs.phase==='fwd'&&e.clientY<gs.y0-40)finishGesture(e);});
-addEventListener('pointerup',e=>{if(gs)finishGesture(e);});
+ G.backAng=-clamp((gs.maxY-gs.y0)/GS(),0,1)*2.3;G.livePow=clamp((gs.maxY-gs.y0)/GS(),.05,MAXPOW);if(gs.phase==='fwd'&&e.clientY<gs.y0-40)finishGesture(e);});
+addEventListener('pointerup',e=>{if(gs&&e.pointerId===gs.id)finishGesture(e);});
+addEventListener('pointercancel',e=>{if(gs&&e.pointerId===gs.id){gs=null;gx.clearRect(0,0,gc.width,gc.height);G.mode='aim';G.backAng=0;}});
 function finishGesture(e){const g=gs;gs=null;gx.clearRect(0,0,gc.width,gc.height);const back=g.maxY-g.y0;const last=g.pts[g.pts.length-1];
  if(g.phase!=='fwd'||back<25){G.mode='aim';G.backAng=0;if(back<25&&Math.abs(last[0]-g.x0)>30){/*horizontal drag = aim*/}say('Drag DOWN, then flick UP! ⬇️⬆️',1500);return;}
- const fd=Math.max(1,g.maxY-last[1]),ft=Math.max(16,last[2]-(g.tTop||g.tf));const speed=fd/ft;
- const p=P();const ef=eff(p.prof,p.club);const pw=clamp(.45*clamp(back/200,0,MAXPOW)+.55*clamp(speed/1.9,0,1.15),.08,MAXPOW);
+ const sc=200/GS();const fd=Math.max(1,g.maxY-last[1]),ft=Math.max(16,last[2]-(g.tTop||g.tf));const speed=fd/ft*sc;
+ const p=P();const ef=eff(p.prof,p.club);const pw=clamp(.45*clamp(back/GS(),0,MAXPOW)+.55*clamp(speed/1.9,0,1.15),.08,MAXPOW);
  const crooked=clamp((last[0]-g.maxX)/fd,-1,1);const dev=crooked*.16*(1.25-ef.acc)+(Math.random()-.5)*(1-ef.acc)*.05+overDev(pw,ef);
  // launch consistency: random distance wobble shrinks with accuracy level (putter has its own small wobble)
  const pv=(Math.random()-.5)*2*(1-ef.acc)*(p.club===4?.3:.06);
@@ -582,7 +712,7 @@ function finishGesture(e){const g=gs;gs=null;gx.clearRect(0,0,gc.width,gc.height
  say(`${pw>1.005?'💥 Overswing! ':''}${Math.round(pw*100)}% ${Math.abs(crooked)<.15?'· Straight! 🎯':crooked>0?'· pushed right ➡️':'· pulled left ⬅️'}`,1200);}
 function sendShot(shot){performShot(shot);if(G.online){net({t:'shot',shot});G.pendSync=true;}}
 function performShot(s){G.swing={t:0,from:G.backAng||-2,shot:s,fired:false};G.mode='swinging';G.backAng=0;}
-function drawGesture(){gx.clearRect(0,0,gc.width,gc.height);if(!gs)return;gx.lineWidth=10;gx.lineCap='round';gx.strokeStyle='rgba(255,255,255,.8)';gx.beginPath();gs.pts.forEach((q,k)=>k?gx.lineTo(q[0],q[1]):gx.moveTo(q[0],q[1]));gx.stroke();
+function drawGesture(){if(!gs){if(gc._drawn){gc._drawn=false;gx.clearRect(0,0,gc.width,gc.height);gc.style.visibility='hidden';}return;}gc._drawn=true;gc.style.visibility='';gx.clearRect(0,0,gc.width,gc.height);gx.lineWidth=10;gx.lineCap='round';gx.strokeStyle='rgba(255,255,255,.8)';gx.beginPath();gs.pts.forEach((q,k)=>k?gx.lineTo(q[0],q[1]):gx.moveTo(q[0],q[1]));gx.stroke();
  gx.fillStyle='#ffe14d';gx.font='bold 26px Trebuchet MS';gx.fillText(gs.phase==='back'?'⬇️ backswing…':'⬆️ FLICK!',gs.x0+20,gs.y0);}
 // spin selector
 const spc=$('spinBall'),spx=spc.getContext('2d');
@@ -795,9 +925,10 @@ function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpp
  if(LOOP){G.__onLoopConn=c=>setupPeer(c);G.online.code=code;G.online.loop=loopConn(code,true);
   overlay(`<h1>🌐 Online Room ${code}</h1><p id="pst">Loopback test mode — waiting…</p>`);return;}
  const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code;
- overlay(`<h1>🌐 Online Room ${code}</h1><p>Send this link to your friend:</p><p><input class="nm" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p id="pst">Connecting to matchmaker…</p>`);
+ overlay(`<h1>🌐 Online Room ${code}</h1><p>Send this link to your friend:</p><p><input class="nm" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p>${navigator.share?`<button class="big" onclick="navigator.share({title:'Tiny Tee Heroes',text:'Play golf with me! ⛳',url:'${link}'}).catch(()=>{})">📤 Share link</button>`:''}<button class="big" onclick="copyLink('${link}',this)">📋 Copy link</button></p><p id="pst">Connecting to matchmaker…</p>`);
  peer.on('open',()=>{const e=$('pst');if(e)e.textContent='Waiting for your friend to join… ⏳';});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Online error: '+err.type+'. Try local mode.';});
  peer.on('connection',c=>{setupPeer(c);});}
+window.copyLink=(l,b)=>{const ok=()=>{b.textContent='✅ Copied!';};(navigator.clipboard?navigator.clipboard.writeText(l).then(ok):Promise.reject()).catch(()=>{const i=document.querySelector('#ovc input.nm');if(i){i.select();try{document.execCommand('copy');ok();}catch(e){}}});};
 function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players=[makePlayer('Host',0xffffff,true),makePlayer(name,0xff5ab4)];
  if(LOOP){overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Loopback test mode</p>`);setupPeer(loopConn(code,false));return;}
  const peer=new Peer();G.online.peer=peer;overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Connecting…</p>`);
@@ -819,7 +950,7 @@ window.startArena=(ci)=>{closeOv();gs=null;gx.clearRect(0,0,gc.width,gc.height);
  const dir=new THREE.Vector3(p.pos.x-B.x,0,p.pos.z-B.z);if(dir.length()<1)dir.set(0,0,1);dir.normalize();
  const pp=c.clone().addScaledVector(dir,8);
  G.arena={ui:{},face:0,p,ci,e:eff(p.prof,ci),c,pos:pp,php:100,phpMax:100,bpos:c.clone(),cd:0,atk:0,dodge:0,dodgeCd:0,inv:0,block:false,state:'idle',st:1.5,tele:null,proj:[],burn:0,slow:0,hurt:0,mdir:new THREE.Vector3(),clock:0,face:0};
- G.mode='arena';$('arenaUI').style.display='block';$('clubs').style.display='none';$('power').style.display='none';$('spinBox').style.display='none';$('aimL').style.display='none';$('aimR').style.display='none';$('windp').style.display='none';$('carry').style.display='none';
+ G.mode='arena';$('arenaUI').style.display='block';document.documentElement.classList.add('inArena');if(G.joyHome){G.joyKnob(0,0);G.joyHome();}$('clubs').style.display='none';$('power').style.display='none';$('spinBox').style.display='none';$('aimL').style.display='none';$('aimR').style.display='none';$('windp').style.display='none';$('carry').style.display='none';
  $('pbar').style.display='block';$('hint').style.display='none';updArenaBars();updClubFx();say('⚔️ FIGHT!',1200);sfx('roar');
  Object.assign(G.arena,{boost:0,cheerHeal:0,cheerCd:0,cheerN:0,cheerName:'',hotCd:0,sendT:0});G.arena.aura=makeAura();arenaGroup.add(G.arena.aura);
  const other=!G.online&&G.players.length===2?G.players.find(q=>q!==p):null;$('aCheer').style.display=other?'block':'none';if(other)$('aCheer').innerHTML=`📣 ${esc(other.name)}<br>cheers (C)`;
@@ -851,9 +982,11 @@ function arenaSim(dt){const A=G.arena,B=G.boss;A.clock+=dt;
  const cy=A.camYaw!=null?A.camYaw:Math.atan2(-toB.x,-toB.z);const cf=new THREE.Vector3(-Math.sin(cy),0,-Math.cos(cy)),cr=new THREE.Vector3(-cf.z,0,cf.x);
  A.block=!!(kd('l','L','KeyL')||A.uiBlock||A.mouseBlock);const mv=new THREE.Vector3();
  if(kd('ArrowUp','KeyW')||A.ui.up)mv.add(cf);if(kd('ArrowDown','KeyS')||A.ui.down)mv.sub(cf);if(kd('ArrowLeft','KeyA')||A.ui.left)mv.sub(cr);if(kd('ArrowRight','KeyD')||A.ui.right)mv.add(cr);
+ // touch: analog virtual joystick (screen up = away from camera)
+ let jm=1;const U=A.ui;if(!mv.lengthSq()&&U.jm>.18){mv.addScaledVector(cr,U.jx).addScaledVector(cf,-U.jy);jm=clamp(U.jm*1.2,.45,1);}
  A.mdir.copy(mv.lengthSq()?mv.normalize():mv);
  // smooth acceleration instead of instant start/stop
- if(!A.vel)A.vel=new THREE.Vector3();const tv=_v1.copy(A.mdir).multiplyScalar(A.block?0:6*(A.atk>0?.4:1));A.vel.lerp(tv,1-Math.pow(.0005,dt));
+ if(!A.vel)A.vel=new THREE.Vector3();const tv=_v1.copy(A.mdir).multiplyScalar(A.block?0:6*jm*(A.atk>0?.4:1));A.vel.lerp(tv,1-Math.pow(.0005,dt));
  if(A.dodge>0){A.dodge-=dt;A.pos.addScaledVector(A.ddir,14*dt);}else A.pos.addScaledVector(A.vel,dt);
  if(A.kb&&A.kb.lengthSq()>1e-4){A.pos.addScaledVector(A.kb,dt);A.kb.multiplyScalar(Math.pow(.002,dt));}
  A.cd-=dt;A.dodgeCd-=dt;A.inv-=dt;A.hurt-=dt;if(A.buf>0){A.buf-=dt;if(A.cd<=0&&A.dodge<=0)playerAttack();}
@@ -938,7 +1071,7 @@ function teleStart(A){let m;if(A.state==='stomp'){m=new THREE.Mesh(new THREE.Cir
 function teleEnd(A){if(A.tele)arenaGroup.remove(A.tele);A.tele=null;A.state='idle';A.st=1.2+Math.random()*1.3;}
 function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length){const o=arenaGroup.children[0];arenaGroup.remove(o);disposeTree(o);}G.arena=null;$('aCheer').style.display='none';$('specBan').style.display='none';
  if(bossMesh)bossMesh.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setRGB(0,0,0);});
- $('arenaUI').style.display='none';$('pbar').style.display='none';['clubs','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
+ $('arenaUI').style.display='none';$('pbar').style.display='none';document.documentElement.classList.remove('inArena');['clubs','power'].forEach(k=>$(k).style.display='');$('spinBox').style.display='';$('aimL').style.display='';$('aimR').style.display='';$('windp').style.display='';$('hint').style.display='';
  if(bossMesh&&G.boss){bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);}}
 function arenaEnd(win){const A=G.arena;if(!A)return;if(win){sfx('boss_defeat');setTimeout(()=>sfx('victory'),900);}else sfx('defeat');const p=A.p;arenaCleanup();if(!win)p.strokes++;
  if(G.online){net({t:'arenaEnd',hp:G.boss.hp,win,strokes:p.strokes,ci:A.ci});G.pendSync=true;}
@@ -959,8 +1092,16 @@ addEventListener('contextmenu',e=>{if(G.arena||e.target===canvas)e.preventDefaul
 addEventListener('beforeunload',e=>{if(G.arena){e.preventDefault();e.returnValue='';}});
 G.arenaUI={};
 for(const [id,key] of [['aU','up'],['aD','down'],['aLf','left'],['aRt','right']]){const b=$(id);b.onpointerdown=e=>{e.preventDefault();if(G.arena)G.arena.ui[key]=true;};b.onpointerup=b.onpointerleave=()=>{if(G.arena)G.arena.ui[key]=false;};}
+// floating virtual joystick (touch): put your left thumb down anywhere in the left zone and slide
+{const z=$('joyZone'),base=$('joyBase'),knob=$('joyKnob');let jid=null,cx=0,cy=0;const R=52;
+ const setK=(dx,dy)=>{const l=Math.hypot(dx,dy),k=l>R?R/l:1;dx*=k;dy*=k;knob.style.transform=`translate(${dx}px,${dy}px)`;if(G.arena){const u=G.arena.ui;u.jx=dx/R;u.jy=dy/R;u.jm=Math.min(1,l/R);}};
+ const home=()=>{const b=z.getBoundingClientRect();cx=b.left+Math.min(110,b.width*.45);cy=b.bottom-110;base.style.left=(cx-b.left)+'px';base.style.top=(cy-b.top)+'px';};
+ z.addEventListener('pointerdown',e=>{if(jid!==null||!G.arena)return;e.preventDefault();jid=e.pointerId;try{z.setPointerCapture(jid);}catch(_){}const b=z.getBoundingClientRect();cx=clamp(e.clientX,b.left+60,b.right-60);cy=clamp(e.clientY,b.top+60,b.bottom-60);base.style.left=(cx-b.left)+'px';base.style.top=(cy-b.top)+'px';base.classList.add('on');setK(e.clientX-cx,e.clientY-cy);});
+ z.addEventListener('pointermove',e=>{if(e.pointerId!==jid)return;e.preventDefault();setK(e.clientX-cx,e.clientY-cy);});
+ const up=e=>{if(e.pointerId!==jid)return;jid=null;base.classList.remove('on');setK(0,0);home();};z.addEventListener('pointerup',up);z.addEventListener('pointercancel',up);
+ G.joyHome=home;G.joyKnob=setK;}
 $('aAtk').onpointerdown=e=>{e.preventDefault();playerAttack();};$('aDodge').onpointerdown=e=>{e.preventDefault();playerDodge();};
-$('aBlock').onpointerdown=e=>{e.preventDefault();if(G.arena)G.arena.uiBlock=true;};$('aBlock').onpointerup=$('aBlock').onpointerleave=()=>{if(G.arena)G.arena.uiBlock=false;};
+$('aBlock').onpointerdown=e=>{e.preventDefault();try{$('aBlock').setPointerCapture(e.pointerId);}catch(_){}if(G.arena)G.arena.uiBlock=true;};$('aBlock').onpointerup=$('aBlock').onpointercancel=$('aBlock').onlostpointercapture=()=>{if(G.arena)G.arena.uiBlock=false;};
 G.arenaIntro=arenaIntro;G.playerAttack=playerAttack;
 
 // ===== online spectator (watch the other player's boss fight) + cheering for the boss =====
@@ -1231,7 +1372,7 @@ function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const
    else if(G.boss.hp>0){if(!bossMesh.visible){bossMesh.visible=true;bossMesh.scale.setScalar(1);}}else bossMesh.visible=false;}
   clouds.children.forEach((c,k)=>{c.position.x+=dt*(2+k%3);if(c.position.x>2200)c.position.x=-2200;});
   sky.position.copy(camera.position);clouds.position.set(camera.position.x,0,camera.position.z);farGroup.position.set(camera.position.x,0,camera.position.z);
-  {const T=PERF.t;T('wind',()=>updWind(dt,t));T('landing',updLanding);T('windHud',()=>drawWind(t));T('mini',drawMini);drawGesture();if(G.mode==='aim')drawSpin();}}
+  {const T=PERF.t;T('wind',()=>updWind(dt,t));T('landing',updLanding);G.hudT=(G.hudT||0)-dt;const hud=!G.gfxLow||G.hudT<=0;if(hud&&G.gfxLow)G.hudT=1/15;if(hud){T('windHud',()=>drawWind(t));T('mini',drawMini);}drawGesture();if(G.mode==='aim')drawSpin();}}
  flyTick(dt);
  if(G.camOverride){camera.position.copy(G.camOverride.pos);camera.lookAt(G.camOverride.look);}PERF.t('render',()=>renderer.render(scene,camera));PERF.frames++;}
 // title backdrop
@@ -1265,5 +1406,18 @@ window.flyStart=flyStart;G.flyStart=flyStart;
 ['pointerdown','keydown','wheel','touchstart'].forEach(ev=>addEventListener(ev,e=>{if(G.fly&&(ev==='keydown'||!(e.target&&e.target.closest&&e.target.closest('#flyBtn'))))G.fly=null;},true));
 G.ellF=ell;G.surf=(x,z)=>surfInfo(H,x,z);
 G.waterQ=waterQ;
+
+// ===== 📱 phone extras =====
+// gentle "turn sideways" hint once per session when playing in portrait (never blocks portrait)
+function rotHint(){if(!TOUCH||!MOBILE)return;const el=$('rotHint');const port=innerHeight>innerWidth;
+ if(port&&H&&G.players.length&&!G.ovOpen&&!sessionStorage.getItem('tth.rot')){sessionStorage.setItem('tth.rot','1');el.style.display='block';clearTimeout(rotHint.t);rotHint.t=setTimeout(()=>el.style.display='none',5000);}
+ else if(!port)el.style.display='none';}
+addEventListener('resize',rotHint);addEventListener('orientationchange',()=>setTimeout(()=>{resize();sizeG();rotHint();},250));
+{const _sh=startHole;G.startHole=startHole=function(i){_sh(i);setTimeout(rotHint,600);};}
+// installable app: service worker (network-first for the page so new deploys always load; cached audio for fast reloads)
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')&&!QS.has('nosw')){
+ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+G.TOUCH=TOUCH;G.MOBILE=MOBILE;G.gfx=()=>({pref:gfxPref,low:gfxLow(),dpr:renderer.getPixelRatio()});G.renderer=renderer;
+G.gsState=()=>gs&&{id:gs.id,x0:gs.x0,y0:gs.y0,phase:gs.phase,n:gs.pts.length};
 </script>
 </body></html>
