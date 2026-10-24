@@ -22,6 +22,7 @@ canvas#c{display:block;width:100%;height:100%}
 @keyframes bob{to{transform:translateY(-5px) rotate(10deg)}}@keyframes flick{to{box-shadow:0 0 26px 8px #ffb300}}
 @keyframes zap{0%,100%{box-shadow:0 0 6px 2px #ff0}50%{box-shadow:0 0 28px 10px #fff36b}}
 #power{position:absolute;left:18px;bottom:108px;width:34px;height:220px;border:4px solid #fff;border-radius:16px;background:rgba(0,0,0,.4);overflow:hidden}
+#pover{position:absolute;top:0;left:0;right:0;height:9.1%;background:repeating-linear-gradient(45deg,rgba(255,60,40,.55) 0 5px,rgba(255,60,40,.2) 5px 10px);z-index:1}#pover::after{content:"110%";position:absolute;left:38px;top:-4px;font-size:12px;font-weight:bold;color:#ff9a80;text-shadow:1px 1px 2px #000}html.touch #pover::after{left:26px;font-size:10px}
 #pfill{position:absolute;bottom:0;width:100%;height:0;background:linear-gradient(0deg,#3f3,#ff3,#f33)}
 #pmark{position:absolute;left:-4px;right:-4px;bottom:90.9%;height:4px;background:#fff;box-shadow:0 0 4px #000}#pmark::after{content:"100%";position:absolute;left:38px;top:-9px;font-size:13px;font-weight:bold;color:#fff;text-shadow:1px 1px 2px #000}
 #ppct{position:absolute;left:6px;bottom:338px;width:60px;text-align:center;font-size:20px;font-weight:bold;text-shadow:1px 1px 3px #000}
@@ -42,7 +43,7 @@ canvas#c{display:block;width:100%;height:100%}
 .card{background:linear-gradient(#2d8a4e,#175c33);border:5px solid #fff;border-radius:24px;padding:22px 30px;max-width:960px;max-height:92vh;overflow:auto;text-align:center;font-size:20px}
 .card h1{margin:4px 0 12px;font-size:40px;color:#ffe14d;text-shadow:3px 3px 0 #0006}
 button.big{font-size:24px;font-weight:bold;padding:12px 26px;margin:8px;border-radius:16px;border:4px solid #fff;background:#fb2;color:#520;cursor:pointer}
-#saveInfo{max-width:720px;margin:4px auto}.savecard{background:#fff2;border:3px solid #fff8;border-radius:14px;padding:8px 12px;margin:6px;font-size:18px}.savecard button.sm.on{background:#7d7}button.sm.fresh{background:#ff8a7a}
+#saveInfo{max-width:720px;margin:4px auto}.savecard{background:#fff2;border:3px solid #fff8;border-radius:14px;padding:8px 12px;margin:6px;font-size:18px}.savecard button.sm.on{background:#7d7}button.sm.fresh{background:#ff8a7a}button.big.fresh{background:#ff8a7a;font-size:18px}button.big.danger{background:#e5533d;color:#fff}
 button.sm{font-size:16px;font-weight:bold;padding:6px 12px;border-radius:10px;border:3px solid #fff;background:#fb2;color:#520;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
 table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,table.sc th{border:2px solid #fff6;padding:5px 9px}
@@ -150,7 +151,7 @@ html.touch #abtns{right:calc(14px + env(safe-area-inset-right))!important;bottom
 <div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><div id="rbtns"><button class="sm" id="shopBtn" style="margin-top:6px" aria-label="Shop">🛒<span class="lbl"> Shop</span></button> <button class="sm" id="cardBtn" aria-label="Scorecard">📋<span class="lbl"> Card</span></button> <button class="sm" id="flyBtn" title="Fly over this hole" aria-label="Flyover" onclick="flyStart()">🚁<span class="lbl"> Flyover</span></button> <button class="sm" id="sndBtn" title="Sound, graphics &amp; credits" aria-label="Settings" onclick="openSound()">🔊</button> <button class="sm" id="homeBtn" title="Start screen" aria-label="Start screen">🏠</button></div></div>
 <div id="bossbar"><div id="bossname"></div><div class="bar"><div id="bossfill"></div></div></div>
 <div id="clubs" class="panel"></div>
-<div id="power"><div id="pfill"></div><div id="pmark"></div></div><div id="ppct"></div>
+<div id="power"><div id="pover"></div><div id="pfill"></div><div id="pmark"></div></div><div id="ppct"></div>
 <div id="carry" class="panel"></div>
 
 <div id="msg"></div>
@@ -258,9 +259,9 @@ const ELEMS={
  lightning:{ic:'⚡',name:'Lightning',col:0xfff36b,desc:'Zappy straight shots (+accuracy).'},
  magnet:{ic:'🧲',name:'Magnet',col:0xcc66ff,desc:'Gently pulls the ball toward the cup & grabs nearby tokens.'},
  bubble:{ic:'🫧',name:'Bubble',col:0x77ddff,desc:'Bounces off water and floats out of sand.'}};
-const BOSSES={2:{name:'Gopher Gus',ic:'🐹',hp:90,col:0x9a6a3a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet'},
- 5:{name:'Frosty the Yeti',ic:'🦍',hp:135,col:0xeef6ff,weak:['fire','lightning'],resist:['ice','magnet'],perk:'ice'},
- 8:{name:'Kraken of the Lake',ic:'🐙',hp:180,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'}};
+const BOSSES={2:{name:'Gopher Gus',ic:'🐹',hp:180,col:0x9a6a3a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet'},
+ 5:{name:'Frosty the Yeti',ic:'🦍',hp:270,col:0xeef6ff,weak:['fire','lightning'],resist:['ice','magnet'],perk:'ice'},
+ 8:{name:'Kraken of the Lake',ic:'🐙',hp:360,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'}};
 const NHOLES=9, PARS=[3,4,4,4,5,4,3,5,5];
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
 const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_VALUE=2, N_COINS=5;
@@ -460,7 +461,7 @@ function waterLevels(h){for(const w of h.water){w.wl=null;let mn=1e9;for(let k=0
   if(h.island&&Math.hypot(x-h.gx,z-h.gz)<h.gr+3)continue;mn=Math.min(mn,hgtBase(x,z));}}w.wl=mn-.45;}
  // overlapping ponds form one lake: share the lowest level so there is no step in the surface
  for(let it=0;it<3;it++)for(const a of h.water)for(const b of h.water){if(a===b||a.wl==null||b.wl==null)continue;let ov=false;for(let k=0;k<48&&!ov;k++){const e=waterEdge(a,k/48*6.2832,.98);if(waterQ(b,e[0],e[1])<1)ov=true;}if(ov){const m=Math.min(a.wl,b.wl);a.wl=b.wl=m;}}}
-const WATER_Y=-.35;const CURVE=10.8,MPH=.44704,WINDK=.6,MAXPOW=1.1;
+const MINPOW=.05;const livePw=d=>clamp(Math.round(d*100)/100,MINPOW,MAXPOW);const WATER_Y=-.35;const CURVE=10.8,MPH=.44704,WINDK=.6,MAXPOW=1.1;
 const HX=150; // texture region half width
 let groundMat;
 // free GPU memory of an object tree (geometries, materials and their textures), skipping shared resources
@@ -612,15 +613,20 @@ function makePlayer(name,col,remote){return{name,prof:remote?newProfile(name):ge
 const P=()=>G.players[G.turn];
 
 // ===== hole start =====
-function startHole(i){G.hole=i;G.holeT0=clock.elapsedTime;buildHole(i);ball=null;trailPts=[];G.snapCam=true;
+// golf "honors": lowest score on the previous hole tees off first; a tie keeps the previous honor; hole 1 = player 1 / host
+function honorFor(i){let h=0;for(let k=0;k<i;k++){let best=null,bi=h;G.players.forEach((p,j)=>{const sc=p.scores&&p.scores[k];if(sc==null)return;if(best===null||sc<best){best=sc;bi=j;}else if(sc===best&&j===h)bi=h;});
+  // tie for lowest that includes the current honor holder -> keep it
+  if(best!==null){const low=G.players.map((p,j)=>j).filter(j=>G.players[j].scores&&G.players[j].scores[k]===best);h=low.includes(h)?h:low[0];}}return h;}
+G.honorFor=honorFor;
+function startHole(i,hon){G.hole=i;G.holeT0=clock.elapsedTime;buildHole(i);ball=null;G.swing=null;trailPts=[];G.snapCam=true;
  G.players.forEach((p,k)=>{p.pos.set(k?1.2:-1.2,0,0);p.pos.y=hgt(p.pos.x,0)+.13;p.last.copy(p.pos);p.strokes=0;p.done=false;p.aim=Math.atan2(H.path[1][0],-H.path[1][1]);p.ball.position.copy(p.pos);p.ball.visible=true;});
- G.turn=0;G.boss=null;if(bossMesh){scene.remove(bossMesh);disposeTree(bossMesh);bossMesh=null;}
+ G.honor=hon!=null&&G.players[hon]?hon:honorFor(i);G.turn=G.honor;G.boss=null;if(bossMesh){scene.remove(bossMesh);disposeTree(bossMesh);bossMesh=null;}
  const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
   // every player has their OWN boss health on this hole; G.boss.hp always means the current (turn) player's boss
   G.players.forEach(p=>p.bhp=b.hp);Object.defineProperty(G.boss,'hp',{get(){const q=P();return q?q.bhp:0;},set(v){const q=P();if(q)q.bhp=v;},enumerable:true});bossMesh=buildBoss(b);bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);bossMesh.rotation.y=0;scene.add(bossMesh);
   $('bossbar').style.display='block';$('bossname').textContent=b.ic+' '+b.name;updBoss();showBossIntro();}
  else $('bossbar').style.display='none';
- G.mode='aim';autoClub();updUI();say(`Hole ${i+1} · Par ${H.par}`);}
+ G.mode='aim';autoClub();updUI();say(`Hole ${i+1} · Par ${H.par}${G.players.length>1?`<br><span style="font-size:.5em">🏌️ ${esc(P().name)} has the honor</span>`:''}`,2600);}
 function updBoss(){const b=G.boss;if(!b)return;$('bossfill').style.width=(100*b.hp/b.hpMax)+'%';const two=G.players.length>1;$('bossname').textContent=b.ic+' '+b.name+(two?` — ${P().name}'s fight`:'')+(b.hp<=0?' ✅ beaten!':'');}
 function showBossIntro(){const b=G.boss;const el=k=>ELEMS[k].ic+' '+ELEMS[k].name;
  overlay(`<h1>${b.ic} BOSS: ${b.name}!</h1><p style="font-size:24px">The boss is guarding the cup! Hit shots near it (or right at it!) to do damage. Beat it, then sink the putt.${G.players.length>1?'<br><b>Each player fights their own boss</b> — your win only unlocks <i>your</i> cup, and only the winner gets the prize!':''}</p>
@@ -694,18 +700,23 @@ $('homeBtn').onclick=()=>{if(G.ovOpen||G.arena)return;overlay(`<h1>🏠 Go to th
 const gc=$('gest'),gx=gc.getContext('2d');function sizeG(){gc.width=innerWidth;gc.height=innerHeight;}addEventListener('resize',sizeG);sizeG();
 let gs=null;G.backAng=0;
 // full backswing = GS px of drag: 200 px on desktop, shorter on small phone screens (same 0-100% power range)
-const GS=()=>TOUCH?clamp(innerHeight*.3,110,200):200;
-canvas.addEventListener('pointerdown',e=>{if(gs||G.mode!=='aim'||!myTurn()||G.ovOpen||(e.pointerType==='mouse'&&e.button!==0))return;if(e.pointerType!=='mouse'){e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(_){}}gs={id:e.pointerId,x0:e.clientX,y0:e.clientY,maxY:e.clientY,maxX:e.clientX,phase:'back',pts:[[e.clientX,e.clientY,performance.now()]]};G.mode='gesture';});
-addEventListener('pointermove',e=>{if(!gs||e.pointerId!==gs.id)return;const now=performance.now();gs.pts.push([e.clientX,e.clientY,now]);
+// full (100%) backswing drag: ~330 px on desktop (clamped to the window), about half the screen height on phones
+const GS=()=>TOUCH?clamp(innerHeight*.5,140,330):clamp(innerHeight*.48,200,330);
+canvas.addEventListener('pointerdown',e=>{if(gs||G.mode!=='aim'||!myTurn()||G.ovOpen||(e.pointerType==='mouse'&&e.button!==0))return;if(e.pointerType!=='mouse')e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(_){}gs={id:e.pointerId,x0:e.clientX,y0:e.clientY,maxY:e.clientY,maxX:e.clientX,phase:'back',pts:[[e.clientX,e.clientY,performance.now()]]};G.mode='gesture';});
+addEventListener('pointermove',e=>{if(!gs||e.pointerId!==gs.id)return;if(e.pointerType==='mouse'&&e.buttons===0){finishGesture(e);return;}const now=performance.now();gs.pts.push([e.clientX,e.clientY,now]);
  if(gs.phase==='back'){if(e.clientY>gs.maxY){gs.maxY=e.clientY;gs.maxX=e.clientX;gs.tTop=now;}if(gs.maxY-gs.y0>25&&e.clientY<gs.maxY-25){gs.phase='fwd';gs.tf=now;}}
- G.backAng=-clamp((gs.maxY-gs.y0)/GS(),0,1)*2.3;G.livePow=clamp((gs.maxY-gs.y0)/GS(),.05,MAXPOW);if(gs.phase==='fwd'&&e.clientY<gs.y0-40)finishGesture(e);});
+ G.backAng=-clamp((gs.maxY-gs.y0)/GS(),0,1)*2.3;G.livePow=livePw((gs.maxY-gs.y0)/GS());showPct(G.livePow);if(gs.phase==='fwd'&&e.clientY<gs.y0-40)finishGesture(e);});
 addEventListener('pointerup',e=>{if(gs&&e.pointerId===gs.id)finishGesture(e);});
+const cancelGs=()=>{if(gs){gs=null;gx.clearRect(0,0,gc.width,gc.height);G.mode='aim';G.backAng=0;}};addEventListener('blur',cancelGs);canvas.addEventListener('lostpointercapture',e=>{if(gs&&e.pointerId===gs.id)finishGesture(e);});
 addEventListener('pointercancel',e=>{if(gs&&e.pointerId===gs.id){gs=null;gx.clearRect(0,0,gc.width,gc.height);G.mode='aim';G.backAng=0;}});
-function finishGesture(e){const g=gs;gs=null;gx.clearRect(0,0,gc.width,gc.height);const back=g.maxY-g.y0;const last=g.pts[g.pts.length-1];
+function finishGesture(e){const g=gs;if(!g)return;gs=null;gx.clearRect(0,0,gc.width,gc.height);const back=g.maxY-g.y0;const last=g.pts[g.pts.length-1];
  if(g.phase!=='fwd'||back<25){G.mode='aim';G.backAng=0;if(back<25&&Math.abs(last[0]-g.x0)>30){/*horizontal drag = aim*/}say('Drag DOWN, then flick UP! ⬇️⬆️',1500);return;}
- const sc=200/GS();const fd=Math.max(1,g.maxY-last[1]),ft=Math.max(16,last[2]-(g.tTop||g.tf));const speed=fd/ft*sc;
- const p=P();const ef=eff(p.prof,p.club);const pw=clamp(.45*clamp(back/GS(),0,MAXPOW)+.55*clamp(speed/1.9,0,1.15),.08,MAXPOW);
- const crooked=clamp((last[0]-g.maxX)/fd,-1,1);const dev=crooked*.16*(1.25-ef.acc)+(Math.random()-.5)*(1-ef.acc)*.05+overDev(pw,ef);
+ const fd=Math.max(1,g.maxY-last[1]);
+ // flick speed: low-passed over the up-swing samples (px/ms, normalised to the drag range) so jitter can't swing the power
+ let sp=0,prev=null;for(const q of g.pts){if(q[2]<(g.tTop||g.tf))continue;if(prev){const dt=Math.max(4,q[2]-prev[2]);const v=Math.max(0,(prev[1]-q[1])/dt)*330/GS();sp=sp?sp+(v-sp)*.35:v;}prev=q;}
+ const p=P();const ef=eff(p.prof,p.club);// power = backswing depth, rounded to the exact % the meter shows
+ const depth=clamp(back/GS(),0,MAXPOW);const pw=livePw(depth);G.lastSwing={depth,sp:+sp.toFixed(3),pw};
+ const crk0=clamp((last[0]-g.maxX)/fd,-1,1);const crooked=Math.sign(crk0)*Math.max(0,Math.abs(crk0)-.12)/.88;const dev=crooked*.16*(1.25-ef.acc)+(Math.random()-.5)*(1-ef.acc)*.05+overDev(pw,ef);
  // launch consistency: random distance wobble shrinks with accuracy level (putter has its own small wobble)
  const pv=(Math.random()-.5)*2*(1-ef.acc)*(p.club===4?.3:.06);
  sendShot({aim:p.aim,power:pw,club:p.club,dev,pv,e:ef,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});
@@ -740,7 +751,7 @@ addEventListener('keyup',e=>{if(e.key==='ArrowLeft')aimRelease(-1);if(e.key==='A
 function startCharge(){if(G.mode!=='aim'||!myTurn()||G.ovOpen)return;charging=true;power=0;pdir=1;G.mode='power';}
 function release(){if(!charging)return;charging=false;const p=P();const e=eff(p.prof,p.club);
  const dev=(Math.random()-.5)*2*(1-e.acc)*.14+overDev(power,e);if(power>1.005)say(`💥 Overswing! ${Math.round(power*100)}%`,1100);
- G.backAng=-Math.min(1,power)*2.3;sendShot({aim:p.aim,power:clamp(power,.08,MAXPOW),club:p.club,dev,e,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});}
+ G.backAng=-Math.min(1,power)*2.3;sendShot({aim:p.aim,power:livePw(power),club:p.club,dev,e,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});}
 function overDev(pw,e){return pw>1?(Math.random()<.5?-1:1)*(.3+Math.random()*.7)*((pw-1)/(MAXPOW-1))*.09*(1.35-e.acc):0;}
 
 // ===== physics =====
@@ -856,7 +867,7 @@ function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' 
   const last=G.hole>=NHOLES-1;const canNext=!G.online||G.online.host;
   t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
-window.nextHole=(h)=>{const n=h===0?0:G.hole+1;if(n===0)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n});};
+window.nextHole=(h)=>{const n=h===0?0:G.hole+1;if(n===0)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n,hon:G.honor});};
 
 // ===== shop =====
 let shopP=0,shopC=0;
@@ -892,8 +903,8 @@ function net(m){if(G.online&&G.online.conn&&G.online.conn.open){m.st=Math.round(
 const NETQ_T={shot:1,hole:1,arenaStart:1,arenaEnd:1,sync:1};G.netQ=[];G.netFixes=0;
 function netBusy(){return !!(ball||G.swing||G.mode==='flight'||G.mode==='swinging'||G.mode==='arena'||(G.mode==='arenaIntro'&&!G.arenaWaiting)||G.afterOv);}
 function netPump(){let n=0;while(G.netQ.length&&!netBusy()&&n++<50)handleNet(G.netQ.shift());}
-function mkSync(periodic){return{t:'sync',periodic:periodic?1:0,from:G.localIdx,hole:G.hole,turn:G.turn,mode:G.mode,pl:G.players.map(p=>({pos:p.pos.toArray().map(v=>+v.toFixed(3)),last:p.last.toArray().map(v=>+v.toFixed(3)),st:p.strokes,done:p.done?1:0,bhp:p.bhp,sc:p.scores||[],tok:p.prof.tokens}))};}
-function applySync(m){if(m.hole!==G.hole||!H)return;if(G.mode==='card'&&m.mode!=='card')return;let fixed=0;
+function mkSync(periodic){return{t:'sync',periodic:periodic?1:0,from:G.localIdx,hole:G.hole,turn:G.turn,hon:G.honor,mode:G.mode,pl:G.players.map(p=>({pos:p.pos.toArray().map(v=>+v.toFixed(3)),last:p.last.toArray().map(v=>+v.toFixed(3)),st:p.strokes,done:p.done?1:0,bhp:p.bhp,sc:p.scores||[],tok:p.prof.tokens}))};}
+function applySync(m){if(m.hole!==G.hole||!H)return;if(m.hon!=null&&G.online&&!G.online.host)G.honor=m.hon;if(G.mode==='card'&&m.mode!=='card')return;let fixed=0;
  m.pl.forEach((q,i)=>{const p=G.players[i];if(!p)return;const d=Math.hypot(p.pos.x-q.pos[0],p.pos.y-q.pos[1],p.pos.z-q.pos[2]);
   if(d>.05||p.strokes!==q.st||!!p.done!==!!q.done||(q.bhp!=null&&p.bhp!==q.bhp))fixed++;
   p.pos.fromArray(q.pos);p.last.fromArray(q.last);p.strokes=q.st;p.done=!!q.done;p.ball.visible=!p.done;if(q.bhp!=null)p.bhp=q.bhp;p.scores=q.sc.slice();
@@ -910,13 +921,13 @@ function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;co
  handleNet(m);}
 function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
  if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
-  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1});net(mkSync(0));}
-  else{G.online.started=true;net({t:'hole',n:G.hole});closeOv();startHole(G.hole);}}}
+  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor});net(mkSync(0));}
+  else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor});}}}
  else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
  else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
- else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n);}}
+ else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n,m.hon);}}
 function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
 function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
  overlay(`<h1>🔌 Your friend disconnected</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
@@ -1185,10 +1196,21 @@ const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 function joinScreen(){let rj=null;try{rj=JSON.parse(sessionStorage.getItem('tth.rejoin')||'null');}catch(e){}
  const names=Object.keys(save.profiles||{});if(rj&&rj.room===room&&names.includes(rj.name)){names.splice(names.indexOf(rj.name),1);names.unshift(rj.name);}
  const lvl=pr=>{migrate(pr);let u=0;for(const k in pr.lv)for(const st of['power','acc','spin'])u+=pr.lv[k][st]||0;return(u/(CLUBS.length*3)).toFixed(1);};
- const cards=names.map(n=>{const pr=save.profiles[n];const re=rj&&rj.room===room&&rj.name===n;return`<div class="savecard"><b style="font-size:22px">🧑 ${esc(n)}</b> <small>avg club level ${lvl(pr)}</small><br><small>${profSummary(pr)}</small><br><button class="big" data-n="${esc(n)}" onclick="joinAs(this.dataset.n)">${re?'🔁 Rejoin':'▶️ Continue'} as ${esc(n)}</button></div>`;}).join('');
+ const cards=names.map(n=>{const pr=save.profiles[n];const re=rj&&rj.room===room&&rj.name===n;return`<div class="savecard"><b style="font-size:22px">🧑 ${esc(n)}</b> <small>avg club level ${lvl(pr)}</small><br><small>${profSummary(pr)}</small><br><button class="big" data-n="${esc(n)}" onclick="joinAs(this.dataset.n)">${re?'🔁 Rejoin':'▶️ Continue'} as ${esc(n)}</button><button class="big fresh" data-n="${esc(n)}" onclick="joinFreshAsk(this.dataset.n)">🧹 Start fresh</button></div>`;}).join('');
  overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">Your friend invited you to room <b>${esc(room)}</b>!</p>${names.length?`<h3>Play as one of your saved players</h3><div id="joinList" style="max-height:44vh;overflow:auto">${cards}</div>`:''}
- <h3>${names.length?'…or a new player':'Who is playing?'}</h3><input class="nm" id="n1" placeholder="Your name" maxlength="14"><br><button class="big" onclick="joinAs(($('n1').value.trim()||'Player 2').slice(0,14))">🆕 Join as new player 🌐</button>`);}
-window.joinAs=name=>{save.lastNames=[name,(save.lastNames||[])[1]||'Player 2'];persist();try{sessionStorage.setItem('tth.rejoin',JSON.stringify({room,name}));}catch(e){}joinOnline(name,room);};
+ <h3>${names.length?'…or a new player':'Who is playing?'}</h3><input class="nm" id="n1" placeholder="Your name" maxlength="14"><br><button class="big" onclick="joinNew()">🆕 Join as new player 🌐</button>`);}
+// "New player" must never silently load an old save: a free name starts at level 0 with 🪙 20; a taken name asks first
+window.joinNew=()=>{let n=($('n1')&&$('n1').value.trim()||'').slice(0,14);
+ if(!n){let k=2;n='Player '+k;while(save.profiles[n])n='Player '+(++k);}
+ if(!save.profiles[n]){joinAs(n,true);return;}
+ const pr=save.profiles[n];overlay(`<h1>🤔 "${esc(n)}" is already saved here</h1><p style="font-size:20px">${profSummary(pr)}</p>
+ <button class="big" data-n="${esc(n)}" onclick="joinAs(this.dataset.n)">▶️ Continue as ${esc(n)}</button>
+ <button class="big danger" data-n="${esc(n)}" onclick="joinFreshAsk(this.dataset.n)">🧹 Start ${esc(n)} over (erase upgrades)</button><br>
+ <button class="big" style="background:#7d7" onclick="joinScreen()">✏️ Pick a different name</button>`);};
+window.joinFreshAsk=n=>{overlay(`<h1>⚠️ Start ${esc(n)} over?</h1><p style="font-size:22px">This erases <b>${esc(n)}</b>'s 🪙 tokens, ⬆️ club upgrades and ✨ attributes on this device.<br>${esc(n)} starts again at level 0 with <b>🪙 20</b>.</p>
+ <button class="big danger" id="joinFreshYes" data-n="${esc(n)}" onclick="joinAs(this.dataset.n,true)">🧹 Yes, erase and start fresh</button><button class="big" style="background:#7d7" onclick="joinScreen()">🙅 No, go back</button>`);};
+window.joinScreen=joinScreen;
+window.joinAs=(name,fresh)=>{if(fresh){delete save.profiles[name];save.profiles[name]=newProfile(name);persist();try{sessionStorage.removeItem('tth.rejoin');}catch(e){}}save.lastNames=[name,(save.lastNames||[])[1]||'Player 2'];persist();try{sessionStorage.setItem('tth.rejoin',JSON.stringify({room,name}));}catch(e){}joinOnline(name,room);};
 function profSummary(pr){migrate(pr);let ups=0;for(const k in pr.lv)for(const st of['power','acc','spin'])ups+=pr.lv[k][st]||0;
  const at=ownedAll(pr).map(([c,k])=>ELEMS[k]?ELEMS[k].ic+'<small>'+c.name+'</small>':'').join(' ');return`🪙 ${pr.tokens} · ⬆️ ${ups} upgrade${ups===1?'':'s'} · ✨ ${at||'no attributes yet'}`;}
 const menuNames=()=>{const a=$('n1')?$('n1').value.trim().slice(0,14):'',b=$('n2')?$('n2').value.trim().slice(0,14):'';return[a||'Player 1',b];};
@@ -1243,7 +1265,10 @@ const landLbl=new THREE.Sprite(new THREE.SpriteMaterial({map:lblTex,depthTest:fa
 function setLbl(t){if(t===lblTxt)return;lblTxt=t;const x=lblCv.getContext('2d');x.clearRect(0,0,256,96);x.fillStyle='rgba(20,60,30,.85)';x.strokeStyle='#ffe14d';x.lineWidth=6;
  x.beginPath();x.roundRect(6,6,244,84,22);x.fill();x.stroke();x.fillStyle='#fff';x.font='bold 50px Trebuchet MS';x.textAlign='center';x.textBaseline='middle';x.fillText(t,128,50);lblTex.needsUpdate=true;}
 let landFrame=0;G.landPt=null;
-function showLand(v){landRing.visible=landDot.visible=landBeam.visible=landLbl.visible=v;}
+// dispersion zone: where intended randomness (accuracy miss, distance wobble, overswing) can send the ball. Upgrades shrink it.
+function dispersion(e,pw,club){const over=pw>1?.09*(1.35-e.acc)*((pw-1)/(MAXPOW-1)):0;return{lat:Math.tan(.025*(1-e.acc)+over),lon:(club===4?.3:.06)*(1-e.acc)};}
+const dispG=new THREE.Group();{const fill=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff9a3c,transparent:true,opacity:.18,depthTest:false,depthWrite:false,side:THREE.DoubleSide}));const edge=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:.85,depthTest:false,side:THREE.DoubleSide}));[fill,edge].forEach(m=>{m.rotation.x=-Math.PI/2;m.renderOrder=9;dispG.add(m);});}scene.add(dispG);dispG.visible=false;G.dispersion=dispersion;
+function showLand(v){if(!v){dispG.visible=false;G.disp=null;}landRing.visible=landDot.visible=landBeam.visible=landLbl.visible=v;}
 const PATHN=1200;const pathG=new THREE.BufferGeometry();pathG.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(PATHN*3),3));
 const pathLine=new THREE.Line(pathG,new THREE.LineDashedMaterial({color:0xffe14d,dashSize:1.2,gapSize:.8,transparent:true,opacity:.95,depthTest:false}));pathLine.renderOrder=8;pathLine.frustumCulled=false;scene.add(pathLine);
 const restDot=new THREE.Mesh(new THREE.RingGeometry(.35,.6,24),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.95,depthTest:false,side:THREE.DoubleSide}));restDot.rotation.x=-Math.PI/2;restDot.renderOrder=10;scene.add(restDot);
@@ -1254,12 +1279,12 @@ const trackDots=new THREE.Points(trackG,new THREE.PointsMaterial({color:0xffffff
 let lastKey='',lastSim=null;
 function updLanding(){const p=P();const ok=H&&p&&!G.arena&&!ball&&!G.swing&&!p.done&&['aim','power','gesture'].includes(G.mode);
  if(!ok){showLand(false);pathLine.visible=restDot.visible=pathDots.visible=trackDots.visible=false;G.landPt=null;G.landPath=null;if(ball||G.arena||!p)$('carry').style.display='none';return;}
- const e=eff(p.prof,p.club);const pw=G.mode==='power'?Math.max(.05,power):G.mode==='gesture'?(G.livePow||.05):1;
- const key=[p.pos.x.toFixed(2),p.pos.z.toFixed(2),p.aim.toFixed(3),p.club,pw.toFixed(2),G.windV.x.toFixed(1),G.windV.y.toFixed(1),e.dist,e.spin].join();
- landFrame++;if(key!==lastKey&&(landFrame%2===0||!lastSim)){lastKey=key;lastSim=simulateShot(p,{aim:p.aim,power:pw,club:p.club,e,spin:{x:0,y:0}},G.windV);}
+ const e=eff(p.prof,p.club);const pw=G.mode==='power'?livePw(power):G.mode==='gesture'?(G.livePow||MINPOW):1;
+ const key=[p.pos.x.toFixed(2),p.pos.z.toFixed(2),p.aim.toFixed(3),p.club,pw.toFixed(2),G.windV.x.toFixed(3),G.windV.y.toFixed(3),e.dist,e.spin,e.acc].join();
+ landFrame++;if(key!==lastKey&&(landFrame%2===0||!lastSim||G.mode==='gesture')){lastKey=key;lastSim=simulateShot(p,{aim:p.aim,power:pw,club:p.club,e,spin:{x:0,y:0}},G.windV);}
  const sim=lastSim;if(!sim)return;const pt=sim.carry;G.landPt=pt;G.landPath=sim.path;G.restPt=sim.rest;
  const d=Math.hypot(pt.x-p.pos.x,pt.z-p.pos.z),dr=Math.hypot(sim.rest.x-p.pos.x,sim.rest.z-p.pos.z);
- const r=Math.max(1.5,d*.06)*(1+.06*Math.sin(performance.now()/180));landRing.scale.setScalar(r);landRing.position.set(pt.x,hgt(pt.x,pt.z)+.15,pt.z);landDot.position.set(pt.x,hgt(pt.x,pt.z)+.16,pt.z);
+ const r=Math.max(.9,d*.015)*(1+.06*Math.sin(performance.now()/180));landRing.scale.setScalar(r);landRing.position.set(pt.x,hgt(pt.x,pt.z)+.15,pt.z);landDot.position.set(pt.x,hgt(pt.x,pt.z)+.16,pt.z);
  landBeam.scale.set(1,6,1);landBeam.position.set(pt.x,pt.y+3,pt.z);landLbl.position.set(pt.x,pt.y+6.8,pt.z);
  const cd=camera.position.distanceTo(pt);landLbl.scale.set(cd*.09,cd*.034,1);showLand(true);setLbl(Math.round(d)+' m');
  // dashed predicted flight path (curves with spin & wind)
@@ -1267,12 +1292,14 @@ function updLanding(){const p=P();const ok=H&&p&&!G.arena&&!ball&&!G.swing&&!p.d
  pathG.setDrawRange(0,n);pathG.attributes.position.needsUpdate=true;pathLine.computeLineDistances();pathLine.visible=true;
  {const da=dotG.attributes.position.array,ta=trackG.attributes.position.array;let m=0;for(let k=0;k<n;k+=2){const q=sim.path[k];da[m*3]=q.x;da[m*3+1]=q.y+.05;da[m*3+2]=q.z;ta[m*3]=q.x;ta[m*3+1]=hgt(q.x,q.z)+.08;ta[m*3+2]=q.z;m++;}
   dotG.setDrawRange(0,m);trackG.setDrawRange(0,m);dotG.attributes.position.needsUpdate=trackG.attributes.position.needsUpdate=true;pathDots.visible=trackDots.visible=true;}
+ {const sp=dispersion(e,pw,p.club),dl=Math.max(.5,d*sp.lat),dz=Math.max(.5,(p.club===4?dr:d)*sp.lon);dispG.position.set(pt.x,hgt(pt.x,pt.z)+.14,pt.z);dispG.rotation.y=Math.PI-p.aim;dispG.scale.set(dl,1,dz);dispG.visible=true;G.disp={lat:dl,lon:dz};}
  restDot.position.set(sim.rest.x,hgt(sim.rest.x,sim.rest.z)+.12,sim.rest.z);restDot.scale.setScalar(Math.max(1,dr*.025));restDot.visible=sim.end==='stop'||sim.end==='holed';
  const full=Math.round(fullCarry(e)),pct=Math.round(pw*100);const c=$('carry');c.style.display='block';
- const endTxt=sim.end==='water'?' · 💦 water!':sim.end==='oob'?' · 🚧 out of bounds!':sim.end==='holed'?' · ⛳ IN THE HOLE!':` · stops ≈ <b>${Math.round(dr)} m</b>`;
- c.innerHTML=(G.mode==='aim'?`${CLUBS[p.club].name}: full swing carries <b>${full} m</b> · this shot lands <b>${Math.round(d)} m</b>${endTxt}`:
-  `Swing <b style="color:${pw>1?'#ff7a5a':'#ffe14d'}">${pct}%</b>${pw>1?' 💥 overswing!':''} → lands <b>${Math.round(d)} m</b>${endTxt}`);
- if(G.mode==='power'||G.mode==='gesture'){$('ppct').textContent=pct+'%';$('ppct').style.color=pw>1?'#ff7a5a':'#fff';if(G.mode==='gesture')$('pfill').style.height=(pw/MAXPOW*100)+'%';}}
+ const sprd=G.disp?` · 🎯 ±${Math.max(G.disp.lat,G.disp.lon)<1.05?'1':Math.round(Math.max(G.disp.lat,G.disp.lon))} m`:'';const endTxt=sim.end==='water'?' · 💦 water!':sim.end==='oob'?' · 🚧 out of bounds!':sim.end==='holed'?' · ⛳ IN THE HOLE!':` · stops ≈ <b>${Math.round(dr)} m</b>`;
+ c.innerHTML=(G.mode==='aim'?`${CLUBS[p.club].name}: full swing carries <b>${full} m</b> · this shot lands <b>${Math.round(d)} m</b>${sprd}${endTxt}`:
+  `Swing <b style="color:${pw>1?'#ff7a5a':'#ffe14d'}">${pct}%</b>${pw>1?' 💥 overswing!':''} → lands <b>${Math.round(d)} m</b>${sprd}${endTxt}`);
+ if(G.mode==='power'||G.mode==='gesture')showPct(pw);}
+function showPct(pw){const t=Math.round(pw*100)+'%';if($('ppct').textContent!==t){$('ppct').textContent=t;$('ppct').style.color=pw>1?'#ff7a5a':'#fff';}if(G.mode==='gesture')$('pfill').style.height=(pw/MAXPOW*100)+'%';}
 // wind compass
 const wcv=$('wcomp'),wcx=wcv.getContext('2d');
 function windInfo(){const p=P();const aim=p?p.aim:0;const w=G.windV;const dir=[Math.sin(aim),-Math.cos(aim)],rt=[Math.cos(aim),Math.sin(aim)];
@@ -1413,11 +1440,13 @@ function rotHint(){if(!TOUCH||!MOBILE)return;const el=$('rotHint');const port=in
  if(port&&H&&G.players.length&&!G.ovOpen&&!sessionStorage.getItem('tth.rot')){sessionStorage.setItem('tth.rot','1');el.style.display='block';clearTimeout(rotHint.t);rotHint.t=setTimeout(()=>el.style.display='none',5000);}
  else if(!port)el.style.display='none';}
 addEventListener('resize',rotHint);addEventListener('orientationchange',()=>setTimeout(()=>{resize();sizeG();rotHint();},250));
-{const _sh=startHole;G.startHole=startHole=function(i){_sh(i);setTimeout(rotHint,600);};}
+{const _sh=startHole;G.startHole=startHole=function(i,hon){_sh(i,hon);setTimeout(rotHint,600);};}
 // installable app: service worker (network-first for the page so new deploys always load; cached audio for fast reloads)
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')&&!QS.has('nosw')){
  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
 G.TOUCH=TOUCH;G.MOBILE=MOBILE;G.gfx=()=>({pref:gfxPref,low:gfxLow(),dpr:renderer.getPixelRatio()});G.renderer=renderer;
 G.gsState=()=>gs&&{id:gs.id,x0:gs.x0,y0:gs.y0,phase:gs.phase,n:gs.pts.length};
+G.gsRange=()=>GS();
+G.updWind=updWind;
 </script>
 </body></html>
