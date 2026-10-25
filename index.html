@@ -830,7 +830,7 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
   if(Math.hypot(v.x,v.z)<.06&&Math.hypot(gx,gz)*GRAV*.6<fr+.01)return stopBall();}
  if(Math.abs(pos.x)>HX||pos.z>H.zmax||pos.z<H.zmin)return penalty('🚧 Out of bounds! +1');
  // tokens
- if(!b.dry)for(const t of H.tokens){if(t.got)continue;const rr=e.el==='magnet'?4.8:2.6;if(Math.hypot(pos.x-t.x,pos.z-t.z)<rr&&Math.abs(pos.y-t.y)<4){t.got=true;t.mesh.visible=false;p.prof.tokens+=COIN_VALUE;persist();float('🪙 +'+COIN_VALUE+' token!');sfx('coin');splash(t.mesh.position,0xffd84a);}}
+ if(!b.dry)for(const t of H.tokens){if(t.got)continue;const rr=e.el==='magnet'?4.8:2.6;if(Math.hypot(pos.x-t.x,pos.z-t.z)<rr&&Math.abs(pos.y-t.y)<4){t.got=true;t.mesh.visible=false;p.prof.tokens+=COIN_VALUE;persist();tokTick(P());float('🪙 +'+COIN_VALUE+' token!');sfx('coin');splash(t.mesh.position,0xffd84a);}}
  if(b.dry){b.n=(b.n||0)+1;if(b.n%3===0)b.path.push(pos.clone());if(b.landed&&!b.carryPt)b.carryPt=pos.clone();}else{trailPts.push(pos.clone());if(trailPts.length>TRN)trailPts.shift();}}
 function mult(el){const b=G.boss;if(!el)return 1;if(b.weak.includes(el))return 2;if(b.resist.includes(el))return .5;return 1;}
 function dealDamage(base,b){const B=G.boss;if(!B||B.hp<=0||b.hitBoss)return;b.hitBoss=true;const m=mult(b.e.el);const dmg=Math.max(1,Math.round(base*m*(1+.03*b.e.power)));B.hp=Math.max(0,B.hp-dmg);updBoss();
@@ -845,7 +845,7 @@ function bossHit(b){const B=G.boss;if(!B||B.hp<=0)return;const pos=b.p.pos;const
 function bossSplash(b){return;const B=G.boss;if(!B||B.hp<=0)return;const d=Math.hypot(b.p.pos.x-B.x,b.p.pos.z-B.z);if(d<35)dealDamage(6+20*(1-d/35),b);}
 // boss perk: granted on the club used in the winning fight (every player gets it on that same club)
 // rewards go ONLY to the player who won their own fight
-function bossDefeated(ci,who){const B=G.boss;who=who||P();const club=CLUBS[ci==null?0:ci];{const p=who;const o=p.prof.owned[club.id]=p.prof.owned[club.id]||[];if(!o.includes(B.perk))o.push(B.perk);p.prof.tokens+=BOSS_BONUS;}persist();if(G.online&&who===G.players[G.localIdx])syncProf();const other=G.players.find(q=>q!==who&&q.bhp>0);
+function bossDefeated(ci,who){const B=G.boss;who=who||P();const club=CLUBS[ci==null?0:ci];{const p=who;const o=p.prof.owned[club.id]=p.prof.owned[club.id]||[];if(!o.includes(B.perk))o.push(B.perk);p.prof.tokens+=BOSS_BONUS;}persist();tokTick(P());if(G.online&&who===G.players[G.localIdx])syncProf();const other=G.players.find(q=>q!==who&&q.bhp>0);
  if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">${G.players.length>1?esc(who.name)+' earns':'You earn'} <b>+${BOSS_BONUS} 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk for the <b>${club.name}</b>!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳${other?`<br><small>${esc(other.name)} still has to beat their own ${B.name} (${other.bhp} HP)!</small>`:''}</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
 function stopBall(){if(ball.dry){ball.end='stop';ball=null;return;}const b=ball;ball=null;if(!b.landed)bossSplash(b);endShot();}
 function penalty(t){if(ball.dry){ball.end=/Splash/.test(t)?'water':'oob';ball=null;return;}const p=ball.p;ball=null;p.strokes++;p.pos.copy(p.last);float(t);sfx(/Splash/.test(t)?'splash':'ooh');splash(p.pos,0x88ccff);setTimeout(endShot,700);}
@@ -853,7 +853,7 @@ function holed(){if(ball.dry){ball.end='holed';ball=null;return;}const p=ball.p;
  sfx('cup');setTimeout(()=>sfx(d<=0?'holed':'coin'),350);if(d<0)setTimeout(()=>sfx('cheer',{vol:.7}),700);
  const names={'-3':'ALBATROSS!! 🦅','-2':'EAGLE!! 🦅','-1':'BIRDIE! 🐦','0':'PAR! 👍','1':'Bogey — nice try!','2':'Double bogey — keep going!'};
  let earn=HOLE_REWARD(d);const et=earn?` +${earn} 🪙`:'';if(p.strokes===1){say('⛳ HOLE IN ONE!!! 🎉'+et,3000);}else say((names[d]||'In the hole! 🎉')+et,2500);
- p.prof.tokens+=earn;persist();p.lastEarn=earn;splash(p.pos,0xffe14d,90);setTimeout(endShot,1500);}
+ p.prof.tokens+=earn;persist();tokTick(P());p.lastEarn=earn;splash(p.pos,0xffe14d,90);setTimeout(endShot,1500);}
 function endShot(){const p=P();if(G.boss&&G.boss.hp>0&&!p.done&&Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz)<45&&!G.skipArena){return arenaIntro(p);}G.skipArena=false;if(!p.done&&p.strokes>=H.par+5&&!(G.boss&&G.boss.hp>0)){p.done=true;p.ball.visible=false;p.lastEarn=0;say("Let's pick it up and move on! 🙂");}
  const live=G.players.filter(q=>!q.done);if(!live.length)return finishHole();
  // next turn: alternate among players still playing
@@ -871,7 +871,7 @@ window.nextHole=(h)=>{const n=h===0?0:G.hole+1;if(n===0)G.players.forEach(p=>p.s
 
 // ===== shop =====
 let shopP=0,shopC=0;
-window.openShop=(pi)=>{if(pi!=null)shopP=pi;const locals=G.players.map((p,k)=>k).filter(k=>!G.players[k].remote);if(!locals.includes(shopP))shopP=locals[0];
+window.openShop=(pi)=>{shopP=pi!=null?pi:G.turn;const locals=G.players.map((p,k)=>k).filter(k=>!G.players[k].remote);if(!locals.includes(shopP))shopP=locals[0];
  const p=G.players[shopP],pr=p.prof,c=CLUBS[shopC],l=pr.lv[c.id],e=eff(pr,shopC);
  const bar=(v,n=MAXLV)=>`<span class="bar5">${[...Array(n).keys()].map(k=>`<i class="${k<v?'on':''}"></i>`).join('')}</span>`;
  const row=(key,label,val)=>{const lv=l[key];return`<div class="statrow"><span class="nm">${label}</span>${bar(lv)}<span style="width:210px;white-space:nowrap">Lv ${lv}/${MAXLV} · ${val}</span>${lv<MAXLV?`<button class="sm" ${pr.tokens<upCost(c.id,lv)?'disabled':''} onclick="upg('${key}')">⬆ ${upCost(c.id,lv)} 🪙</button>`:'<b>MAX ⭐</b>'}</div>`;};
@@ -885,8 +885,8 @@ window.openShop=(pi)=>{if(pi!=null)shopP=pi;const locals=G.players.map((p,k)=>k)
  <p><small>Attributes are bought for <b>one club at a time</b> — pick a club tab above. Bosses drop a free perk for the club you fought with!</small></p><button class="big" onclick="closeShop()">Done ✅</button>`;
  const oc=$('ovc'),keepScroll=G.inShop?oc.scrollTop:0;overlay(t);G.inShop=true;oc.classList.add('shopcard');oc.scrollTop=keepScroll;};
 window.closeShop=()=>{if(!G.inShop)return;G.inShop=false;$('ovc').classList.remove('shopcard');closeOv();if(G.mode==='arenaIntro')arenaIntro(P());else if(G.mode==='card')showCard(true);else if(G.boss&&G.boss.hp>0&&G.players.every(p=>p.strokes===0))showBossIntro();};
-window.upg=k=>{const pr=G.players[shopP].prof,l=pr.lv[CLUBS[shopC].id];if(l[k]>=MAXLV)return;const c=upCost(CLUBS[shopC].id,l[k]);if(pr.tokens>=c){pr.tokens-=c;l[k]++;persist();sfx('buy');say('⬆ Upgraded!',900);}syncProf();openShop();updUI();};
-window.unlock=k=>{const pr=G.players[shopP].prof,cid=CLUBS[shopC].id;if(pr.tokens>=ELCOST(k)&&!owns(pr,cid,k)){sfx('buy');sfx('coin');pr.tokens-=ELCOST(k);(pr.owned[cid]=pr.owned[cid]||[]).push(k);pr.equip[cid]=k;persist();say(`${ELEMS[k].icon||ELEMS[k].ic} Unlocked for your ${CLUBS[shopC].name}!`,1100);}syncProf();openShop();updUI();};
+window.upg=k=>{const pr=G.players[shopP].prof,l=pr.lv[CLUBS[shopC].id];if(l[k]>=MAXLV)return;const c=upCost(CLUBS[shopC].id,l[k]);if(pr.tokens>=c){pr.tokens-=c;l[k]++;persist();tokTick(P());sfx('buy');say('⬆ Upgraded!',900);}syncProf();openShop();updUI();};
+window.unlock=k=>{const pr=G.players[shopP].prof,cid=CLUBS[shopC].id;if(pr.tokens>=ELCOST(k)&&!owns(pr,cid,k)){sfx('buy');sfx('coin');pr.tokens-=ELCOST(k);(pr.owned[cid]=pr.owned[cid]||[]).push(k);pr.equip[cid]=k;tokTick(P());persist();say(`${ELEMS[k].icon||ELEMS[k].ic} Unlocked for your ${CLUBS[shopC].name}!`,1100);}syncProf();openShop();updUI();};
 window.equip=k=>{const pr=G.players[shopP].prof;if(k&&!owns(pr,CLUBS[shopC].id,k))return;if(k)pr.equip[CLUBS[shopC].id]=k;else delete pr.equip[CLUBS[shopC].id];persist();syncProf();openShop();updUI();};
 
 // ===== particles =====
@@ -904,7 +904,8 @@ const NETQ_T={shot:1,hole:1,arenaStart:1,arenaEnd:1,sync:1};G.netQ=[];G.netFixes
 function netBusy(){return !!(ball||G.swing||G.mode==='flight'||G.mode==='swinging'||G.mode==='arena'||(G.mode==='arenaIntro'&&!G.arenaWaiting)||G.afterOv);}
 function netPump(){let n=0;while(G.netQ.length&&!netBusy()&&n++<50)handleNet(G.netQ.shift());}
 function mkSync(periodic){return{t:'sync',periodic:periodic?1:0,from:G.localIdx,hole:G.hole,turn:G.turn,hon:G.honor,mode:G.mode,pl:G.players.map(p=>({pos:p.pos.toArray().map(v=>+v.toFixed(3)),last:p.last.toArray().map(v=>+v.toFixed(3)),st:p.strokes,done:p.done?1:0,bhp:p.bhp,sc:p.scores||[],tok:p.prof.tokens}))};}
-function applySync(m){if(m.hole!==G.hole||!H)return;if(m.hon!=null&&G.online&&!G.online.host)G.honor=m.hon;if(G.mode==='card'&&m.mode!=='card')return;let fixed=0;
+function applySync(m){try{return applySync0(m);}finally{if(H)tokTick(P());}}
+function applySync0(m){if(m.hole!==G.hole||!H)return;if(m.hon!=null&&G.online&&!G.online.host)G.honor=m.hon;if(G.mode==='card'&&m.mode!=='card')return;let fixed=0;
  m.pl.forEach((q,i)=>{const p=G.players[i];if(!p)return;const d=Math.hypot(p.pos.x-q.pos[0],p.pos.y-q.pos[1],p.pos.z-q.pos[2]);
   if(d>.05||p.strokes!==q.st||!!p.done!==!!q.done||(q.bhp!=null&&p.bhp!==q.bhp))fixed++;
   p.pos.fromArray(q.pos);p.last.fromArray(q.last);p.strokes=q.st;p.done=!!q.done;p.ball.visible=!p.done;if(q.bhp!=null)p.bhp=q.bhp;p.scores=q.sc.slice();
@@ -920,9 +921,10 @@ function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;co
  if(NETQ_T[m.t]&&(G.netQ.length||netBusy())){G.netQ.push(m);return;}
  handleNet(m);}
 function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
- if(m.t==='hello'){const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
+ if(m.t==='hello'){tokSent=null;const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
   if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor});net(mkSync(0));}
   else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor});}}}
+ else if(m.t==='tok'){const q=G.players[m.i];if(q&&m.i!==G.localIdx&&typeof m.v==='number'){q.prof.tokens=m.v;if(H)tokTick(P());}}
  else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
@@ -1345,9 +1347,14 @@ const clock=new THREE.Clock();let swingT=0;
 const camPos=new THREE.Vector3(0,5,10),camLook=new THREE.Vector3();
 // lightweight per-section timing (ms totals) for profiling: __golf.perf
 const PERF={frames:0,ms:{},t:(k,f)=>{const t0=performance.now();f();PERF.ms[k]=(PERF.ms[k]||0)+performance.now()-t0;},reset:()=>{PERF.frames=0;PERF.ms={};}};G.perf=PERF;
+// tokens: the HUD always shows the CURRENT shooter's own tokens, refreshed every frame (coin pickups, rewards, purchases, turn changes);
+// online, each screen is the owner of its local player's tokens and pushes every change to the other screen
+let tokShown=null,tokSent=null;
+function tokTick(p){if(p){const t='🪙 '+p.prof.tokens;if(t!==tokShown){tokShown=t;$('tokens').textContent=t;}}
+ if(G.online&&G.online.conn&&G.localIdx!=null){const me=G.players[G.localIdx];if(me&&me.prof.tokens!==tokSent){tokSent=me.prof.tokens;net({t:'tok',i:G.localIdx,v:me.prof.tokens});}}}
 function tick(){requestAnimationFrame(tick);try{PERF.t('frame',tickInner);}catch(e){recover(e&&e.stack||e);}}
 function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
- if(H){const p=P();
+ if(H){const p=P();tokTick(p);
   aimStream();if(G.mode==='aim'&&myTurn()){if(aimHold){const tot=aimTurned((performance.now()-aimHold.t0)/1000);p.aim+=aimHold.dir*(tot-aimHold.done);aimHold.done=tot;}}else aimHold=null;
   if(G.mode==='power'){power+=pdir*dt*.75;if(power>=MAXPOW){power=MAXPOW;pdir=-1;}if(power<=0){power=0;pdir=1;}$('pfill').style.height=(power/MAXPOW*100)+'%';$('pfill').style.filter=power>1?'hue-rotate(-40deg) saturate(2)':'';}
   if(G.swing){const w=G.swing;w.t+=dt;const T1=.14,T2=.5;if(w.t>=T1&&!w.fired){w.fired=true;doShot(w.shot);}if(w.t>T2+.4)G.swing=null;}
