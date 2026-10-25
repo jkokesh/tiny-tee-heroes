@@ -46,6 +46,8 @@ button.big{font-size:24px;font-weight:bold;padding:12px 26px;margin:8px;border-r
 #saveInfo{max-width:720px;margin:4px auto}.savecard{background:#fff2;border:3px solid #fff8;border-radius:14px;padding:8px 12px;margin:6px;font-size:18px}.savecard button.sm.on{background:#7d7}button.sm.fresh{background:#ff8a7a}button.big.fresh{background:#ff8a7a;font-size:18px}button.big.danger{background:#e5533d;color:#fff}
 button.sm{font-size:16px;font-weight:bold;padding:6px 12px;border-radius:10px;border:3px solid #fff;background:#fb2;color:#520;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
+#roundSel{margin:6px 0 8px;font-size:18px}#roundSel button{margin:3px;border:3px solid transparent;opacity:.75}#roundSel button.on{border-color:#ffe14d;opacity:1;box-shadow:0 0 0 2px #0004}
+#trajBox{margin-bottom:4px}#trajBox button{font:bold 13px inherit;padding:6px 7px;margin:2px 1px;border-radius:9px;border:2px solid #fff8;background:#0006;color:#fff;cursor:pointer;min-height:34px}#trajBox button.on{background:#ffe14d;color:#222;border-color:#fff}html.touch #trajBox button{font-size:11px;padding:4px 5px;min-height:32px}
 table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,table.sc th{border:2px solid #fff6;padding:5px 9px}
 .statrow{display:flex;align-items:center;gap:10px;margin:6px 0;text-align:left}.statrow .nm{width:120px}
 .bar5{display:flex;gap:3px}.bar5 i{width:17px;height:20px;border-radius:5px;background:#0005;border:2px solid #fff5}.bar5 i.on{background:linear-gradient(#ff5,#fa0)}
@@ -156,7 +158,7 @@ html.touch #abtns{right:calc(14px + env(safe-area-inset-right))!important;bottom
 
 <div id="msg"></div>
 <canvas id="gest" style="position:absolute;inset:0;pointer-events:none"></canvas>
-<div id="spinBox" class="panel" style="right:12px;bottom:20px;text-align:center;padding:6px 10px"><div style="font-size:15px">Ball spin (tap!)</div><canvas id="spinBall" width="96" height="96" style="cursor:pointer"></canvas><div id="spinLab" style="font-size:14px"></div></div>
+<div id="spinBox" class="panel" style="right:12px;bottom:20px;text-align:center;padding:6px 10px"><div id="trajBox" title="Trajectory (T)"><div style="font-size:13px">Trajectory <small>(T)</small></div><button data-t="-1" onclick="setTraj(-1)">⤵️ Low</button><button data-t="0" class="on" onclick="setTraj(0)">➡️ Normal</button><button data-t="1" onclick="setTraj(1)">⤴️ Flop</button></div><div style="font-size:15px">Ball spin (tap!)</div><canvas id="spinBall" width="96" height="96" style="cursor:pointer"></canvas><div id="spinLab" style="font-size:14px"></div></div>
 <button id="aimL" class="aimb" style="left:16px">◀</button><button id="aimR" class="aimb" style="left:96px">▶</button>
 <div id="hint" style="position:absolute;bottom:185px;left:72px;font-size:16px;text-shadow:1px 1px 2px #000">Drag ⬇️ then flick ⬆️ on the course to swing!</div>
 <div id="pbar" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:380px;display:none;text-align:center;font-size:20px;font-weight:bold"><div id="pname"></div><div class="bar" style="height:22px;border:3px solid #fff;border-radius:12px;background:#033;overflow:hidden"><div id="pfill2" style="height:100%;width:100%;background:linear-gradient(#6f6,#1a1)"></div></div></div>
@@ -261,8 +263,11 @@ const ELEMS={
  bubble:{ic:'🫧',name:'Bubble',col:0x77ddff,desc:'Bounces off water and floats out of sand.'}};
 const BOSSES={2:{name:'Gopher Gus',ic:'🐹',hp:180,col:0x9a6a3a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet'},
  5:{name:'Frosty the Yeti',ic:'🦍',hp:270,col:0xeef6ff,weak:['fire','lightning'],resist:['ice','magnet'],perk:'ice'},
- 8:{name:'Kraken of the Lake',ic:'🐙',hp:360,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'}};
-const NHOLES=9, PARS=[3,4,4,4,5,4,3,5,5];
+ 8:{name:'Kraken of the Lake',ic:'🐙',hp:360,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'},
+ 11:{name:'Sir Scorch the Sand Scorpion',ic:'🦂',hp:450,col:0xd9772b,weak:['ice','bubble'],resist:['fire','spikes'],perk:'spikes',agg:1.1,bonus:40},
+ 14:{name:'Thunder Talon',ic:'🦅',hp:540,col:0x3a6fd8,weak:['spikes','magnet'],resist:['lightning','bubble'],perk:'lightning',agg:1.2,bonus:48},
+ 17:{name:'King Bogey the Dragon',ic:'🐉',hp:720,col:0x2f9e4f,weak:['ice','lightning'],resist:['fire','magnet'],perk:'fire',agg:1.32,bonus:64}};
+const NHOLES=18, PARS=[3,4,4,4,5,4,3,5,5, 4,3,4,5,4,3,4,4,4];// out 37 · in 35 · par 72
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
 const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_VALUE=2, N_COINS=5;
 
@@ -283,7 +288,7 @@ function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el0=prof.equip[c.id]||nu
  // progression: 10 levels per stat. Power starts at 40% (+6%/level), spin at 7% (+9.3%/level; backspin bite uses BITE table) → both 100% at level 10.
  // Accuracy: "miss" (1-acc) starts at 2× the club's base miss and shrinks evenly to 0.2× at level 10.
  let dist=c.dist*(.4+.06*l.power)*(el==='fire'?1.12:1);let acc=1-(1-c.acc)*(2-.18*l.acc);if(el==='lightning')acc+=(1-acc)*.6;
- return{dist,acc:clamp(acc,0,.995),spin:c.spin,spinMul:.07+.093*l.spin,loft:c.loft,el,power:l.power,id:c.id,spinLv:l.spin};}
+ return{dist,acc:clamp(acc,0,.995),spin:c.spin,spinMul:.07+.093*l.spin,sideMul:1.3*(.07+.093*l.spin),loft:c.loft,el,power:l.power,id:c.id,spinLv:l.spin};}
 // cost to buy level lv+1 (same for every club & stat): 2,5,9,15,22,31,42,55,70,88 — 339 tokens to max one stat
 const MAXLV=10,UPBASE=[2,5,9,15,22,31,42,55,70,88];
 const upCost=(club,lv)=>UPBASE[lv];
@@ -379,25 +384,36 @@ const ELEV=[
  {prof:[[0,14],[.06,14],[.27,4],[.6,0],[1,9]],mound:1.1,tier:0},                 // 6 high tee, valley, raised green (boss)
  {prof:[[0,24],[.08,24],[.2,6],[.38,.5],[1,0]],mound:.6,tier:1.2,island:1},       // 7 cliff-top tee down to an island-ish green
  {prof:[[0,10],[.06,10],[.3,6],[.6,10],[.85,14],[1,20]],rav:[.36,8,.04],mound:1.5,tier:1.4}, // 8 ravine + climb to a perched green
- {prof:[[0,30],[.07,30],[.2,12],[.5,4],[.8,8],[1,14]],rav:[.63,7,.035],mound:1.6,tier:0}];   // 9 cliff-top finale (boss)
+ {prof:[[0,30],[.07,30],[.2,12],[.5,4],[.8,8],[1,14]],rav:[.63,7,.035],mound:1.6,tier:0},   // 9 cliff-top finale (boss)
+ {prof:[[0,4],[.3,10],[.6,6],[1,12]],rav:[.5,7,.04],mound:1.5,tier:1.2},                     // 10 back nine opener: rolling climb
+ {prof:[[0,18],[.08,18],[.3,6],[1,2]],mound:.9,tier:1.3},                                    // 11 drop-shot par 3
+ {prof:[[0,6],[.25,14],[.5,8],[.75,16],[1,20]],rav:[.42,9,.04],mound:1.7,tier:1.4},          // 12 ravine + ridge climb (boss)
+ {prof:[[0,22],[.07,22],[.3,10],[.55,3],[.8,9],[1,15]],rav:[.66,8,.035],mound:1.8,tier:1.5},  // 13 long par 5 over two valleys
+ {prof:[[0,10],[.3,3],[.6,12],[1,18]],rav:[.3,8,.04],mound:1.8,tier:1.6},                     // 14 forced carry then uphill
+ {prof:[[0,26],[.08,26],[.25,8],[1,4]],mound:1,tier:1.6,island:1},                           // 15 cliff par 3 to an island green (boss)
+ {prof:[[0,8],[.2,16],[.45,6],[.7,14],[1,22]],rav:[.55,10,.04],mound:2,tier:1.7},             // 16 roller-coaster
+ {prof:[[0,30],[.07,30],[.25,14],[.5,6],[.75,12],[1,20]],rav:[.4,9,.035],mound:2,tier:1.8},   // 17 big drop, ravine, perched green
+ {prof:[[0,36],[.07,36],[.22,16],[.45,6],[.7,14],[1,26]],rav:[.58,11,.035],mound:2.1,tier:1.9}]; // 18 the summit finale (final boss)   // 9 cliff-top finale (boss)
 function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
+ // D = difficulty index: front nine unchanged (D = i); the back nine keeps climbing more gently (hole 18 ≈ 12) so formulas stay sane
+ const D=i<9?i:8+(i-8)*.45;
  const LF=.62+.04*i;// shorter early holes for 60%-power starter clubs
- const L=Math.round((par===3?135+i*6:par===4?250+i*14:390+i*12)*LF);
- const fw=Math.max(22,40-i*2.2);const side=r()<.5?-1:1;const dog=i<1?0:side*(10+i*6)*(par===3?.3:1);
+ const L=i<9?Math.round((par===3?135+i*6:par===4?250+i*14:390+i*12)*LF):Math.round(par===3?150+(D-8)*9:par===4?300+(D-8)*19:470+(D-8)*11);
+ const fw=i<9?Math.max(22,40-i*2.2):Math.max(16,22-(D-8)*1.5);const side=r()<.5?-1:1;const dog=i<1?0:side*(10+Math.min(D,10)*6)*(par===3?.3:1);
  const gx=dog*(par===5?.3:.8)+(r()-.5)*10;
  const path=[[0,0],[dog*.4,-L*.35],[dog,-L*.62],[gx,-L]];
- const gr=Math.max(10,15-i*.5);
- const h={i,par,L,fw,path,gx,gz:-L,gr,seed:i*1.7,amp:.5+i*.22,slope:(r()-.5)*.012*(1+i*.4),slope2:(r()-.5)*.01*(1+i*.3),bunkers:[],water:[],trees:[],tokens:[]};
+ const gr=Math.max(i<9?10:8.5,15-D*.55);
+ const h={i,d:D,par,L,fw,path,gx,gz:-L,gr,seed:i*1.7,amp:.5+D*.22,slope:(r()-.5)*.012*(1+D*.4),slope2:(r()-.5)*.01*(1+D*.3),bunkers:[],water:[],trees:[],tokens:[]};
  // bunkers
- const nb=1+Math.min(7,i+1);for(let k=0;k<nb;k++){let t=r(),x,z;if(k<2){const a=r()*Math.PI*2;x=gx+Math.cos(a)*(gr+5);z=-L+Math.sin(a)*(gr+5)*.8;if(z<-L-gr)z+=8;}
+ const nb=1+Math.min(i<9?7:9,Math.round(D)+1);for(let k=0;k<nb;k++){let t=r(),x,z;if(k<2){const a=r()*Math.PI*2;x=gx+Math.cos(a)*(gr+5);z=-L+Math.sin(a)*(gr+5)*.8;if(z<-L-gr)z+=8;}
   else{t=.45+r()*.45;const p=ptAt(h,t);x=p[0]+(r()<.5?-1:1)*(fw*.45+r()*6);z=p[1];}
   const bk={x,z,rx:4+r()*5,rz:3+r()*4,a:r()*3};
   // never on the green: the whole bunker sits outside green + fringe (2.5 m) + a 2.5 m grass gap
   {const R0=Math.max(bk.rx,bk.rz),need=gr+2.5+2.5+R0;let dx=bk.x-gx,dz=bk.z+L;const d=Math.hypot(dx,dz)||1;if(d<need){if(d<.5){dx=0;dz=1;}bk.x=gx+dx/d*need;bk.z=-L+dz/d*need;}}
   h.bunkers.push(bk);}
  // water
- if(i>=2){const nw=i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):.8;const p=ptAt(h,t);
-  const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+i*.6:14+r()*10,a:0});}}
+ if(i>=2){const nw=i>=12?3:i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):k===1?.8:.62;const p=ptAt(h,t);
+  const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+D*.6:14+r()*10,a:0});}}
  // island-ish green (hole 7): water wraps the front and one side of the green
  Object.assign(h,ELEV[i]||ELEV[0]);h.boss=!!BOSSES[i];h.segL=[];h.totL=0;for(let k=0;k<3;k++){const l=Math.hypot(path[k+1][0]-path[k][0],path[k+1][1]-path[k][1]);h.segL.push(l);h.totL+=l;}
  h.tierA=r()*Math.PI;
@@ -523,13 +539,19 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
  const coinG=new THREE.CylinderGeometry(.9,.9,.18,32);coinG.rotateX(Math.PI/2);const coinM=new THREE.MeshStandardMaterial({color:0xffc21a,metalness:1,roughness:.25,emissive:0x553300});
  for(const t of h.tokens){const m=new THREE.Mesh(coinG,coinM);t.y=hgt(t.x,t.z)+1.6;m.position.set(t.x,t.y,t.z);m.castShadow=true;t.mesh=m;holeGroup.add(m);}
  // wind
- const wr=rng(55+i);const mph=clamp(2+i*1.6+wr()*5,2,18);const wa=wr()*Math.PI*2;G.windMph=mph;G.windDir=wa;G.windBase=mph*MPH;G.windV.set(Math.sin(wa)*G.windBase,-Math.cos(wa)*G.windBase);G.gustSeed=wr()*100;
+ const wr=rng(55+i);const mph=windMphFor(i,wr);const wa=windDirFor(i);G.windMph=mph;G.windDir=wa;G.windBase=mph*MPH;G.windV.set(Math.sin(wa)*G.windBase,-Math.cos(wa)*G.windBase);G.gustSeed=wr()*100;
  drawMiniBase();}
+// wind: deterministic per hole (same on every screen). Base speed ramps from ~2-5 mph on hole 1 to ~16.8 on hole 18,
+// so with gusts (≤ +25%) it never passes WIND_CAP (21 mph). Direction: each hole turns 60-300° from the previous one.
+const WIND_CAP=21;
+function windMphFor(i,wr){const base=lerp(3.5,16.8,i/(NHOLES-1));return clamp(base+(wr()-.5)*3,2,16.8);}
+const WIND_DIRS=(()=>{const r=rng(4242),a=[r()*Math.PI*2];for(let k=1;k<NHOLES;k++)a.push((a[k-1]+(Math.PI/3)+r()*(Math.PI*4/3))%(Math.PI*2));return a;})();
+function windDirFor(i){return WIND_DIRS[i%NHOLES];}
 function buildTrees(h){const r=rng(300+h.i);const trees=[];
  const ok=(x,z)=>{const s=surfInfo(h,x,z);if(s!=='rough')return false;if(Math.hypot(x-h.gx,z-h.gz)<h.gr+8)return false;if(Math.hypot(x,z)<12)return false;
   for(const w of h.water)if(waterQ(w,x,z)<1.6)return false;return true;};
  // near-fairway trees (closer when harder)
- const near=18+h.i*6;for(let k=0;k<near*3&&trees.length<near;k++){const t=.15+r()*.8;const p=ptAt(h,t);const off=(h.fw/2+3+r()*(30-h.i*1.5))*(r()<.5?-1:1);
+ const near=Math.round(18+h.d*6);for(let k=0;k<near*3&&trees.length<near;k++){const t=.15+r()*.8;const p=ptAt(h,t);const off=(h.fw/2+3+r()*Math.max(10,30-h.d*1.5))*(r()<.5?-1:1);
   const x=p[0]+off,z=p[1]+(r()-.5)*20;if(ok(x,z))trees.push([x,z]);}
  // forest
  for(let k=0;k<2200&&trees.length<900;k++){const x=(r()-.5)*640,z=h.zmax+200-r()*(h.zmax+200-h.zmin+260);const d=distPath(h,x,z);
@@ -582,6 +604,22 @@ function buildBoss(b){const g=new THREE.Group();const M=c=>new THREE.MeshStandar
   const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.3,1,4,8),M(b.col));arm.position.set(s*1.7,1.6,0);arm.rotation.z=s*.7;g.add(arm);}
  const crown=new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,.5,8,1,true),new THREE.MeshStandardMaterial({color:0xffd700,metalness:1,roughness:.2,side:THREE.DoubleSide}));crown.position.y=3.6;g.add(crown);
  if(b.name.includes('Kraken'))for(let k=0;k<6;k++){const t=new THREE.Mesh(new THREE.CapsuleGeometry(.22,1.6,4,8),M(b.col));const a=k/6*Math.PI*2;t.position.set(Math.cos(a)*1.5,.4,Math.sin(a)*1.5);t.rotation.set(Math.sin(a)*1.2,0,-Math.cos(a)*1.2);g.add(t);}
+ if(b.name.includes('Scorpion')){// pincers + segmented tail with a stinger
+  for(const s of[-1,1]){const c=new THREE.Mesh(new THREE.SphereGeometry(.55,16,12),M(b.col));c.scale.set(1.3,.6,1);c.position.set(s*1.9,1.1,1.4);g.add(c);
+   const jaw=new THREE.Mesh(new THREE.ConeGeometry(.22,.9,8),M(0x7a3a10));jaw.rotation.x=Math.PI/2;jaw.position.set(s*1.9+s*.25,1.1,2.1);g.add(jaw);}
+  for(let k=0;k<5;k++){const t=new THREE.Mesh(new THREE.SphereGeometry(.42-k*.04,14,10),M(b.col));t.position.set(0,2+k*.55,-1.4-k*.35+k*k*.09);g.add(t);}
+  const st=new THREE.Mesh(new THREE.ConeGeometry(.22,.7,10),M(0x331100));st.position.set(0,4.75,-1.7);st.rotation.x=-1.2;g.add(st);}
+ if(b.name.includes('Talon')){// big wings, beak, crest; little lightning bolts
+  for(const s of[-1,1]){const w=new THREE.Mesh(new THREE.BoxGeometry(3.2,.12,1.4),M(0x2a4fa8));w.position.set(s*2.6,2.6,-.2);w.rotation.z=s*.45;g.add(w);
+   const tip=new THREE.Mesh(new THREE.BoxGeometry(1.2,.1,1),M(0xffffff));tip.position.set(s*4.1,3.35,-.2);tip.rotation.z=s*.45;g.add(tip);}
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,10),M(0xffc21a));beak.rotation.x=Math.PI/2;beak.position.set(0,2.2,1.85);g.add(beak);
+  for(let k=0;k<3;k++){const f=new THREE.Mesh(new THREE.ConeGeometry(.12,.8,6),M(0xffe14d));f.position.set((k-1)*.3,3.55,-.3);f.rotation.x=-.5;g.add(f);}}
+ if(b.name.includes('Dragon')){// horns, spiky back, wings, long tail
+  for(const s of[-1,1]){const h=new THREE.Mesh(new THREE.ConeGeometry(.18,1,8),M(0xf2e6c8));h.position.set(s*.6,3.6,.2);h.rotation.z=-s*.35;g.add(h);
+   const w=new THREE.Mesh(new THREE.ConeGeometry(1.4,2.6,3),M(0x8a1f1f));w.position.set(s*2.3,2.8,-.6);w.rotation.set(0,0,s*1.25);w.scale.z=.15;g.add(w);}
+  for(let k=0;k<5;k++){const sp=new THREE.Mesh(new THREE.ConeGeometry(.2,.55,6),M(0xffd23a));sp.position.set(0,3.1-k*.45,-1.2-k*.15);sp.rotation.x=-.6;g.add(sp);}
+  for(let k=0;k<6;k++){const t=new THREE.Mesh(new THREE.SphereGeometry(.45-k*.06,12,10),M(b.col));t.position.set(Math.sin(k*.6)*.6,.6,-1.8-k*.6);g.add(t);}
+  const snout=new THREE.Mesh(new THREE.BoxGeometry(.9,.55,.8),M(b.col));snout.position.set(0,2.25,1.7);g.add(snout);}
  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 
 
@@ -620,7 +658,7 @@ function honorFor(i){let h=0;for(let k=0;k<i;k++){let best=null,bi=h;G.players.f
 G.honorFor=honorFor;
 function startHole(i,hon){G.hole=i;G.holeT0=clock.elapsedTime;buildHole(i);ball=null;G.swing=null;trailPts=[];G.snapCam=true;
  G.players.forEach((p,k)=>{p.pos.set(k?1.2:-1.2,0,0);p.pos.y=hgt(p.pos.x,0)+.13;p.last.copy(p.pos);p.strokes=0;p.done=false;p.aim=Math.atan2(H.path[1][0],-H.path[1][1]);p.ball.position.copy(p.pos);p.ball.visible=true;});
- G.honor=hon!=null&&G.players[hon]?hon:honorFor(i);G.turn=G.honor;G.boss=null;if(bossMesh){scene.remove(bossMesh);disposeTree(bossMesh);bossMesh=null;}
+ G.traj=0;G.honor=hon!=null&&G.players[hon]?hon:honorFor(i);G.turn=G.honor;G.boss=null;if(bossMesh){scene.remove(bossMesh);disposeTree(bossMesh);bossMesh=null;}
  const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
   // every player has their OWN boss health on this hole; G.boss.hp always means the current (turn) player's boss
   G.players.forEach(p=>p.bhp=b.hp);Object.defineProperty(G.boss,'hp',{get(){const q=P();return q?q.bhp:0;},set(v){const q=P();if(q)q.bhp=v;},enumerable:true});bossMesh=buildBoss(b);bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);bossMesh.rotation.y=0;scene.add(bossMesh);
@@ -649,7 +687,10 @@ function clubIcon(cv,ci,el){const x=cv.getContext('2d');x.clearRect(0,0,cv.width
  if(el==='spikes'){x.fillStyle='#fff';for(let k=0;k<6;k++){const a=k/6*7;x.beginPath();x.moveTo(hw/2+Math.cos(a)*(hw/2+1),22+Math.sin(a)*hh/2);x.lineTo(hw/2+Math.cos(a)*(hw/2+9),22+Math.sin(a)*(hh/2+7));x.lineTo(hw/2+Math.cos(a+.3)*(hw/2+1),22+Math.sin(a+.3)*hh/2);x.fill();}}
  x.restore();}
 function elevTxt(p){const dy=hgt(H.gx,H.gz)-(p.pos.y-.13);if(Math.abs(dy)<1.5)return'<small>· level</small>';return dy>0?`<small style="color:#ffd27a">⬆️ +${dy.toFixed(0)} m uphill</small>`:`<small style="color:#9fe3ff">⬇️ ${dy.toFixed(0)} m downhill</small>`;}
-function updUI(){if(G.boss&&P())updBoss();const p=P();if(!p||!H)return;$('hint').innerHTML=G.online&&!myTurn()?`👀 Watching <b>${esc(p.name)}</b>'s turn…`:'Drag ⬇️ then flick ⬆️ on the course to swing!';{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
+window.setTraj=t=>{if(!myTurn()||G.mode!=='aim')return;G.traj=t;updTraj();};
+function updTraj(){const p=P();const box=$('trajBox');if(!box)return;const putt=!p||p.club===4;box.style.display=putt?'none':'';
+ box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.t===(G.traj||0)));}
+function updUI(){updTraj();if(G.boss&&P())updBoss();const p=P();if(!p||!H)return;$('hint').innerHTML=G.online&&!myTurn()?`👀 Watching <b>${esc(p.name)}</b>'s turn…`:'Drag ⬇️ then flick ⬆️ on the course to swing!';{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
  $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; Par ${H.par}<br>${G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':''}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m ${elevTxt(p)}<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
  $('tokens').textContent='🪙 '+pr.tokens;
  
@@ -691,7 +732,8 @@ if(TOUCH){const scrollable=el=>{for(let e=el;e&&e!==document.body;e=e.parentElem
  addEventListener('selectstart',e=>{if(!(e.target.closest&&e.target.closest('input,textarea')))e.preventDefault();});}
 const keys={};let power=0,pdir=1,charging=false;
 addEventListener('keydown',e=>{keys[e.key]=true;if(G.ovOpen)return;if(e.key===' '&&!G.arena)e.preventDefault();// Space no longer swings: golf shots are drag-gesture only
- if(e.key>='1'&&e.key<='5'&&myTurn()&&G.mode==='aim'){P().club=+e.key-1;updUI();}});
+ if(e.key>='1'&&e.key<='5'&&myTurn()&&G.mode==='aim'){P().club=+e.key-1;updUI();}
+ if((e.key==='t'||e.key==='T')&&myTurn()&&G.mode==='aim'&&!G.arena){setTraj(((G.traj||0)+2)%3-1);}});
 addEventListener('keyup',e=>{keys[e.key]=false;});
 
 $('shopBtn').onclick=()=>openShop();$('cardBtn').onclick=()=>showCard(false);
@@ -716,10 +758,10 @@ function finishGesture(e){const g=gs;if(!g)return;gs=null;gx.clearRect(0,0,gc.wi
  let sp=0,prev=null;for(const q of g.pts){if(q[2]<(g.tTop||g.tf))continue;if(prev){const dt=Math.max(4,q[2]-prev[2]);const v=Math.max(0,(prev[1]-q[1])/dt)*330/GS();sp=sp?sp+(v-sp)*.35:v;}prev=q;}
  const p=P();const ef=eff(p.prof,p.club);// power = backswing depth, rounded to the exact % the meter shows
  const depth=clamp(back/GS(),0,MAXPOW);const pw=livePw(depth);G.lastSwing={depth,sp:+sp.toFixed(3),pw};
- const crk0=clamp((last[0]-g.maxX)/fd,-1,1);const crooked=Math.sign(crk0)*Math.max(0,Math.abs(crk0)-.12)/.88;const dev=crooked*.16*(1.25-ef.acc)+(Math.random()-.5)*(1-ef.acc)*.05+overDev(pw,ef);
+ const crk0=clamp((last[0]-g.maxX)/fd,-1,1);const crooked=Math.sign(crk0)*Math.max(0,Math.abs(crk0)-.12)/.88;const ts=trajScatter(p.club,ef,G.traj||0);const dev=crooked*.16*(1.25-ef.acc)+(Math.random()-.5)*(1-ef.acc)*.05*ts.lat+overDev(pw,ef);
  // launch consistency: random distance wobble shrinks with accuracy level (putter has its own small wobble)
- const pv=(Math.random()-.5)*2*(1-ef.acc)*(p.club===4?.3:.06);
- sendShot({aim:p.aim,power:pw,club:p.club,dev,pv,e:ef,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});
+ const pv=(Math.random()-.5)*2*(1-ef.acc)*(p.club===4?.3:.06)*ts.lon;
+ sendShot({aim:p.aim,power:pw,club:p.club,dev,pv,e:ef,spin:{...p.spin},traj:G.traj||0,wind:[G.windV.x,G.windV.y]});
  say(`${pw>1.005?'💥 Overswing! ':''}${Math.round(pw*100)}% ${Math.abs(crooked)<.15?'· Straight! 🎯':crooked>0?'· pushed right ➡️':'· pulled left ⬅️'}`,1200);}
 function sendShot(shot){performShot(shot);if(G.online){net({t:'shot',shot});G.pendSync=true;}}
 function performShot(s){G.swing={t:0,from:G.backAng||-2,shot:s,fired:false};G.mode='swinging';G.backAng=0;}
@@ -751,32 +793,53 @@ addEventListener('keyup',e=>{if(e.key==='ArrowLeft')aimRelease(-1);if(e.key==='A
 function startCharge(){if(G.mode!=='aim'||!myTurn()||G.ovOpen)return;charging=true;power=0;pdir=1;G.mode='power';}
 function release(){if(!charging)return;charging=false;const p=P();const e=eff(p.prof,p.club);
  const dev=(Math.random()-.5)*2*(1-e.acc)*.14+overDev(power,e);if(power>1.005)say(`💥 Overswing! ${Math.round(power*100)}%`,1100);
- G.backAng=-Math.min(1,power)*2.3;sendShot({aim:p.aim,power:livePw(power),club:p.club,dev,e,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});}
+ G.backAng=-Math.min(1,power)*2.3;sendShot({aim:p.aim,traj:G.traj||0,power:livePw(power),club:p.club,dev,e,spin:{...p.spin},wind:[G.windV.x,G.windV.y]});}
 function overDev(pw,e){return pw>1?(Math.random()<.5?-1:1)*(.3+Math.random()*.7)*((pw-1)/(MAXPOW-1))*.09*(1.35-e.acc):0;}
 
 // ===== physics =====
 const GRAV=9.8,R=.13;let ball=null;
 const spinScale=e=>(.45+.55*e.spin)*(e.spinMul==null?1:e.spinMul);
+// ---- sidespin calibration: curve at landing for a full swing with 84% sidespin at spin level 8 (no wind):
+// Driver ≈18 m · Wood ≈15 m · Iron ≈10 m · Wedge ≈5 m. Level shape: Lv0 ≈8%, Lv5 ≈half, Lv8 = 1, Lv10 ≈ +22%.
+// ⇣ single tuning knob (1 = the targets above); SIDE_CLUB holds the measured per-club factors that hit them
+const SIDESPIN_CURVE_K=1,SIDE_KICK=.8;// SIDE_KICK: sideways m/s added on the first bounce per unit of (scaled) sidespin
+const SIDE_CLUB={driver:.81,wood:.59,iron:.573,wedge:.35,putter:0};
+const sideLv=lv=>lv<=8?.08+.92*Math.pow(lv/8,1.5):1+.11*(lv-8);
+const sideScale=e=>SIDESPIN_CURVE_K*(SIDE_CLUB[e.id]==null?1:SIDE_CLUB[e.id])*sideLv(e.spinLv||0);
+// ---- trajectory choice (full-swing clubs): -1 Low (thin) · 0 Normal · +1 Flop. Strength k = club suitability × lerp(.5,1, spin level/10)
+// Low  : launch angle × (1-.38k), carry × (1-.05k), wind × (1-.4k), first-bounce roll +.2k
+// Flop : launch angle × (1+.35k) (≤56°), carry × (1-.14k), wind × (1+.15k) (plus its longer hang time), first-bounce roll × (1-.45k)
+const TRAJ_FIT={low:[1,1,.85,.45],flop:[.3,.45,.7,1]};
+function trajK(s,e){const t=s.traj||0;if(!t||!e||!e.loft||s.club>3)return 0;const fit=(t<0?TRAJ_FIT.low:TRAJ_FIT.flop)[s.club]||0;return fit*lerp(.5,1,(e.spinLv||0)/MAXLV);}
+function trajWind(s,e){const k=trajK(s,e),t=s.traj||0;return t<0?1-.4*k:t>0?1+.15*k:1;}
 function launchVel(p,s){const e=s.e;const sy=(s.spin?s.spin.y:0)*spinScale(e);const lie=surfInfo(H,p.pos.x,p.pos.z);let dist=e.dist*(1+(s.pv||0));const pk=(e.power||0)/MAXLV;// upgraded power digs out of bad lies better
  if(lie==='rough')dist*=lerp(ROUGH_LAUNCH,.9,pk);if(lie==='sand'&&!(e.el==='bubble'))dist*=s.club===3?lerp(.85,.95,pk):lerp(.55,.7,pk);
  const a=s.aim+(s.dev||0);const pw=Math.min(MAXPOW,s.power);
  if(e.loft===0){const fr=lie==='green'?FR.green:FR[lie]||2;const vv=Math.sqrt(2*fr*dist*pw*1.05)*(1+.05*clamp(s.spin?s.spin.y:0,-1,1));return new THREE.Vector3(Math.sin(a)*vv,0,-Math.cos(a)*vv);}
- const th0=e.loft*Math.PI/180;const v0=Math.sqrt(dist*.86*GRAV/Math.sin(2*th0))*Math.sqrt(pw);const th=th0*(sy>0?1-.14*sy:1-.1*sy);return new THREE.Vector3(Math.sin(a)*v0*Math.cos(th),v0*Math.sin(th),-Math.cos(a)*v0*Math.cos(th));}
+ const tk=trajK(s,e),tt=s.traj||0;if(tk)dist*=tt<0?1-.05*tk:1-.14*tk;const th0=Math.min(56,e.loft*(tt<0?1-.38*tk:tt>0?1+.35*tk:1))*Math.PI/180;const v0=Math.sqrt(dist*.86*GRAV/Math.sin(2*th0))*Math.sqrt(pw);const th=th0*(sy>0?1-.14*sy:1-.1*sy);return new THREE.Vector3(Math.sin(a)*v0*Math.cos(th),v0*Math.sin(th),-Math.cos(a)*v0*Math.cos(th));}
 // ---- backspin "bite" on first ground contact: depends on club, spin LEVEL, backspin amount and surface (smooth, no thresholds)
-// bite = backspin% × lerp(L0,L10, spinLevel/10) × surface.  bite<1 scales forward speed by (1-bite); bite>1 zips back at (bite-1)×7 m/s
+// 1) bite = backspin% × 1.3·lerp(L0,L10, level/10) × surface (capped at .95) scales forward speed by (1-bite)
+// 2) pull-back: clubs with PULL>0 then zip BACK. Distance = BACKSPIN_PULL_M × (backspin%/84%) × PULL[club] × (level/8)^1.8 × surface,
+//    i.e. a wedge at 84% backspin on a flat green pulls back BACKSPIN_PULL_M at spin level 8 (≈.65 m Lv 5, ≈2.2 m Lv 10, Lv 0 just checks).
+//    ⇣ single tuning knob: the pull-back wanted for a level-8 wedge at 84% backspin (1.5 m ≈ 5 ft)
+const BACKSPIN_PULL_M=1.5;
 const BITE={driver:[.1,.95],wood:[.17,1],iron:[.25,1.05],wedge:[.45,1.3],putter:[0,0]};
+const PULL={driver:0,wood:0,iron:.3,wedge:1,putter:0};
 const BITE_SURF={green:1,fringe:.9,fairway:.8,tee:.8,ice:.5,rough:.4,sand:.3};
+function pullBackM(e,bk,s){const sf=BITE_SURF[s]==null?.5:BITE_SURF[s];return BACKSPIN_PULL_M*(bk/.84)*(PULL[e.id]||0)*Math.pow((e.spinLv||0)/8,1.8)*sf;}
 function applyBite(b,v,s){if(b.bitten)return;b.bitten=1;const e=b.e;if(!b.bk||!e.loft)return;const T=BITE[e.id]||[0,0];
- const bite=b.bk*lerp(T[0],T[1],(e.spinLv||0)/MAXLV)*(BITE_SURF[s]==null?.5:BITE_SURF[s]);if(bite<=0)return;b.bite=bite;
- const hs=Math.hypot(v.x,v.z);if(hs<1e-3)return;
- if(bite<1){v.x*=1-bite;v.z*=1-bite;if(bite>.6&&!b.dry)float('🛑 Backspin bite!');}
- else{const back=(bite-1)*7;v.x=-v.x/hs*back;v.z=-v.z/hs*back;v.y*=.35;b.zipped=1;if(!b.dry&&back>.8)float('⏪ Backspin! Zip!');}}
+ const sf=BITE_SURF[s]==null?.5:BITE_SURF[s];const bite=Math.min(.95,b.bk*1.3*lerp(T[0],T[1],(e.spinLv||0)/MAXLV)*sf);if(bite<=0)return;b.bite=bite;
+ const hs=Math.hypot(v.x,v.z);if(hs<1e-3)return;const D=pullBackM(e,b.bk,s)*PULL_CAL;
+ if(D>.15){// stop, then zip back: speed for a roll of D metres against this surface's rolling friction
+  const back=Math.sqrt(2*(FR[s]||FR.green)*D);v.x=-v.x/hs*back;v.z=-v.z/hs*back;v.y*=.2;b.zipped=1;if(!b.dry&&D>.6)float('⏪ Backspin! Zip!');}
+ else{v.x*=1-bite;v.z*=1-bite;if(bite>.6&&!b.dry)float('🛑 Backspin bite!');}}
+let PULL_CAL=1;// measured fudge for bounce/slope losses (kept 1 unless the test says otherwise)
 // predicted landing point (carry) for a shot, using the same flight model as stepBall
 function predictLanding(p,s,wind){return simulateShot(p,s,wind).carry;}
 // full dry-run of a shot using the real ball physics (no side effects)
 let DRY=false;
 function simulateShot(p,s,wind){const saveBall=ball;const fake={pos:p.pos.clone(),last:p.pos.clone(),prof:p.prof,strokes:0};const e=s.e;const v=launchVel(fake,s);const sp=s.spin||{x:0,y:0};
- const b={p:fake,v,e,w:wind.clone(),sx:e.loft?sp.x*spinScale(e):0,sy:e.loft?sp.y*spinScale(e):0,bk:e.loft?clamp(-sp.y,0,1):0,air:e.loft>0,bounced:0,usedBubble:false,t:0,dry:true,path:[p.pos.clone()],bonk:1,blk:1,treeMsg:1};
+ const b={p:fake,v,e,w:wind.clone(),sx:e.loft?sp.x*sideScale(e):0,sy:e.loft?sp.y*spinScale(e):0,bk:e.loft?clamp(-sp.y,0,1):0,air:e.loft>0,bounced:0,usedBubble:false,t:0,tk:trajK(s,e),tt:s.traj||0,wm:trajWind(s,e),dry:true,path:[p.pos.clone()],bonk:1,blk:1,treeMsg:1};
  ball=b;DRY=true;try{let n=0;while(ball===b&&n<5000){stepBall(1/120);n++;}}finally{DRY=false;ball=saveBall;}
  b.path.push(fake.pos.clone());return{path:b.path,carry:b.carryPt||fake.pos.clone(),rest:fake.pos.clone(),end:b.end||'stop',treeT:b.treeT,landT:b.landT,t:b.t};}
 // calm, flat full-swing carry for labels
@@ -786,7 +849,7 @@ const carryCache={};function fullCarry(e){const key=[e.dist,e.loft].join();if(ca
 function doShot(s){const p=P();p.club=s.club;p.aimT=null;const e=s.e;p.last.copy(p.pos);p.strokes++;G.mode='flight';$('pfill').style.height='0';
  const v=launchVel(p,s);const w=s.wind?new THREE.Vector2(s.wind[0],s.wind[1]):G.windV.clone();
  const sp=s.spin||{x:0,y:0};{const kind=e.loft===0?'putt':s.club===0||s.club===1?'hit_driver':s.club===2?'hit_iron':'hit_wedge';if(kind!=='putt')sfx(Math.random()<.5?'swing1':'swing2',{vol:.5+.5*Math.min(1,s.power||1)});setTimeout(()=>sfx(kind,{vol:kind==='putt'?.5+.5*Math.min(1,s.power||.6):1,rate:.94+Math.random()*.12}),kind==='putt'?0:90);if(e.el==='fire')sfx('fire',{vol:.6});}
- ball={p,v,e,w,sx:e.loft?sp.x*spinScale(e):0,sy:e.loft?sp.y*spinScale(e):0,bk:e.loft?clamp(-sp.y,0,1):0,air:e.loft>0,bounced:0,usedBubble:false,hitBoss:false,t:0};swingT=.4;trailPts=[];
+ ball={p,v,e,w,sx:e.loft?sp.x*sideScale(e):0,sy:e.loft?sp.y*spinScale(e):0,bk:e.loft?clamp(-sp.y,0,1):0,air:e.loft>0,bounced:0,usedBubble:false,hitBoss:false,t:0,tk:trajK(s,e),tt:s.traj||0,wm:trajWind(s,e)};swingT=.4;trailPts=[];
  updUI();}
 // rough: 50% more slowing than v5 (launch penalty 15%→22.5%, roll friction 5→7.5; landing-bounce speed loss unchanged at 40%)
 const ROUGH_LAUNCH=.775,ROUGH_FR=7.5,ROUGH_LAND=.6;
@@ -794,7 +857,7 @@ const FR={green:.95,fringe:1.8,fairway:2.1,tee:2.1,rough:ROUGH_FR,sand:10,ice:.6
 const BOUNCE={green:.3,fringe:.3,fairway:.35,tee:.35,rough:.18,sand:.04,ice:.4};
 function grad(x,z){const e=.5;return[(hgt(x+e,z)-hgt(x-e,z))/(2*e),(hgt(x,z+e)-hgt(x,z-e))/(2*e)];}
 function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30){pos.y=hgt(pos.x,pos.z)+R;return stopBall();}
- if(b.air){v.y-=GRAV*dt;const hf=clamp(pos.y-hgt(pos.x,pos.z),0,30)/30+.3;if(e.loft>0){v.x+=b.w.x*WINDK*hf*dt;v.z+=b.w.y*WINDK*hf*dt;}// wind only acts on lofted shots in the air — never on putts or rolling ballsv.multiplyScalar(1-.04*dt);
+ if(b.air){v.y-=GRAV*dt;const hf=clamp(pos.y-hgt(pos.x,pos.z),0,30)/30+.3;if(e.loft>0){const wm=b.wm||1;v.x+=b.w.x*WINDK*hf*wm*dt;v.z+=b.w.y*WINDK*hf*wm*dt;}// wind only acts on lofted shots in the air — never on putts or rolling ballsv.multiplyScalar(1-.04*dt);
   {const hs=Math.hypot(v.x,v.z);if(hs>1&&b.sx){const k=b.sx*CURVE*(.35+.65*Math.min(1,b.t/1.2))*dt;const vx=v.x;v.x+=-v.z/hs*k;v.z+=vx/hs*k;}}
   pos.addScaledVector(v,dt);
   // trees: deflect ONCE when the ball enters a canopy, then let gravity pull it down through/off the leaves.
@@ -812,7 +875,8 @@ function stepBall(dt){const b=ball,p=b.p,pos=p.pos,v=b.v,e=b.e;b.t+=dt;if(b.t>30
    if(!b.landed){b.landed=true;b.landT=b.t;bossSplash(b);if(!b.dry)sfx(s==='sand'?'sand':Math.abs(v.y)>14?'land_hard':'land',{vol:Math.min(1,.4+Math.abs(v.y)/18)});}
    if(e.el==='spikes'){v.set(0,0,0);b.air=false;float('🦔 Stuck the landing!');return;}
    if(Math.abs(v.y)>2.5&&b.bounced<4){b.bounced++;const k=BOUNCE[s];v.y=-v.y*k;let keep=.8;const firm=s==='green'||s==='fringe'||s==='fairway'||s==='tee'||s==='ice';
-    if(b.bounced===1){keep=.42-.15*e.spin;if(b.sy>0)keep+=.12*b.sy;}
+    if(b.bounced===1&&b.sx){const hs2=Math.hypot(v.x,v.z)||1;const kk=b.sx*SIDE_KICK;const vx=v.x;v.x+=-v.z/hs2*kk;v.z+=vx/hs2*kk;}
+    if(b.bounced===1){keep=.42-.15*e.spin;if(b.sy>0)keep+=.12*b.sy;if(b.tk){keep=b.tt<0?keep+.2*b.tk:keep*(1-.45*b.tk);}}
     else if(b.zipped)keep=.9;
     v.x*=keep*(s==='rough'?ROUGH_LAND:s==='sand'?.15:1);v.z*=keep*(s==='rough'?ROUGH_LAND:s==='sand'?.15:1);if(s==='sand')splash(pos,0xe8d29a);
     if(b.bounced===1)applyBite(b,v,s);}
@@ -845,8 +909,8 @@ function bossHit(b){const B=G.boss;if(!B||B.hp<=0)return;const pos=b.p.pos;const
 function bossSplash(b){return;const B=G.boss;if(!B||B.hp<=0)return;const d=Math.hypot(b.p.pos.x-B.x,b.p.pos.z-B.z);if(d<35)dealDamage(6+20*(1-d/35),b);}
 // boss perk: granted on the club used in the winning fight (every player gets it on that same club)
 // rewards go ONLY to the player who won their own fight
-function bossDefeated(ci,who){const B=G.boss;who=who||P();const club=CLUBS[ci==null?0:ci];{const p=who;const o=p.prof.owned[club.id]=p.prof.owned[club.id]||[];if(!o.includes(B.perk))o.push(B.perk);p.prof.tokens+=BOSS_BONUS;}persist();tokTick(P());if(G.online&&who===G.players[G.localIdx])syncProf();const other=G.players.find(q=>q!==who&&q.bhp>0);
- if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">${G.players.length>1?esc(who.name)+' earns':'You earn'} <b>+${BOSS_BONUS} 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk for the <b>${club.name}</b>!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳${other?`<br><small>${esc(other.name)} still has to beat their own ${B.name} (${other.bhp} HP)!</small>`:''}</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
+function bossDefeated(ci,who){const B=G.boss;who=who||P();const club=CLUBS[ci==null?0:ci];{const p=who;const o=p.prof.owned[club.id]=p.prof.owned[club.id]||[];if(!o.includes(B.perk))o.push(B.perk);p.prof.tokens+=(B.bonus||BOSS_BONUS);}persist();tokTick(P());if(G.online&&who===G.players[G.localIdx])syncProf();const other=G.players.find(q=>q!==who&&q.bhp>0);
+ if(bossMesh){bossMesh.userData.dying=1;}overlay(`<h1>🏆 Victory!</h1><p style="font-size:26px">${B.ic} ${B.name} is defeated!</p><p style="font-size:24px">${G.players.length>1?esc(who.name)+' earns':'You earn'} <b>+${B.bonus||BOSS_BONUS} 🪙</b> and the <b>${ELEMS[B.perk].ic} ${ELEMS[B.perk].name}</b> perk for the <b>${club.name}</b>!<br><small>${ELEMS[B.perk].desc}</small></p><p>Now sink that putt! ⛳${other?`<br><small>${esc(other.name)} still has to beat their own ${B.name} (${other.bhp} HP)!</small>`:''}</p><button class="big" onclick="closeOv()">Awesome!</button>`);updUI();}
 function stopBall(){if(ball.dry){ball.end='stop';ball=null;return;}const b=ball;ball=null;if(!b.landed)bossSplash(b);endShot();}
 function penalty(t){if(ball.dry){ball.end=/Splash/.test(t)?'water':'oob';ball=null;return;}const p=ball.p;ball=null;p.strokes++;p.pos.copy(p.last);float(t);sfx(/Splash/.test(t)?'splash':'ooh');splash(p.pos,0x88ccff);setTimeout(endShot,700);}
 function holed(){if(ball.dry){ball.end='holed';ball=null;return;}const p=ball.p;ball=null;p.done=true;p.ball.visible=false;const d=p.strokes-H.par;
@@ -859,15 +923,25 @@ function endShot(){const p=P();if(G.boss&&G.boss.hp>0&&!p.done&&Math.hypot(p.pos
  // next turn: alternate among players still playing
  let n=G.turn;do{n=(n+1)%G.players.length;}while(G.players[n].done);G.turn=n;
  G.mode='aim';autoClub();updUI();if(G.players.length>1)say(`${P().name}'s turn!`,1200);}
+// ---- round length: Front 9 (holes 1-9), Back 9 (10-18, harder) or Full 18. Host's choice rules online.
+const ROUNDS={front:{a:0,b:9,name:'Front 9'},back:{a:9,b:18,name:'Back 9'},full:{a:0,b:18,name:'Full 18'}};
+const RD=()=>ROUNDS[G.round]||ROUNDS.full;
+window.pickRound=k=>{if(!ROUNDS[k])return;G.round=save.round=k;persist();document.querySelectorAll('#roundSel button').forEach(b=>b.classList.toggle('on',b.dataset.r===k));};
+function roundSel(){const cur=save.round||'full';return`<div id="roundSel"><b>Round:</b> ${Object.entries(ROUNDS).map(([k,r])=>`<button class="sm${k===cur?' on':''}" data-r="${k}" onclick="pickRound('${k}')">${r.name}<br><small>${k==='front'?'holes 1-9':k==='back'?'holes 10-18 · harder':'holes 1-18'}</small></button>`).join('')}</div>`;}
 function finishHole(){G.players.forEach(p=>{p.scores[G.hole]=p.strokes;});G.mode='card';persist();
- if(!G.online||G.online.host){save.hole=G.hole+1;persist();}showCard(true);}
-function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1><table class="sc"><tr><th>Hole</th>${PARS.map((_,i)=>`<th>${i+1}${BOSSES[i]?BOSSES[i].ic:''}</th>`).join('')}<th>Total</th></tr><tr><td>Par</td>${PARS.map(x=>`<td>${x}</td>`).join('')}<td>${PARS.reduce((a,b)=>a+b)}</td></tr>`;
- pl.forEach(p=>{let tot=0;t+=`<tr><td>${p.name}</td>${PARS.map((par,i)=>{const s=p.scores[i];if(s==null)return'<td></td>';tot+=s;const c=s<par?'#ffe14d':s>par?'#fbb':'#fff';return`<td style="color:${c}">${s}</td>`;}).join('')}<td><b>${tot}</b></td></tr>`;});
- t+='</table>';if(G.boss)t+=`<p>${G.boss.ic} <b>${G.boss.name}</b> — each player fights their own: ${pl.map(p=>`${esc(p.name)} ${p.bhp<=0?'✅ beaten':'❤️ '+p.bhp+'/'+G.boss.hpMax+' HP'}`).join(' · ')}</p>`;if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
-  const last=G.hole>=NHOLES-1;const canNext=!G.online||G.online.host;
-  t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 Course complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
+ if(!G.online||G.online.host){save.hole=G.hole+1;save.round=G.round;persist();}showCard(true);}
+function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1>`;
+ const sum=(a,b,f)=>{let n=0,any=false;for(let k=a;k<b;k++){const v=f(k);if(v!=null){n+=v;any=true;}}return any?n:'';};
+ const half=(a,b,lab,last)=>{let h=`<table class="sc"><tr><th>Hole</th>`;for(let i=a;i<b;i++)h+=`<th${i===G.hole?' style="background:#ffe14d33"':''}>${i+1}${BOSSES[i]?BOSSES[i].ic:''}</th>`;h+=`<th>${lab}</th>${last?'<th>Total</th>':''}</tr><tr><td>Par</td>`;
+  for(let i=a;i<b;i++)h+=`<td>${PARS[i]}</td>`;h+=`<td>${sum(a,b,k=>PARS[k])}</td>${last?`<td>${sum(0,NHOLES,k=>PARS[k])}</td>`:''}</tr>`;
+  pl.forEach(p=>{h+=`<tr><td>${esc(p.name)}</td>`;for(let i=a;i<b;i++){const s=p.scores[i];if(s==null){h+='<td></td>';continue;}const c=s<PARS[i]?'#ffe14d':s>PARS[i]?'#fbb':'#fff';h+=`<td style="color:${c}">${s}</td>`;}
+   h+=`<td><b>${sum(a,b,k=>p.scores[k])}</b></td>${last?`<td><b>${sum(0,NHOLES,k=>p.scores[k])}</b></td>`:''}</tr>`;});return h+'</table>';};
+ {const r=RD();if(r.a===0&&r.b===NHOLES)t+=half(0,9,'Out',false)+half(9,NHOLES,'In',true).replace('<table class="sc">','<table class="sc" style="margin-top:6px">');else t+=`<p style="margin:2px">${r.name}</p>`+half(r.a,r.b,r.a?'In':'Out',false);}
+ if(G.boss)t+=`<p>${G.boss.ic} <b>${G.boss.name}</b> — each player fights their own: ${pl.map(p=>`${esc(p.name)} ${p.bhp<=0?'✅ beaten':'❤️ '+p.bhp+'/'+G.boss.hpMax+' HP'}`).join(' · ')}</p>`;if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
+  const last=G.hole>=RD().b-1;const canNext=!G.online||G.online.host;
+  t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 ${RD().name} complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
-window.nextHole=(h)=>{const n=h===0?0:G.hole+1;if(n===0)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n,hon:G.honor});};
+window.nextHole=(h)=>{const first=h===0;const n=first?RD().a:G.hole+1;if(first)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n,hon:G.honor,rd:G.round,first:first?1:0});};
 
 // ===== shop =====
 let shopP=0,shopC=0;
@@ -922,22 +996,22 @@ function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;co
  handleNet(m);}
 function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
  if(m.t==='hello'){tokSent=null;const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
-  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor});net(mkSync(0));}
-  else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor});}}}
+  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor,rd:G.round});net(mkSync(0));}
+  else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor,rd:G.round,first:1});}}}
  else if(m.t==='tok'){const q=G.players[m.i];if(q&&m.i!==G.localIdx&&typeof m.v==='number'){q.prof.tokens=m.v;if(H)tokTick(P());}}
  else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
  else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
- else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.n===0&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n,m.hon);}}
+ else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.rd&&ROUNDS[m.rd])G.round=m.rd;if((m.first||(m.n===RD().a&&m.rd))&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n,m.hon);}}
 function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
 function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
  overlay(`<h1>🔌 Your friend disconnected</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
-function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpperCase();G.online={host:true,code};G.localIdx=0;
+function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpperCase();G.hole=RD().a;G.online={host:true,code};G.localIdx=0;
  G.players=[makePlayer(name,0xffffff),makePlayer('Friend',0xff5ab4,true)];
  if(LOOP){G.__onLoopConn=c=>setupPeer(c);G.online.code=code;G.online.loop=loopConn(code,true);
   overlay(`<h1>🌐 Online Room ${code}</h1><p id="pst">Loopback test mode — waiting…</p>`);return;}
- const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code;
+ const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code+'&rd='+(G.round||'full');
  overlay(`<h1>🌐 Online Room ${code}</h1><p>Send this link to your friend:</p><p><input class="nm" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p>${navigator.share?`<button class="big" onclick="navigator.share({title:'Tiny Tee Heroes',text:'Play golf with me! ⛳',url:'${link}'}).catch(()=>{})">📤 Share link</button>`:''}<button class="big" onclick="copyLink('${link}',this)">📋 Copy link</button></p><p id="pst">Connecting to matchmaker…</p>`);
  peer.on('open',()=>{const e=$('pst');if(e)e.textContent='Waiting for your friend to join… ⏳';});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Online error: '+err.type+'. Try local mode.';});
  peer.on('connection',c=>{setupPeer(c);});}
@@ -1014,7 +1088,7 @@ function arenaSim(dt){const A=G.arena,B=G.boss;A.clock+=dt;
    else float('Whoosh! Get closer!');}}
  if(A.burn>0){A.burn-=dt;if(Math.floor((A.burn+dt)*2)!==Math.floor(A.burn*2)&&B.hp>0){B.hp=Math.max(0,B.hp-2);updBoss();splash(A.bpos.clone().setY(A.bpos.y+2.5),0xff6a00,10);if(B.hp<=0)return arenaEnd(true);}}
  // ---- boss AI: chase / circle / back off, then telegraphed attacks
- A.boost=Math.max(0,(A.boost||0)-CHEER.decay*dt);A.cheerCd-=dt;A.hotCd-=dt;const rage=B.hp<B.hpMax*.4?1.5:1;const spd=(A.slow>0?.5:1)*rage*(1+A.boost);A.slow-=dt;A.st-=dt*spd;
+ A.boost=Math.max(0,(A.boost||0)-CHEER.decay*dt);A.cheerCd-=dt;A.hotCd-=dt;const rage=(B.hp<B.hpMax*.4?1.5:1)*(B.agg||1);const spd=(A.slow>0?.5:1)*rage*(1+A.boost);A.slow-=dt;A.st-=dt*spd;
  const bt=new THREE.Vector3().subVectors(A.pos,A.bpos).setY(0);const bd=bt.length();bt.normalize();const tang=new THREE.Vector3(-bt.z,0,bt.x).multiplyScalar(A.circ||1);
  if(!A.bvel)A.bvel=new THREE.Vector3();const bv=_v2.set(0,0,0);
  if(A.state==='idle'){A.flip=(A.flip||0)-dt;if(A.flip<=0){A.flip=1.5+Math.random()*2;A.circ=Math.random()<.5?-1:1;}
@@ -1191,7 +1265,7 @@ function loopConn(code,host){// test relay across separate browser profiles (win
  if(!host){const ping=()=>{if(!c.open){bc.postMessage({_hs:'join'});setTimeout(ping,300);}};ping();}return c;}
 
 // ===== menu =====
-const room=new URLSearchParams(location.search).get('room');
+const room=new URLSearchParams(location.search).get('room'),urlRd=new URLSearchParams(location.search).get('rd');
 const RESET_Q=new URLSearchParams(location.search).get('reset')==='1';
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 // invite-link join screen: pick one of this browser's saved players (their own clubs/levels/tokens) or make a new one
@@ -1199,7 +1273,7 @@ function joinScreen(){let rj=null;try{rj=JSON.parse(sessionStorage.getItem('tth.
  const names=Object.keys(save.profiles||{});if(rj&&rj.room===room&&names.includes(rj.name)){names.splice(names.indexOf(rj.name),1);names.unshift(rj.name);}
  const lvl=pr=>{migrate(pr);let u=0;for(const k in pr.lv)for(const st of['power','acc','spin'])u+=pr.lv[k][st]||0;return(u/(CLUBS.length*3)).toFixed(1);};
  const cards=names.map(n=>{const pr=save.profiles[n];const re=rj&&rj.room===room&&rj.name===n;return`<div class="savecard"><b style="font-size:22px">🧑 ${esc(n)}</b> <small>avg club level ${lvl(pr)}</small><br><small>${profSummary(pr)}</small><br><button class="big" data-n="${esc(n)}" onclick="joinAs(this.dataset.n)">${re?'🔁 Rejoin':'▶️ Continue'} as ${esc(n)}</button><button class="big fresh" data-n="${esc(n)}" onclick="joinFreshAsk(this.dataset.n)">🧹 Start fresh</button></div>`;}).join('');
- overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">Your friend invited you to room <b>${esc(room)}</b>!</p>${names.length?`<h3>Play as one of your saved players</h3><div id="joinList" style="max-height:44vh;overflow:auto">${cards}</div>`:''}
+ overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">Your friend invited you to room <b>${esc(room)}</b>!${ROUNDS[urlRd]?`<br>⛳ Round: <b>${ROUNDS[urlRd].name}</b>`:''}</p>${names.length?`<h3>Play as one of your saved players</h3><div id="joinList" style="max-height:44vh;overflow:auto">${cards}</div>`:''}
  <h3>${names.length?'…or a new player':'Who is playing?'}</h3><input class="nm" id="n1" placeholder="Your name" maxlength="14"><br><button class="big" onclick="joinNew()">🆕 Join as new player 🌐</button>`);}
 // "New player" must never silently load an old save: a free name starts at level 0 with 🪙 20; a taken name asks first
 window.joinNew=()=>{let n=($('n1')&&$('n1').value.trim()||'').slice(0,14);
@@ -1232,10 +1306,10 @@ window.doFresh=i=>{const n=G.freshName;if(!n)return;delete save.profiles[n];dele
 function menu(){G.mode='menu';const last=save.lastNames||['Player 1','Player 2'];
  if(room){joinScreen();return;}
  const nSaved=Object.keys(save.profiles).length;
- overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">9 holes · 3 bosses · upgrade your clubs with tokens!</p>
+ overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">18 holes · 6 bosses · upgrade your clubs with tokens!</p>
  <div class="startrow"><button class="big" id="btnContinue" onclick="continueGame()">▶️ Continue<br><small>${nSaved?`keep your stuff${save.hole?' · hole '+(Math.min(save.hole,NHOLES-1)+1):''}`:'no saved game yet'}</small></button><button class="big" id="btnNewGame" style="background:#ff8a7a" onclick="askNewGame()">🆕 New Game<br><small>fresh start, 🪙 20</small></button></div>
  <input class="nm" id="n1" value="${esc(last[0])}" oninput="updSaveInfo()"><input class="nm" id="n2" value="${esc(last[1])}" placeholder="Player 2 (optional)" oninput="updSaveInfo()"><div id="saveInfo"></div>
- <button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
+ ${roundSel()}<button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
  <button class="sm" onclick="openSound(1)">🔊 Sound &amp; 📜 Credits</button>
  <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);updSaveInfo();}
 window.updSaveInfo=updSaveInfo;
@@ -1251,7 +1325,7 @@ window.doNewGame=()=>{save.profiles={};delete save.hole;persist();G.keep={};
 window.toMenu=()=>{if(G.arena)arenaCleanup();ball=null;G.swing=null;gs=null;G.afterOv=null;if(G.players)G.players.forEach(p=>{if(p.ball)scene.remove(p.ball);});G.players=[];
  if(G.online){try{G.online.conn&&G.online.conn.close();G.online.peer&&G.online.peer.destroy();}catch(e){}G.online=null;}menu();};
 window.go=(m,cont)=>{if(m===1||m===2)save.lastMode=m;const n1=($('n1').value.trim()||'Player 1').slice(0,14),n2=$('n2')?($('n2').value.trim()||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
- const start=cont?Math.min(save.hole||0,NHOLES-1):0;
+ G.round=ROUNDS[save.round]?save.round:'full';{const r=RD();var start=cont&&save.hole!=null&&save.hole>=r.a&&save.hole<r.b?save.hole:r.a;}
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
  else if(m==='host')hostOnline(n1);else if(m==='join')joinOnline(n1,room);};
@@ -1268,7 +1342,9 @@ function setLbl(t){if(t===lblTxt)return;lblTxt=t;const x=lblCv.getContext('2d');
  x.beginPath();x.roundRect(6,6,244,84,22);x.fill();x.stroke();x.fillStyle='#fff';x.font='bold 50px Trebuchet MS';x.textAlign='center';x.textBaseline='middle';x.fillText(t,128,50);lblTex.needsUpdate=true;}
 let landFrame=0;G.landPt=null;
 // dispersion zone: where intended randomness (accuracy miss, distance wobble, overswing) can send the ball. Upgrades shrink it.
-function dispersion(e,pw,club){const over=pw>1?.09*(1.35-e.acc)*((pw-1)/(MAXPOW-1)):0;return{lat:Math.tan(.025*(1-e.acc)+over),lon:(club===4?.3:.06)*(1-e.acc)};}
+// trajectory scatter: Low runs out more (distance wobble ×(1+.25k)); Flop drifts sideways a bit more (×(1+.2k))
+function trajScatter(club,e,traj){const k=trajK({traj,club},e);return{lat:traj>0?1+.2*k:1,lon:traj<0?1+.25*k:1};}
+function dispersion(e,pw,club,traj){const ts=trajScatter(club,e,traj||0);const over=pw>1?.09*(1.35-e.acc)*((pw-1)/(MAXPOW-1)):0;return{lat:Math.tan(.025*(1-e.acc)*ts.lat+over),lon:(club===4?.3:.06)*(1-e.acc)*ts.lon};}
 const dispG=new THREE.Group();{const fill=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff9a3c,transparent:true,opacity:.18,depthTest:false,depthWrite:false,side:THREE.DoubleSide}));const edge=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:.85,depthTest:false,side:THREE.DoubleSide}));[fill,edge].forEach(m=>{m.rotation.x=-Math.PI/2;m.renderOrder=9;dispG.add(m);});}scene.add(dispG);dispG.visible=false;G.dispersion=dispersion;
 function showLand(v){if(!v){dispG.visible=false;G.disp=null;}landRing.visible=landDot.visible=landBeam.visible=landLbl.visible=v;}
 const PATHN=1200;const pathG=new THREE.BufferGeometry();pathG.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(PATHN*3),3));
@@ -1282,8 +1358,8 @@ let lastKey='',lastSim=null;
 function updLanding(){const p=P();const ok=H&&p&&!G.arena&&!ball&&!G.swing&&!p.done&&['aim','power','gesture'].includes(G.mode);
  if(!ok){showLand(false);pathLine.visible=restDot.visible=pathDots.visible=trackDots.visible=false;G.landPt=null;G.landPath=null;if(ball||G.arena||!p)$('carry').style.display='none';return;}
  const e=eff(p.prof,p.club);const pw=G.mode==='power'?livePw(power):G.mode==='gesture'?(G.livePow||MINPOW):1;
- const key=[p.pos.x.toFixed(2),p.pos.z.toFixed(2),p.aim.toFixed(3),p.club,pw.toFixed(2),G.windV.x.toFixed(3),G.windV.y.toFixed(3),e.dist,e.spin,e.acc].join();
- landFrame++;if(key!==lastKey&&(landFrame%2===0||!lastSim||G.mode==='gesture')){lastKey=key;lastSim=simulateShot(p,{aim:p.aim,power:pw,club:p.club,e,spin:{x:0,y:0}},G.windV);}
+ const key=[G.traj||0,p.pos.x.toFixed(2),p.pos.z.toFixed(2),p.aim.toFixed(3),p.club,pw.toFixed(2),G.windV.x.toFixed(3),G.windV.y.toFixed(3),e.dist,e.spin,e.acc].join();
+ landFrame++;if(key!==lastKey&&(landFrame%2===0||!lastSim||G.mode==='gesture')){lastKey=key;lastSim=simulateShot(p,{aim:p.aim,power:pw,club:p.club,e,spin:{x:0,y:0},traj:G.traj||0},G.windV);}
  const sim=lastSim;if(!sim)return;const pt=sim.carry;G.landPt=pt;G.landPath=sim.path;G.restPt=sim.rest;
  const d=Math.hypot(pt.x-p.pos.x,pt.z-p.pos.z),dr=Math.hypot(sim.rest.x-p.pos.x,sim.rest.z-p.pos.z);
  const r=Math.max(.9,d*.015)*(1+.06*Math.sin(performance.now()/180));landRing.scale.setScalar(r);landRing.position.set(pt.x,hgt(pt.x,pt.z)+.15,pt.z);landDot.position.set(pt.x,hgt(pt.x,pt.z)+.16,pt.z);
@@ -1294,7 +1370,7 @@ function updLanding(){const p=P();const ok=H&&p&&!G.arena&&!ball&&!G.swing&&!p.d
  pathG.setDrawRange(0,n);pathG.attributes.position.needsUpdate=true;pathLine.computeLineDistances();pathLine.visible=true;
  {const da=dotG.attributes.position.array,ta=trackG.attributes.position.array;let m=0;for(let k=0;k<n;k+=2){const q=sim.path[k];da[m*3]=q.x;da[m*3+1]=q.y+.05;da[m*3+2]=q.z;ta[m*3]=q.x;ta[m*3+1]=hgt(q.x,q.z)+.08;ta[m*3+2]=q.z;m++;}
   dotG.setDrawRange(0,m);trackG.setDrawRange(0,m);dotG.attributes.position.needsUpdate=trackG.attributes.position.needsUpdate=true;pathDots.visible=trackDots.visible=true;}
- {const sp=dispersion(e,pw,p.club),dl=Math.max(.5,d*sp.lat),dz=Math.max(.5,(p.club===4?dr:d)*sp.lon);dispG.position.set(pt.x,hgt(pt.x,pt.z)+.14,pt.z);dispG.rotation.y=Math.PI-p.aim;dispG.scale.set(dl,1,dz);dispG.visible=true;G.disp={lat:dl,lon:dz};}
+ {const sp=dispersion(e,pw,p.club,G.traj||0),dl=Math.max(.5,d*sp.lat),dz=Math.max(.5,(p.club===4?dr:d)*sp.lon);dispG.position.set(pt.x,hgt(pt.x,pt.z)+.14,pt.z);dispG.rotation.y=Math.PI-p.aim;dispG.scale.set(dl,1,dz);dispG.visible=true;G.disp={lat:dl,lon:dz};}
  restDot.position.set(sim.rest.x,hgt(sim.rest.x,sim.rest.z)+.12,sim.rest.z);restDot.scale.setScalar(Math.max(1,dr*.025));restDot.visible=sim.end==='stop'||sim.end==='holed';
  const full=Math.round(fullCarry(e)),pct=Math.round(pw*100);const c=$('carry');c.style.display='block';
  const sprd=G.disp?` · 🎯 ±${Math.max(G.disp.lat,G.disp.lon)<1.05?'1':Math.round(Math.max(G.disp.lat,G.disp.lon))} m`:'';const endTxt=sim.end==='water'?' · 💦 water!':sim.end==='oob'?' · 🚧 out of bounds!':sim.end==='holed'?' · ⛳ IN THE HOLE!':` · stops ≈ <b>${Math.round(dr)} m</b>`;
@@ -1322,7 +1398,7 @@ const leafCols=new Float32Array(LN*3);const leafData=[];{const C=new THREE.Color
 leafG.setAttribute('color',new THREE.Float32BufferAttribute(leafCols,3));
 const leaves=new THREE.Points(leafG,new THREE.PointsMaterial({size:.32,vertexColors:true,map:DOT,transparent:true,depthWrite:false,alphaTest:.1}));leaves.frustumCulled=false;scene.add(leaves);
 function updWind(dt,t){if(G.windBase==null)return;t=t-(G.holeT0||0);const sd=G.gustSeed||0;const f=1+.16*Math.sin(t*.55+sd)+.09*Math.sin(t*1.9+sd*2);const ang=G.windDir+.1*Math.sin(t*.37+sd);
- G.windV.set(Math.sin(ang)*G.windBase*f,-Math.cos(ang)*G.windBase*f);WIND_U.uTime.value=t;WIND_U.uWind.value.copy(G.windV);
+ {const sp=Math.min(G.windBase*f,WIND_CAP*MPH);G.windV.set(Math.sin(ang)*sp,-Math.cos(ang)*sp);}WIND_U.uTime.value=t;WIND_U.uWind.value.copy(G.windV);
  const n=Math.round(LN*clamp(G.windMph/18,.08,1));leafG.setDrawRange(0,n);const pa=leafG.attributes.position.array,c=camera.position;const sp=G.windV.length();
  for(let k=0;k<n;k++){const q=leafData[k];const dx=q.x-c.x,dz=q.z-c.z;if(q.y<-900||Math.abs(dx)>40||Math.abs(dz)>40||q.y<hgt(q.x,q.z)-.5||q.y>c.y+14){
    // respawn upwind of the camera
@@ -1421,16 +1497,16 @@ G.hgt=hgt;
 const FLY_DUR=3.2;const _fp=new THREE.Vector3(),_fl=new THREE.Vector3(),_cq=new THREE.Quaternion(),_cp=new THREE.Vector3();
 function flyCan(){return !!(H&&G.mode==='aim'&&!ball&&!G.swing&&!G.arena&&!G.spec&&!G.ovOpen);}
 function flyStart(){if(G.fly){G.fly=null;return;}if(!flyCan())return;
- const pts=H.path.map(([x,z])=>new THREE.Vector3(x,0,z));const tee=pts[0],gr=new THREE.Vector3(H.gx,0,H.gz);
- // camera route: behind & above the tee, along the hole, finishing above/short of the green
- const back=tee.clone().sub(pts[1]).setY(0).normalize();const route=[tee.clone().addScaledVector(back,25),...pts.slice(0,-1),gr.clone().addScaledVector(back,-0).add(new THREE.Vector3(0,0,0))];
- const top=Math.max(...route.map(v=>hgt(v.x,v.z)));route.forEach((v,k)=>{v.y=Math.max(hgt(v.x,v.z),top*.7)+lerp(50,34,k/(route.length-1));});
- const look=[...pts,gr].map(v=>new THREE.Vector3(v.x,hgt(v.x,v.z),v.z));
- G.fly={t:0,cam:new THREE.CatmullRomCurve3(route,false,'centripetal'),look:new THREE.CatmullRomCurve3(look,false,'centripetal')};$('flyBtn').classList.add('on');}
+ // drone route: from just behind/above the CURRENT player's ball, along the ball→pin line, ending above/short of the green
+ const p=P();const B=new THREE.Vector3(p.pos.x,0,p.pos.z),gr=new THREE.Vector3(H.gx,0,H.gz);const d=Math.max(1,B.distanceTo(gr));const dir=gr.clone().sub(B).normalize();
+ const hz=clamp(d*.12,12,45);const route=[];const N=5;for(let k=0;k<=N;k++){const u=k/N;const v=B.clone().addScaledVector(dir,-18*(1-u)+u*(d-Math.min(14,d*.25)));route.push(v);}
+ route.forEach((v,k)=>{const u=k/N;let gmax=0;for(let q=0;q<=6;q++){const w=B.clone().lerp(v,q/6);gmax=Math.max(gmax,hgt(w.x,w.z));}v.y=gmax+lerp(hz*.75+6,hz*.7+8,u);});
+ const look=[];for(let k=0;k<=N;k++){const u=k/N;const v=B.clone().lerp(gr,lerp(.35,1,u));v.y=hgt(v.x,v.z);look.push(v);}
+ G.fly={t:0,dur:clamp(1.5+d*.009,1.5,FLY_DUR),cam:new THREE.CatmullRomCurve3(route,false,'centripetal'),look:new THREE.CatmullRomCurve3(look,false,'centripetal')};$('flyBtn').classList.add('on');}
 function flyTick(dt){const F=G.fly;if(!F){$('flyBtn').disabled=!flyCan();$('flyBtn').classList.remove('on');return;}
- if(!flyCan()){G.fly=null;return;}F.t+=dt;const k=F.t/FLY_DUR;if(k>=1){G.fly=null;return;}
+ if(!flyCan()){G.fly=null;return;}F.t+=dt;const k=F.t/(F.dur||FLY_DUR);if(k>=1){G.fly=null;return;}
  const e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;// ease in-out cubic along the route
- F.cam.getPointAt(Math.min(1,e*.97),_fp);F.look.getPointAt(Math.min(1,e*.6+.4),_fl);
+ F.cam.getPointAt(Math.min(1,e),_fp);F.look.getPointAt(Math.min(1,e),_fl);
  // blend in from / out to the normal shot camera so it starts and ends seamlessly
  const w=Math.min(1,Math.min(k,1-k)/.18);const ws=w*w*(3-2*w);
  _cp.copy(camera.position);_cq.copy(camera.quaternion);camera.position.copy(_fp);camera.lookAt(_fl);

@@ -1,7 +1,7 @@
 // Tiny Tee Heroes service worker.
 // Page (index.html / any navigation, incl. ?room= invite links): NETWORK-FIRST, so every new deploy is picked up; cached copy only when offline/slow.
 // Audio: cache-first (separate cache keyed by an audio content hash, so changed audio is re-fetched). Icons/manifest: stale-while-revalidate.
-const V='tth-53f6bfab74',AUDIO='tth-audio-7d57f220';
+const V='tth-4f53e870ac',AUDIO='tth-audio-7d57f220';
 const CORE=['./','index.html','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V&&k!==AUDIO).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
