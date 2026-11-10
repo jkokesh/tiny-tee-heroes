@@ -403,7 +403,7 @@ function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  const gx=dog*(par===5?.3:.8)+(r()-.5)*10;
  const path=[[0,0],[dog*.4,-L*.35],[dog,-L*.62],[gx,-L]];
  const gr=Math.max(i<9?10:8.5,15-D*.55);
- const h={i,d:D,par,L,fw,path,gx,gz:-L,gr,seed:i*1.7,amp:.5+D*.22,slope:(r()-.5)*.012*(1+D*.4),slope2:(r()-.5)*.01*(1+D*.3),bunkers:[],water:[],trees:[],tokens:[]};
+ const h={i,d:D,par,L,fw,path,gx,gz:-L,gr,seed:i*1.7,amp:.65+D*.28,slope:(r()-.5)*.012*(1+D*.4),slope2:(r()-.5)*.01*(1+D*.3),bunkers:[],water:[],trees:[],tokens:[]};
  // bunkers
  const nb=1+Math.min(i<9?7:9,Math.round(D)+1);for(let k=0;k<nb;k++){let t=r(),x,z;if(k<2){const a=r()*Math.PI*2;x=gx+Math.cos(a)*(gr+5);z=-L+Math.sin(a)*(gr+5)*.8;if(z<-L-gr)z+=8;}
   else{t=.45+r()*.45;const p=ptAt(h,t);x=p[0]+(r()<.5?-1:1)*(fw*.45+r()*6);z=p[1];}
@@ -432,7 +432,14 @@ function profAt(h,t){const P=h.prof;if(t<=P[0][0])return P[0][1];for(let k=1;k<P
 // big-scale course elevation: designed profile along the hole + ravine + rolling mounds on the fairway
 function elevBase(h,x,z,pi){pi=pi||pathInfo(h,x,z);let y=profAt(h,pi.t);
  if(h.rav){const [tv,dep,w]=h.rav;const k=(pi.t-tv)/w;y-=dep*Math.exp(-k*k*2.2)*sstep(h.fw/2+70,h.fw/2+30,pi.d);}
- if(h.mound){const fade=sstep(.04,.14,pi.t)*sstep(.97,.84,pi.t);y+=h.mound*fade*(Math.sin(pi.t*h.totL/19+h.seed)*.7+Math.sin(x*.09+z*.04+h.seed*3)*.5);}
+ if(h.mound){const fade=sstep(.03,.12,pi.t)*sstep(.97,.84,pi.t);
+  y+=h.mound*fade*(Math.sin(pi.t*h.totL/19+h.seed)*.7+Math.sin(x*.09+z*.04+h.seed*3)*.5);
+  // extra fairway roll (a longer swell + a shorter dip); stays off the tee and green
+  y+=h.mound*fade*.7*(Math.sin(pi.t*h.totL/11+h.seed*2)*.6+Math.sin(pi.t*h.totL/6.2+h.seed*5)*.35+Math.sin(x*.05+z*.03+h.seed)*.25);}
+ // mounds that frame the fairway — on the shoulders only, so the tee-to-green line stays open
+ {const shW=6+(h.d||0)*.7,shC=h.fw/2+3.5,u=(pi.d-shC)/shW,sh=Math.exp(-u*u);
+  const shFade=sstep(.05,.16,pi.t)*sstep(.95,.82,pi.t);
+  y+=sh*shFade*(1.15+(h.d||0)*.25)*(.65+.55*vnoise(x*.038+h.seed,z*.038));}
  return y;}
 function inRavine(h,x,z){if(!h.rav)return false;const pi=pathInfo(h,x,z);return Math.abs(pi.t-h.rav[0])<h.rav[2]*.75&&pi.d<h.fw/2+40;}
 function ptAt(h,t){const P=h.path;const seg=Math.min(2,Math.floor(t*3));const u=t*3-seg;return[lerp(P[seg][0],P[seg+1][0],u),lerp(P[seg][1],P[seg+1][1],u)];}
@@ -451,14 +458,16 @@ function surfInfo(h,x,z){if(G.forceSurf)return G.forceSurf;
  if(Math.abs(x)<4&&z>-3&&z<5)return'tee';
  const d=distPath(h,x,z);const half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed));if(d<half&&z<-12&&!inRavine(h,x,z))return'fairway';
  return'rough';}
-function hgtBase(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.cos(z*.018+h.seed*2)+.8*Math.sin(z*.041+x*.012)+.4*Math.sin(x*.07-z*.05));
- const dt=Math.hypot(x,z-1);y*=sstep(6,25,dt);
+function hgtBase(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.cos(z*.018+h.seed*2)+.8*Math.sin(z*.041+x*.012)+.4*Math.sin(x*.07-z*.05)+.35*Math.sin(x*.015-z*.022+h.seed*4)*Math.cos(z*.019+h.seed));
+ const dt=Math.hypot(x,z-1);y*=.22+.78*sstep(8,32,dt);
  const pi=pathInfo(h,x,z),d=pi.d;y+=elevBase(h,x,z,pi);
  const dg=Math.hypot(x-h.gx,z-h.gz);const gw=sstep(h.gr+8,h.gr,dg);const yg=h.slope*(x-h.gx)*h.gr/2*.4+h.slope2*(z-h.gz)*h.gr/2*.4;
  const gT=(px,pz)=>{const dx=px-h.gx,dz=pz-h.gz;const tr=h.tier?Math.min(.5,h.tier*.42)*sstep(-4.5,4.5,dx*Math.cos(h.tierA)+dz*Math.sin(h.tierA)+1.5):0;
   return tr+.2*Math.sin(dx*.21+h.tierA*3)*Math.cos(dz*.17+h.seed)+.12*Math.sin((dx+dz)*.13+h.seed*2);};// low-frequency breaks
  const fc=sstep(1.3,3.8,dg);const gc=gT(h.gx,h.gz);const tier=gc+(gT(x,z)-gc)*fc;y=lerp(y,h.Eg+yg+.3+tier,gw);
- y+=Math.min(22,Math.max(0,d-h.fw/2-28)*.13)+ (d>h.fw/2+28? 2*fbm(x*.02,z*.02):0);
+ const mid=sstep(h.fw*.18,h.fw*.5,d)*sstep(h.fw/2+22,h.fw/2+6,d)*sstep(.08,.2,pi.t)*sstep(.92,.78,pi.t);
+ y+=(0.9+(h.d||0)*.18)*mid*(fbm(x*.032+h.seed,z*.032)-.42)*2.4;
+ y+=Math.min(26,Math.max(0,d-h.fw/2-22)*.16)+(d>h.fw/2+22?(2.2+(h.d||0)*.15)*fbm(x*.016,z*.016):0);
  if(h.boss){const db=Math.hypot(x-h.gx,z-(h.gz-2.5));y=lerp(y,h.Eg+.3,sstep(38,23,db));}// flat boss arena
  for(const b of h.bunkers){y-=.55*sstep(1.15,.55,ell(b,x,z));}
  return y;}
@@ -490,35 +499,58 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
  const SG=3,gnx=Math.ceil(Wd/SG)+2,gnz=Math.ceil(Ld/SG)+2,HG=new Float32Array(gnx*gnz);for(let j=0;j<gnz;j++)for(let k=0;k<gnx;k++)HG[j*gnx+k]=hgt(-HX+(k-.5)*SG,zmin+(j-.5)*SG);
  let hmin=1e9,hmax=-1e9;for(const v of HG){hmin=Math.min(hmin,v);hmax=Math.max(hmax,v);}
  const shadeAt=(x,z)=>{const fx=(x+HX)/SG+.5,fz=(z-zmin)/SG+.5;const k=clamp(Math.floor(fx),1,gnx-2),j=clamp(Math.floor(fz),1,gnz-2);const gx_=(HG[j*gnx+k+1]-HG[j*gnx+k-1])/(2*SG),gz_=(HG[(j+1)*gnx+k]-HG[(j-1)*gnx+k])/(2*SG);
-  const hh=HG[j*gnx+k];return clamp(1+(-gx_*.55+gz_*.75)*.9,.62,1.3)*(.93+.14*(hh-hmin)/Math.max(1,hmax-hmin));};
+  const hh=HG[j*gnx+k];return clamp(1+(-gx_*.45+gz_*.65)*.7,.74,1.18)*(.95+.1*(hh-hmin)/Math.max(1,hmax-hmin));};
  const TW=G.gfxLow?640:1024,TH=Math.round(TW*Ld/Wd);const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const cx=cv.getContext('2d');const im=cx.createImageData(TW,TH);const D=im.data;
  const ang=Math.atan2(h.path[3][0]-h.path[0][0],-(h.path[3][1]));
  for(let j=0;j<TH;j++){const z=zmin+(j+.5)/TH*Ld;for(let k=0;k<TW;k++){const x=-HX+(k+.5)/TW*Wd;
-  const s=surfInfo(h,x,z);const n=fbm(x*.08,z*.08),n2=hash2(k,j);let r,g,b;
-  if(s==='rough'){const m=fbm(x*.015+5,z*.015);r=48+n*30+m*18;g=92+n*42+m*25;b=30+n*14;const d=distPath(h,x,z);if(d<h.fw/2+3&&z<-10){r+=8;g+=12;}}
-  else if(s==='fairway'){const st=Math.floor((x*Math.cos(ang)*.6+z)/9)&1;r=st?96:80;g=st?162:142;b=st?60:50;r+=n*14;g+=n*16;}
-  else if(s==='green'){const st=Math.floor((x+z*.3)/3)&1;r=st?92:82;g=st?184:170;b=st?74:66;r+=n*8;g+=n*8;}
-  else if(s==='fringe'||s==='tee'){r=78+n*12;g=150+n*14;b=56;}
-  else if(s==='sand'){let e=1;for(const bb of h.bunkers){const v=ell(bb,x,z);if(v<1)e=Math.min(e,v);}const lip=e>.82?.82:1;
-   r=(228-n*25+n2*14)*lip;g=(208-n*25+n2*12)*lip;b=(165-n*25+n2*10)*lip;}
-  else{// lake bed: wet sand at the shore fading to deep teal
-   let q=9;for(const w of h.water)q=Math.min(q,waterQ(w,x,z));const k2=sstep(.98,.6,q);r=lerp(150,30,k2)+n*10;g=lerp(135,62,k2)+n*10;b=lerp(95,60,k2)+n*6;}
-  if(s==='rough'||s==='fairway'){let q=9;for(const w of h.water)q=Math.min(q,waterQ(w,x,z));if(q<1.12){const k3=sstep(1.12,1,q);r=lerp(r,112,k3*.6);g=lerp(g,110,k3*.5);b=lerp(b,72,k3*.5);}}
+  const n=fbm(x*.08,z*.08),n2=hash2(k,j),m=fbm(x*.015+5,z*.015);
+  const d=distPath(h,x,z),half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed)),dg=Math.hypot(x-h.gx,z-h.gz);
+  let qW=9;for(const w of h.water)qW=Math.min(qW,waterQ(w,x,z));
+  let eS=9;for(const bb of h.bunkers)eS=Math.min(eS,Math.sqrt(Math.max(0,ell(bb,x,z))));
+  const mowF=.5+.22*Math.sin((x*Math.cos(ang)*.6+z)*.7)+.1*Math.sin((x*.4-z)*.33+h.seed)+.08*n,
+  mowG=.5+.16*Math.sin((x+z*.3)*2.1)+.1*n;
+  const grTex=h.gr*(1+.05*Math.sin(Math.atan2(z-h.gz,x-h.gx)*2+h.seed*3)+.03*Math.sin(Math.atan2(z-h.gz,x-h.gx)*5+h.seed));
+  const rR=48+n*30+m*18+(d<h.fw/2+6&&z<-10?8:0),gR=92+n*42+m*25+(d<h.fw/2+6&&z<-10?12:0),bR=30+n*14;
+  const rF=88+mowF*16+n*14,gF=152+mowF*20+n*16,bF=55+n*6;
+  const rN=86+mowG*10+n*8,gN=176+mowG*14+n*8,bN=70+n*4;
+  const rI=78+n*12,gI=150+n*14,bI=56;
+  const rS=228-n*25+n2*14,gS=208-n*25+n2*12,bS=165-n*25+n2*10;
+  const k2=sstep(.98,.6,qW),rB=lerp(150,30,k2)+n*10,gB=lerp(135,62,k2)+n*10,bB=lerp(95,60,k2)+n*6;
+  let r=rR,g=gR,b=bR;
+  const fwW=sstep(half+2.4,half-.4,d)*(z<-8?1:sstep(5,-8,z))*(inRavine(h,x,z)?0:1);
+  r=lerp(r,rF,fwW);g=lerp(g,gF,fwW);b=lerp(b,bF,fwW);
+  if(z>-4&&z<6){const teeW=sstep(5.2,2.2,Math.max(Math.abs(x)*1.1,Math.abs(z-1)));r=lerp(r,rI,teeW);g=lerp(g,gI,teeW);b=lerp(b,bI,teeW);}
+  const frW=sstep(grTex+3.6,grTex+.4,dg);r=lerp(r,rI,frW);g=lerp(g,gI,frW);b=lerp(b,bI,frW);
+  const gnW=sstep(grTex+.35,grTex-.8,dg);r=lerp(r,rN,gnW);g=lerp(g,gN,gnW);b=lerp(b,bN,gnW);
+  if(eS<1.35){const lip=sstep(1.35,1,eS),inn=sstep(1.02,.7,eS);r=lerp(r,r*.7,lip*.7);g=lerp(g,g*.72,lip*.7);b=lerp(b,b*.55,lip*.7);
+   r=lerp(r,rS,inn);g=lerp(g,gS,inn);b=lerp(b,bS,inn);}
+  if(qW<1.18){const wet=sstep(1.18,1,qW);r=lerp(r,112,wet*.65);g=lerp(g,110,wet*.55);b=lerp(b,72,wet*.55);
+   const wk=sstep(1.02,.7,qW);r=lerp(r,rB,wk);g=lerp(g,gB,wk);b=lerp(b,bB,wk);}
   {const sh=shadeAt(x,z);r*=sh;g*=sh;b*=sh;}
   const v=n2*8-4;const edge=Math.min(k,TW-1-k,j,TH-1-j);const ef=sstep(0,30,edge);
-  if(ef<1&&s==='rough'){r=lerp(60,r,ef);g=lerp(112,g,ef);b=lerp(38,b,ef);}
+  if(ef<1&&fwW<.25&&gnW<.25&&qW>1.05){r=lerp(60,r,ef);g=lerp(112,g,ef);b=lerp(38,b,ef);}
   const q=(j*TW+k)*4;D[q]=r+v;D[q+1]=g+v;D[q+2]=b+v;D[q+3]=255;}}
  cx.putImageData(im,0,0);h.canvas=cv;
  const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
- // terrain mesh
- const MW=700,MZ0=zmax+250,MZ1=zmin-300,ML=MZ0-MZ1,seg=G.gfxLow?3.5:2.5;/* mesh resolution is visual only (physics uses hgt()) */const sx=Math.round(MW/seg),sz=Math.round(ML/seg);
- const geo=new THREE.PlaneGeometry(MW,ML,sx,sz);geo.rotateX(-Math.PI/2);geo.translate(0,0,(MZ0+MZ1)/2);
- const p=geo.attributes.position,uv=geo.attributes.uv;
- for(let k=0;k<p.count;k++){const x=p.getX(k),z=p.getZ(k);p.setY(k,hgt(x,z));uv.setXY(k,(x+HX)/Wd,1-(z-zmin)/Ld);}
- geo.computeVertexNormals();
+ // terrain mesh: a denser play-corridor mesh + a coarser surround (visual only; physics always uses hgt())
+ const MZ0=zmax+250,MZ1=zmin-300;
+ const mkTerrain=(MW,z0,z1,seg,smoothN)=>{
+  const ML=z0-z1,sx=Math.round(MW/seg),sz=Math.round(ML/seg);
+  const geo=new THREE.PlaneGeometry(MW,ML,sx,sz);geo.rotateX(-Math.PI/2);geo.translate(0,0,(z0+z1)/2);
+  const p=geo.attributes.position,uv=geo.attributes.uv;
+  for(let k=0;k<p.count;k++){const x=p.getX(k),z=p.getZ(k);p.setY(k,hgt(x,z));uv.setXY(k,(x+HX)/Wd,1-(z-zmin)/Ld);}
+  if(smoothN){const nn=geo.attributes.normal,eps=.75;
+   for(let k=0;k<p.count;k++){const x=p.getX(k),z=p.getZ(k);
+    const nx=hgt(x-eps,z)-hgt(x+eps,z),ny=2*eps,nz=hgt(x,z-eps)-hgt(x,z+eps);const L=Math.hypot(nx,ny,nz)||1;nn.setXYZ(k,nx/L,ny/L,nz/L);}
+   nn.needsUpdate=true;}
+  else geo.computeVertexNormals();
+  return geo;};
  const bt=bumpTex.clone();bt.needsUpdate=true;bt.repeat.set(Wd/3,Ld/3);
- groundMat=G.gfxLow?new THREE.MeshLambertMaterial({map:tex}):new THREE.MeshStandardMaterial({map:tex,bumpMap:bt,bumpScale:1.2,roughness:.95,metalness:0});
- const ground=new THREE.Mesh(geo,groundMat);ground.receiveShadow=true;holeGroup.add(ground);
+ const mkMat=()=>G.gfxLow?new THREE.MeshLambertMaterial({map:tex}):new THREE.MeshStandardMaterial({map:tex,bumpMap:bt,bumpScale:.55,roughness:.96,metalness:0});
+ const playW=Math.min(440,Wd+80);
+ groundMat=mkMat();groundMat.polygonOffset=true;groundMat.polygonOffsetFactor=-1;groundMat.polygonOffsetUnits=-1;
+ const ground=new THREE.Mesh(mkTerrain(playW,zmax+50,zmin-40,G.gfxLow?2.4:1.55,true),groundMat);ground.receiveShadow=true;ground.renderOrder=1;holeGroup.add(ground);
+ const farM=mkMat();const farMesh=new THREE.Mesh(mkTerrain(700,MZ0,MZ1,G.gfxLow?5:3.6,false),farM);farMesh.receiveShadow=!G.gfxLow;holeGroup.add(farMesh);
  const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=Math.min(21.5,hmin-4);holeGroup.add(outer);
  // water
  for(const w of h.water){const sh=new THREE.Shape();for(let k=0;k<=160;k++){const [ex,ez]=waterEdge(w,k/160*Math.PI*2,1.012);const px=ex-w.x,pz=-(ez-w.z);k?sh.lineTo(px,pz):sh.moveTo(px,pz);}
@@ -559,9 +591,9 @@ function buildTrees(h){const r=rng(300+h.i);const trees=[];
  function ok2(x,z){return Math.hypot(x,z)>25&&Math.hypot(x-h.gx,z-h.gz)>h.gr+20;}
  const n=trees.length;
  const pineProf=[];const lv=4;pineProf.push(new THREE.Vector2(0,0));for(let k=0;k<lv;k++){const y0=k/lv,y1=(k+1)/lv;pineProf.push(new THREE.Vector2((1-y0)*.9+.1,y0+.02));pineProf.push(new THREE.Vector2((1-y1)*.5,y1));}pineProf.push(new THREE.Vector2(0,1));
- const LO=G.gfxLow;const pineG=new THREE.LatheGeometry(pineProf,LO?6:9);
+ const LO=G.gfxLow;const pineG=new THREE.LatheGeometry(pineProf,LO?8:12);
  const blobG=new THREE.IcosahedronGeometry(1,LO?1:2);{const pp=blobG.attributes.position;for(let k=0;k<pp.count;k++){const v=new THREE.Vector3().fromBufferAttribute(pp,k);const s=1+.22*(vnoise(v.x*2+5,v.y*2+v.z*2)-.5)*2;v.multiplyScalar(s);pp.setXYZ(k,v.x,v.y,v.z);}blobG.computeVertexNormals();}
- const trunkG=new THREE.CylinderGeometry(.18,.3,1,LO?4:6);trunkG.translate(0,.5,0);
+ const trunkG=new THREE.CylinderGeometry(.18,.3,1,LO?6:8);trunkG.translate(0,.5,0);
  const fm=new THREE.MeshStandardMaterial({roughness:.9});fm.onBeforeCompile=sh=>{sh.uniforms.uTime=WIND_U.uTime;sh.uniforms.uWind=WIND_U.uWind;
  sh.vertexShader='uniform float uTime;uniform vec2 uWind;\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 mvPosition=vec4(transformed,1.0);
 #ifdef USE_INSTANCING
@@ -1527,7 +1559,7 @@ addEventListener('resize',rotHint);addEventListener('orientationchange',()=>setT
 // installable app: service worker (network-first for the page so new deploys always load; cached audio for fast reloads)
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')&&!QS.has('nosw')){
  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
-G.TOUCH=TOUCH;G.MOBILE=MOBILE;G.gfx=()=>({pref:gfxPref,low:gfxLow(),dpr:renderer.getPixelRatio()});G.renderer=renderer;
+G.H=()=>H;G.TOUCH=TOUCH;G.MOBILE=MOBILE;G.gfx=()=>({pref:gfxPref,low:gfxLow(),dpr:renderer.getPixelRatio()});G.renderer=renderer;
 G.gsState=()=>gs&&{id:gs.id,x0:gs.x0,y0:gs.y0,phase:gs.phase,n:gs.pts.length};
 G.gsRange=()=>GS();
 G.updWind=updWind;
