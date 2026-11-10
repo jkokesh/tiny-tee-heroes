@@ -20,6 +20,9 @@ Changes: trimmed to the first 60 seconds, fade in/out added, re-encoded.
 | 10-cool-vibes.mp3 | Cool Vibes | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cool%20Vibes.mp3 |
 | 11-smooth-lovin.mp3 | Smooth Lovin | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Smooth%20Lovin.mp3 |
 | 12-breaktime.mp3 | Breaktime | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Breaktime.mp3 |
+| 13-island-meet-and-greet.mp3 | Island Meet and Greet | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Island%20Meet%20and%20Greet.mp3 |
+| 14-beach-party.mp3 | Beach Party | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Beach%20Party.mp3 |
+| 15-maccary-bay.mp3 | Maccary Bay | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Maccary%20Bay.mp3 |
 
 ## Sound effects
 
@@ -38,3 +41,4 @@ Changes: trimmed to the first 60 seconds, fade in/out added, re-encoded.
 | boss_defeat | Yellowstone sound library – Grizzly Bears Roar – 001 | NPS & MSU Acoustic Atlas / Jennifer Jerrett, https://commons.wikimedia.org/wiki/File:Yellowstone_sound_library_-_Grizzly_Bears_Roar_-_001.mp3 | Public domain |
 | cheer | Applause i | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Applause_i.ogg | Public domain |
 | ooh | Ohhh ahhh | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Ohhh_ahhh.ogg | Public domain |
+| ocean (Coral Cove ambience) | Sea Waves with Tern Calls (0267) | DenisChardonnet, https://bigsoundbank.com/sea-waves-and-seagulls-s0267.html | CC0 |

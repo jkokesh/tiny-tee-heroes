@@ -46,7 +46,7 @@ button.big{font-size:24px;font-weight:bold;padding:12px 26px;margin:8px;border-r
 #saveInfo{max-width:720px;margin:4px auto}.savecard{background:#fff2;border:3px solid #fff8;border-radius:14px;padding:8px 12px;margin:6px;font-size:18px}.savecard button.sm.on{background:#7d7}button.sm.fresh{background:#ff8a7a}button.big.fresh{background:#ff8a7a;font-size:18px}button.big.danger{background:#e5533d;color:#fff}
 button.sm{font-size:16px;font-weight:bold;padding:6px 12px;border-radius:10px;border:3px solid #fff;background:#fb2;color:#520;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
-#roundSel{margin:6px 0 8px;font-size:18px}#roundSel button{margin:3px;border:3px solid transparent;opacity:.75}#roundSel button.on{border-color:#ffe14d;opacity:1;box-shadow:0 0 0 2px #0004}
+#roundSel{margin:6px 0 8px;font-size:18px}#roundSel button{margin:3px;border:3px solid transparent;opacity:.75}#roundSel button.on{border-color:#ffe14d;opacity:1;box-shadow:0 0 0 2px #0004}#courseSel{margin:8px 0 4px;font-size:18px}#courseSel button{margin:3px;border:3px solid transparent;opacity:.75;min-width:210px;line-height:1.2}#courseSel button.on{border-color:#ffe14d;opacity:1;box-shadow:0 0 0 2px #0004}#courseSel small{font-weight:normal;font-size:14px}
 #trajBox{margin-bottom:4px}#trajBox button{font:bold 13px inherit;padding:6px 7px;margin:2px 1px;border-radius:9px;border:2px solid #fff8;background:#0006;color:#fff;cursor:pointer;min-height:34px}#trajBox button.on{background:#ffe14d;color:#222;border-color:#fff}html.touch #trajBox button{font-size:11px;padding:4px 5px;min-height:32px}
 table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,table.sc th{border:2px solid #fff6;padding:5px 9px}
 .statrow{display:flex;align-items:center;gap:10px;margin:6px 0;text-align:left}.statrow .nm{width:120px}
@@ -186,13 +186,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 //# sourceMappingURL=peerjs.min.js.map
 </script>
 <script>// ===== AUDIO: real recorded music + SFX, served as separate files in audio/ (see CREDITS.md). No synthesized audio. =====
-const MUSIC=[['01-local-forecast-elevator','Local Forecast - Elevator'],['02-carefree','Carefree'],['03-wallpaper','Wallpaper'],['04-easy-lemon','Easy Lemon'],['05-airport-lounge','Airport Lounge'],['06-bossa-antigua','Bossa Antigua'],['07-lobby-time','Lobby Time'],['08-laid-back-guitars','Laid Back Guitars'],['09-somewhere-sunny','Somewhere Sunny'],['10-cool-vibes','Cool Vibes'],['11-smooth-lovin','Smooth Lovin'],['12-breaktime','Breaktime']];
+const MUSIC_PINES=[['01-local-forecast-elevator','Local Forecast - Elevator'],['02-carefree','Carefree'],['03-wallpaper','Wallpaper'],['04-easy-lemon','Easy Lemon'],['05-airport-lounge','Airport Lounge'],['06-bossa-antigua','Bossa Antigua'],['07-lobby-time','Lobby Time'],['08-laid-back-guitars','Laid Back Guitars'],['09-somewhere-sunny','Somewhere Sunny'],['10-cool-vibes','Cool Vibes'],['11-smooth-lovin','Smooth Lovin'],['12-breaktime','Breaktime']];
+const MUSIC_COVE=[['13-island-meet-and-greet','Island Meet and Greet'],['14-beach-party','Beach Party'],['15-maccary-bay','Maccary Bay'],['09-somewhere-sunny','Somewhere Sunny'],['06-bossa-antigua','Bossa Antigua'],['02-carefree','Carefree'],['05-airport-lounge','Airport Lounge'],['07-lobby-time','Lobby Time']];
+const MUSIC=MUSIC_PINES.concat([['13-island-meet-and-greet','Island Meet and Greet'],['14-beach-party','Beach Party'],['15-maccary-bay','Maccary Bay']]);
+function playlist(){try{return (window.__golf&&window.__golf.course==='cove')?MUSIC_COVE:MUSIC_PINES;}catch(e){return MUSIC_PINES;}}
 const SFXV={swing1:.5,swing2:.5,dodge:.6,hit_driver:.9,hit_iron:.8,hit_wedge:.8,putt:.9,cup:.9,holed:.7,splash:.8,splash2:.7,sand:.8,land:.7,land_hard:.6,coin:.7,buy:.8,boss_hit:.8,player_hit:.8,block:.7,roar:.7,boss_defeat:.7,victory:.7,defeat:.7,cheer:.6,ooh:.6,click:.5,toggle:.5,fire:.6,ice:.7,zap:.6};
 const AU=(()=>{let st={music:.45,sfx:.8,mOn:true,sOn:true};try{Object.assign(st,JSON.parse(localStorage.getItem('tinyTeeHeroes.audio')||'{}'));}catch(e){}
  const save=()=>{try{localStorage.setItem('tinyTeeHeroes.audio',JSON.stringify(st));}catch(e){}};
- let unlocked=false,order=[],oi=0,mus=null,pools={},played={},lastT={};
- const shuffle=()=>{order=MUSIC.map((_,i)=>i);for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}oi=0;};
- function nextTrack(){if(!order.length||oi>=order.length)shuffle();const t=MUSIC[order[oi++]];mus.src='audio/music/'+t[0]+'.mp3';mus.dataset.title=t[1];mus.volume=st.mOn?st.music:0;if(st.mOn)mus.play().catch(()=>{});const n=document.getElementById('nowPlaying');if(n)n.textContent='🎵 '+t[1]+' — Kevin MacLeod';}
+ let unlocked=false,order=[],oi=0,mus=null,pools={},played={},lastT={},amb=null,ambOn=false;
+ const shuffle=()=>{const P=playlist();order=P.map((_,i)=>i);for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}oi=0;};
+ function nextTrack(){if(!order.length||oi>=order.length)shuffle();const t=playlist()[order[oi++]];if(!t){shuffle();return nextTrack();}mus.src='audio/music/'+t[0]+'.mp3';mus.dataset.title=t[1];mus.volume=st.mOn?st.music:0;if(st.mOn)mus.play().catch(()=>{});const n=document.getElementById('nowPlaying');if(n)n.textContent='🎵 '+t[1]+' — Kevin MacLeod';}
  // SFX play through Web Audio (decoded recorded clips): works on iOS once unlocked by the first touch, low latency, no element pools.
  // Falls back to <audio> elements where Web Audio is missing.
  const AC=window.AudioContext||window.webkitAudioContext;let ctx=null,gain=null;const bufs={},loading={};
@@ -201,21 +204,26 @@ const AU=(()=>{let st={music:.45,sfx:.8,mOn:true,sOn:true};try{Object.assign(st,
    // iOS: playing a silent buffer inside the gesture unlocks the context
    const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(gain);sb.start(0);Object.keys(SFXV).forEach(load);}catch(e){ctx=null;}}
   if(ctx&&ctx.state!=='running'&&!document.hidden)ctx.resume().catch(()=>{});
-  if(unlocked)return;unlocked=true;mus=new Audio();mus.preload='auto';mus.setAttribute('playsinline','');mus.addEventListener('ended',nextTrack);nextTrack();}
+  if(unlocked)return;unlocked=true;mus=new Audio();mus.preload='auto';mus.setAttribute('playsinline','');mus.addEventListener('ended',nextTrack);nextTrack();if(ambOn)setAmbience(true);}
  function play(name,{vol=1,rate=1,minGap=.04}={}){played[name]=(played[name]||0)+1;if(!unlocked||!st.sOn||st.sfx<=0)return;const now=performance.now()/1000;if(now-(lastT[name]||0)<minGap)return;lastT[name]=now;
   const v=Math.min(1,st.sfx*(SFXV[name]||.7)*vol);
   if(ctx){const b=bufs[name];if(!b){load(name);return;}const src=ctx.createBufferSource();src.buffer=b;src.playbackRate.value=rate;const g=ctx.createGain();g.gain.value=v;src.connect(g);g.connect(gain);src.start();return;}
   const pool=pools[name]=pools[name]||[];let a=pool.find(x=>x.paused||x.ended);if(!a){if(pool.length>=6)a=pool[0];else{a=new Audio('audio/sfx/'+name+'.mp3');a.preload='auto';pool.push(a);}}
   try{a.currentTime=0;}catch(e){}a.volume=v;a.playbackRate=rate;a.preservesPitch=false;a.play().catch(()=>{});}
- function set(k,v){st[k]=v;save();if(mus){mus.volume=st.mOn?st.music:0;if(st.mOn&&mus.paused&&unlocked&&!document.hidden)mus.play().catch(()=>{});if(!st.mOn)mus.pause();}}
+ function setAmbience(on){ambOn=!!on;if(!unlocked)return;
+  if(on){if(!amb){amb=new Audio('audio/sfx/ocean.mp3');amb.loop=true;amb.preload='auto';amb.setAttribute('playsinline','');}
+   amb.volume=st.sOn?Math.min(.32,st.sfx*.28):0;if(st.sOn&&!document.hidden)amb.play().catch(()=>{});}
+  else if(amb)amb.pause();}
+ function set(k,v){st[k]=v;save();if(mus){mus.volume=st.mOn?st.music:0;if(st.mOn&&mus.paused&&unlocked&&!document.hidden)mus.play().catch(()=>{});if(!st.mOn)mus.pause();}
+  if(amb){amb.volume=st.sOn?Math.min(.32,st.sfx*.28):0;if(!st.sOn||!ambOn||document.hidden)amb.pause();else amb.play().catch(()=>{});}}
  ['pointerdown','keydown','touchstart','touchend','click'].forEach(ev=>window.addEventListener(ev,unlock,{capture:true}));
  // pause everything while the tab/app is in the background; resume when it comes back
- function vis(){if(document.hidden){if(mus)mus.pause();if(ctx&&ctx.state==='running')ctx.suspend().catch(()=>{});}
-  else{if(mus&&st.mOn&&unlocked)mus.play().catch(()=>{});if(ctx&&ctx.state!=='running')ctx.resume().catch(()=>{});}}
+ function vis(){if(document.hidden){if(mus)mus.pause();if(amb)amb.pause();if(ctx&&ctx.state==='running')ctx.suspend().catch(()=>{});}
+  else{if(mus&&st.mOn&&unlocked)mus.play().catch(()=>{});if(amb&&ambOn&&st.sOn)amb.play().catch(()=>{});if(ctx&&ctx.state!=='running')ctx.resume().catch(()=>{});}}
  document.addEventListener('visibilitychange',vis);window.addEventListener('pagehide',()=>{if(mus)mus.pause();});window.addEventListener('pageshow',vis);
  // UI click sound on any button
  document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b&&!b.disabled&&!b.dataset.nosfx)play('click');},true);
- return{play,set,st,unlock,get ctx(){return ctx},bufs,skip:()=>{if(mus)nextTrack();},get unlocked(){return unlocked},played,get track(){return mus?mus.dataset.title:null},get music(){return mus}};})();
+ return{play,set,setAmbience,st,unlock,get ctx(){return ctx},bufs,skip:()=>{if(mus)nextTrack();},refreshPlaylist:()=>{order=[];oi=0;if(mus&&st.mOn)nextTrack();},get unlocked(){return unlocked},played,get track(){return mus?mus.dataset.title:null},get music(){return mus}};})();
 window.AU=AU;
 const sfx=(n,o)=>{if(typeof DRY!=='undefined'&&DRY)return;AU.play(n,o);};
 function soundMenu(){const s=AU.st;const row=(k,on,lbl)=>`<div class="sndrow"><b>${lbl}</b><button class="sm" data-nosfx="1" onclick="sndToggle('${on}')">${s[on]?'🔊 On':'🔇 Off'}</button><input type="range" min="0" max="100" value="${Math.round(s[k]*100)}" oninput="AU.set('${k}',this.value/100)" onchange="sfx('coin')"><span>${Math.round(s[k]*100)}%</span></div>`;
@@ -228,11 +236,12 @@ window.sndToggle=k=>{AU.set(k,!AU.st[k]);soundMenu();};
 window.sndBack=()=>{closeOv();if(G.sndFromMenu){G.sndFromMenu=false;menu();}};
 window.openSound=fromMenu=>{G.sndFromMenu=!!fromMenu;soundMenu();};
 window.showCredits=()=>overlay(`<h1>📜 Credits</h1><div style="text-align:left;font-size:15px;max-height:60vh;overflow:auto">
-<h3>🎵 Music — Kevin MacLeod (incompetech.com)</h3><p>${MUSIC.map(t=>`“${t[1]}”`).join(', ')}<br>Kevin MacLeod (incompetech.com) · Licensed under Creative Commons: By Attribution 4.0 — creativecommons.org/licenses/by/4.0/ · Trimmed to 60 s with fades.</p>
+<h3>🎵 Music — Kevin MacLeod (incompetech.com)</h3><p>${MUSIC.map(t=>`“${t[1]}”`).join(', ')}<br>Kevin MacLeod (incompetech.com) · Licensed under Creative Commons: By Attribution 4.0 — creativecommons.org/licenses/by/4.0/ · Trimmed to 60 s with fades. Coral Cove also plays “Island Meet and Greet”, “Beach Party” and “Maccary Bay”.</p>
 <h3>💥 Sound effects</h3><ul>
 <li>Kenney (kenney.nl) — Impact Sounds, RPG Audio, Casino Audio, UI Audio, Music Jingles · CC0</li>
 <li>“Swishes Sound Pack” by artisticdude (OpenGameArt) · CC0</li><li>“Air Whoosh” by pyranostudios (OpenGameArt) · CC0</li><li>“6 Short Water Splashes” by ezwa (OpenGameArt) · CC0</li>
-<li>Wikimedia Commons, public domain: “Bathtub water splashes”, “Monster growls 2”, “Applause i”, “Ohhh ahhh”, “Yellowstone sound library – Grizzly Bears Roar – 001” (NPS &amp; MSU Acoustic Atlas / Jennifer Jerrett)</li></ul>
+<li>Wikimedia Commons, public domain: “Bathtub water splashes”, “Monster growls 2”, “Applause i”, “Ohhh ahhh”, “Yellowstone sound library – Grizzly Bears Roar – 001” (NPS &amp; MSU Acoustic Atlas / Jennifer Jerrett)</li>
+<li>“Sea Waves with Tern Calls” (ocean ambience on Coral Cove) — DenisChardonnet, BigSoundBank.com · CC0</li></ul>
 <p>Full list with links: CREDITS.md in the game's GitHub repo.</p></div><button class="big" onclick="soundMenu()">⬅️ Back</button>`);
 window.soundMenu=soundMenu;
 
@@ -261,12 +270,20 @@ const ELEMS={
  lightning:{ic:'⚡',name:'Lightning',col:0xfff36b,desc:'Zappy straight shots (+accuracy).'},
  magnet:{ic:'🧲',name:'Magnet',col:0xcc66ff,desc:'Gently pulls the ball toward the cup & grabs nearby tokens.'},
  bubble:{ic:'🫧',name:'Bubble',col:0x77ddff,desc:'Bounces off water and floats out of sand.'}};
-const BOSSES={2:{name:'Gopher Gus',ic:'🐹',hp:180,col:0x9a6a3a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet'},
+const BOSSES_PINES={2:{name:'Gopher Gus',ic:'🐹',hp:180,col:0x9a6a3a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet'},
  5:{name:'Frosty the Yeti',ic:'🦍',hp:270,col:0xeef6ff,weak:['fire','lightning'],resist:['ice','magnet'],perk:'ice'},
  8:{name:'Kraken of the Lake',ic:'🐙',hp:360,col:0x8a3fb0,weak:['lightning','ice'],resist:['fire','bubble'],perk:'bubble'},
  11:{name:'Sir Scorch the Sand Scorpion',ic:'🦂',hp:450,col:0xd9772b,weak:['ice','bubble'],resist:['fire','spikes'],perk:'spikes',agg:1.1,bonus:40},
  14:{name:'Thunder Talon',ic:'🦅',hp:540,col:0x3a6fd8,weak:['spikes','magnet'],resist:['lightning','bubble'],perk:'lightning',agg:1.2,bonus:48},
  17:{name:'King Bogey the Dragon',ic:'🐉',hp:720,col:0x2f9e4f,weak:['ice','lightning'],resist:['fire','magnet'],perk:'fire',agg:1.32,bonus:64}};
+const BOSSES_COVE={2:{name:'Pinchy McClaw',ic:'🦀',hp:180,col:0xd4552a,weak:['fire','spikes'],resist:['bubble','ice'],perk:'magnet',style:'crab'},
+ 5:{name:'Hammerhead Hank',ic:'🦈',hp:270,col:0x4a6a80,weak:['lightning','ice'],resist:['fire','bubble'],perk:'ice',style:'shark'},
+ 8:{name:'Captain Barnacle',ic:'🏴‍☠️',hp:360,col:0x3a2a28,weak:['fire','lightning'],resist:['ice','bubble'],perk:'bubble',style:'pirate'},
+ 11:{name:'Jellyva the Jolt',ic:'🪼',hp:450,col:0xc48cff,weak:['ice','spikes'],resist:['lightning','bubble'],perk:'spikes',style:'jelly',agg:1.1,bonus:40},
+ 14:{name:'Marina the Mermaid',ic:'🧜',hp:540,col:0x2aa89a,weak:['spikes','magnet'],resist:['lightning','bubble'],perk:'lightning',style:'mermaid',agg:1.2,bonus:48},
+ 17:{name:'Serpentia the Sea Serpent',ic:'🐍',hp:720,col:0x1e6b5a,weak:['ice','lightning'],resist:['fire','magnet'],perk:'fire',style:'serpent',agg:1.32,bonus:64}};
+function bosses(){return (CUR&&CUR().bosses)||BOSSES_PINES;}
+
 const NHOLES=18, PARS=[3,4,4,4,5,4,3,5,5, 4,3,4,5,4,3,4,4,4];// out 37 · in 35 · par 72
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
 const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_VALUE=2, N_COINS=5;
@@ -294,7 +311,7 @@ const MAXLV=10,UPBASE=[2,5,9,15,22,31,42,55,70,88];
 const upCost=(club,lv)=>UPBASE[lv];
 
 // ===== game state =====
-const G={hole:0,players:[],turn:0,mode:'menu',online:null,localIdx:null,boss:null,windV:new THREE.Vector2()};
+const G={hole:0,players:[],turn:0,mode:'menu',online:null,localIdx:null,boss:null,course:'pines',windV:new THREE.Vector2()};
 window.__golf=G;
 
 // ===== renderer / scene =====
@@ -326,16 +343,18 @@ const HORIZ=new THREE.Color(0xcfe3f2);
 scene.fog=new THREE.Fog(HORIZ,250,1700);
 // sky
 const sunDir=new THREE.Vector3(-.5,.62,-.6).normalize();
-const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:sunDir}},
+const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:sunDir},topCol:{value:new THREE.Color(.16,.42,.85)},horCol:{value:new THREE.Color(.80,.89,.95)},gndCol:{value:new THREE.Color(.55,.65,.6)}},
  vertexShader:'varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
- fragmentShader:`varying vec3 vP;uniform vec3 sun;void main(){float h=clamp(vP.y,0.,1.);
- vec3 top=vec3(.16,.42,.85),hor=vec3(.80,.89,.95);vec3 c=mix(hor,top,pow(h,.55));
+ fragmentShader:`varying vec3 vP;uniform vec3 sun,topCol,horCol,gndCol;void main(){float h=clamp(vP.y,0.,1.);
+ vec3 c=mix(horCol,topCol,pow(h,.55));
  float s=max(dot(vP,sun),0.);c+=vec3(1.,.9,.7)*(pow(s,600.)*2.+pow(s,12.)*.25);
- if(vP.y<0.)c=mix(hor,vec3(.55,.65,.6),clamp(-vP.y*4.,0.,1.));gl_FragColor=vec4(c,1.);}`});
+ if(vP.y<0.)c=mix(horCol,gndCol,clamp(-vP.y*4.,0.,1.));gl_FragColor=vec4(c,1.);}`});
 const sky=new THREE.Mesh(new THREE.SphereGeometry(3000,32,16),skyMat);scene.add(sky);
 // env map for reflections (water, coins)
-{const s2=new THREE.Scene();s2.add(new THREE.Mesh(new THREE.SphereGeometry(100,32,16),skyMat.clone()));
- const pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromScene(s2,0.02).texture;}
+let envPM=null;function refreshEnv(){const s2=new THREE.Scene();const sm=skyMat.clone();if(skyMat.uniforms.topCol){sm.uniforms.topCol={value:skyMat.uniforms.topCol.value.clone()};sm.uniforms.horCol={value:skyMat.uniforms.horCol.value.clone()};sm.uniforms.gndCol={value:skyMat.uniforms.gndCol.value.clone()};sm.uniforms.sun={value:sunDir};}
+ s2.add(new THREE.Mesh(new THREE.SphereGeometry(100,32,16),sm));
+ if(!envPM)envPM=new THREE.PMREMGenerator(renderer);if(scene.environment&&scene.environment.dispose)scene.environment.dispose();scene.environment=envPM.fromScene(s2,0.02).texture;}
+refreshEnv();
 // clouds
 function cloudTex(seed){const cv=document.createElement('canvas');cv.width=512;cv.height=256;const x=cv.getContext('2d');const r=rng(seed);
  for(let i=0;i<55;i++){const cx=80+r()*352,cy=150-r()*70*Math.sin((cx-80)/352*Math.PI),rad=25+r()*55;
@@ -357,7 +376,20 @@ function ring(R,base,amp,freq,col,seed){const N=200,pos=[],idx=[];const r=rng(se
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();
  return new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:col,side:THREE.DoubleSide}));}
 const farGroup=new THREE.Group();scene.add(farGroup);
-farGroup.add(ring(1500,60,260,3,0x6f8fa0,1));farGroup.add(ring(1150,40,150,5,0x4f7a55,2));farGroup.add(ring(850,30,60,28,0x2f5a2c,3));
+const THEMES={
+ park:{fog:0xcfe3f2,top:[.16,.42,.85],hor:[.80,.89,.95],gnd:[.55,.65,.6],hemiSky:0xbfdcff,hemiGnd:0x4a6a2a,hemi:.75,sun:0xfff2dd,sunI:2.6,rings:[[1500,60,260,3,0x6f8fa0,1],[1150,40,150,5,0x4f7a55,2],[850,30,60,28,0x2f5a2c,3]]},
+ beach:{fog:0xb8dce8,top:[.18,.50,.93],hor:[.99,.84,.58],gnd:[.18,.42,.52],hemiSky:0xffe6b8,hemiGnd:0xc2a06a,hemi:.9,sun:0xffe2a8,sunI:2.85,rings:[[1600,36,160,3,0x5a8a94,1],[1200,24,80,6,0xd2c08a,2],[880,16,36,18,0xe0d0a0,3]]}
+};
+function applyTheme(theme){const T=THEMES[theme]||THEMES.park;
+ HORIZ.setHex(T.fog);scene.fog.color.copy(HORIZ);
+ if(skyMat.uniforms.topCol){skyMat.uniforms.topCol.value.set(T.top[0],T.top[1],T.top[2]);skyMat.uniforms.horCol.value.set(T.hor[0],T.hor[1],T.hor[2]);skyMat.uniforms.gndCol.value.set(T.gnd[0],T.gnd[1],T.gnd[2]);}
+ hemi.color.setHex(T.hemiSky);hemi.groundColor.setHex(T.hemiGnd);hemi.intensity=T.hemi;
+ sun.color.setHex(T.sun);sun.intensity=T.sunI;
+ while(farGroup.children.length){const o=farGroup.children.pop();if(typeof disposeTree==='function')disposeTree(o);}
+ T.rings.forEach(r=>farGroup.add(ring(...r)));
+ if(theme==='beach'){const sea=new THREE.Mesh(new THREE.CircleGeometry(2400,48),new THREE.MeshLambertMaterial({color:0x1a6a80}));sea.rotation.x=-Math.PI/2;sea.position.y=-8;farGroup.add(sea);}
+ refreshEnv();G.theme=theme;if(typeof AU!=='undefined'){if(AU.setAmbience)AU.setAmbience(theme==='beach');if(AU.refreshPlaylist)AU.refreshPlaylist();}}
+THEMES.park.rings.forEach(r=>farGroup.add(ring(...r)));G.theme='park';
 
 // ===== textures =====
 function noiseTex(size,scale,fn){const cv=document.createElement('canvas');cv.width=cv.height=size;const x=cv.getContext('2d');const im=x.createImageData(size,size);
@@ -393,7 +425,32 @@ const ELEV=[
  {prof:[[0,26],[.08,26],[.25,8],[1,4]],mound:1,tier:1.6,island:1},                           // 15 cliff par 3 to an island green (boss)
  {prof:[[0,8],[.2,16],[.45,6],[.7,14],[1,22]],rav:[.55,10,.04],mound:2,tier:1.7},             // 16 roller-coaster
  {prof:[[0,30],[.07,30],[.25,14],[.5,6],[.75,12],[1,20]],rav:[.4,9,.035],mound:2,tier:1.8},   // 17 big drop, ravine, perched green
- {prof:[[0,36],[.07,36],[.22,16],[.45,6],[.7,14],[1,26]],rav:[.58,11,.035],mound:2.1,tier:1.9}]; // 18 the summit finale (final boss)   // 9 cliff-top finale (boss)
+ {prof:[[0,36],[.07,36],[.22,16],[.45,6],[.7,14],[1,26]],rav:[.58,11,.035],mound:2.1,tier:1.9}]; // 18 the summit finale (final boss)
+const ELEV_COVE=[
+ {prof:[[0,3],[1,1.2]],mound:.45,tier:.3,ocean:1},                                              // 1 gentle coastal par 3
+ {prof:[[0,7],[.06,7],[.3,2],[.7,1.2],[1,2.8]],mound:.75,tier:.5,ocean:1},                       // 2 dune tee, lagoon left (boss crab)
+ {prof:[[0,1],[.4,2.2],[.75,5.5],[1,8]],mound:.95,tier:.25,ocean:1},                            // 3 uphill dune green
+ {prof:[[0,8],[.06,8],[.25,3],[1,2]],mound:1.05,tier:.85,ocean:1,lagoon:.42},                   // 4 downhill + lagoon carry (bailout)
+ {prof:[[0,4],[.25,8],[.5,3],[.8,7],[1,10]],mound:1.3,tier:1,ocean:1,waste:1},                  // 5 rolling dunes, waste sand
+ {prof:[[0,15],[.07,15],[.28,3],[.6,1],[1,8]],mound:1.2,tier:0,ocean:1},                        // 6 high dune tee, valley (boss shark)
+ {prof:[[0,18],[.1,18],[.3,6],[.5,.8],[1,1.2]],mound:.55,tier:1,island:1,ocean:1},              // 7 island green
+ {prof:[[0,8],[.08,8],[.35,5],[.7,8],[1,6]],mound:1.35,tier:1.15,peninsula:1,ocean:1},          // 8 peninsula green
+ {prof:[[0,16],[.07,16],[.25,8],[.55,4],[.8,9],[1,13]],mound:1.5,tier:0,ocean:1,pier:1,lagoon:.55}, // 9 pier + perched green (boss pirate)
+ {prof:[[0,3],[.3,9],[.6,5],[1,11]],mound:1.4,tier:1.1,ocean:1,waste:1},                       // 10 back-nine opener
+ {prof:[[0,16],[.08,16],[.35,5],[1,2]],mound:.85,tier:1.2,ocean:1,lagoon:.5},                   // 11 drop-shot over a cove
+ {prof:[[0,5],[.22,12],[.48,6],[.75,14],[1,18]],mound:1.6,tier:1.3,ocean:1,lagoon:.4},          // 12 inlet carry + climb (boss jellyfish)
+ {prof:[[0,20],[.07,20],[.3,8],[.5,3],[.72,8],[1,14]],mound:1.7,tier:1.4,ocean:1,lagoon:.35,lagoon2:.68}, // 13 two lagoons
+ {prof:[[0,8],[.28,2],[.55,10],[1,16]],mound:1.7,tier:1.5,ocean:1,lagoon:.32},                  // 14 forced carry then uphill dune
+ {prof:[[0,22],[.08,22],[.28,7],[1,3]],mound:.95,tier:1.5,island:1,ocean:1},                    // 15 island green (boss mermaid)
+ {prof:[[0,6],[.2,14],[.45,5],[.7,13],[1,20]],mound:1.9,tier:1.6,ocean:1,waste:1},              // 16 roller dunes
+ {prof:[[0,24],[.07,24],[.28,10],[.55,4],[.8,10],[1,18]],mound:1.9,tier:1.7,ocean:1,lagoon:.38},// 17 drop, cove, perched green
+ {prof:[[0,26],[.07,26],[.22,14],[.45,5],[.7,12],[1,20]],mound:2.0,tier:1.8,ocean:1,pier:1,peninsula:1,lagoon:.5} // 18 coastal finale (sea serpent)
+];
+const COURSES={
+ pines:{id:'pines',name:'Pinecrest Hills',short:'Hills, pines and classic bosses',ic:'🌲',theme:'park',elev:ELEV,bosses:BOSSES_PINES,windSeed:4242},
+ cove:{id:'cove',name:'Coral Cove',short:'A beach course with more water',ic:'🏖️',theme:'beach',elev:ELEV_COVE,bosses:BOSSES_COVE,windSeed:7771}
+};
+function CUR(){return COURSES[G.course]||COURSES.pines;}
 function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  // D = difficulty index: front nine unchanged (D = i); the back nine keeps climbing more gently (hole 18 ≈ 12) so formulas stay sane
  const D=i<9?i:8+(i-8)*.45;
@@ -405,30 +462,49 @@ function genHole(i){const r=rng(1000+i*7919);const par=PARS[i];
  const gr=Math.max(i<9?10:8.5,15-D*.55);
  const h={i,d:D,par,L,fw,path,gx,gz:-L,gr,seed:i*1.7,amp:.65+D*.28,slope:(r()-.5)*.012*(1+D*.4),slope2:(r()-.5)*.01*(1+D*.3),bunkers:[],water:[],trees:[],tokens:[]};
  // bunkers
- const nb=1+Math.min(i<9?7:9,Math.round(D)+1);for(let k=0;k<nb;k++){let t=r(),x,z;if(k<2){const a=r()*Math.PI*2;x=gx+Math.cos(a)*(gr+5);z=-L+Math.sin(a)*(gr+5)*.8;if(z<-L-gr)z+=8;}
+ const nb=CUR().theme==='beach'?1+Math.min(3,Math.round(D*.45)):(1+Math.min(i<9?7:9,Math.round(D)+1));for(let k=0;k<nb;k++){let t=r(),x,z;if(k<2){const a=r()*Math.PI*2;x=gx+Math.cos(a)*(gr+5);z=-L+Math.sin(a)*(gr+5)*.8;if(z<-L-gr)z+=8;}
   else{t=.45+r()*.45;const p=ptAt(h,t);x=p[0]+(r()<.5?-1:1)*(fw*.45+r()*6);z=p[1];}
   const bk={x,z,rx:4+r()*5,rz:3+r()*4,a:r()*3};
   // never on the green: the whole bunker sits outside green + fringe (2.5 m) + a 2.5 m grass gap
   {const R0=Math.max(bk.rx,bk.rz),need=gr+2.5+2.5+R0;let dx=bk.x-gx,dz=bk.z+L;const d=Math.hypot(dx,dz)||1;if(d<need){if(d<.5){dx=0;dz=1;}bk.x=gx+dx/d*need;bk.z=-L+dz/d*need;}}
   h.bunkers.push(bk);}
- // water
- if(i>=2){const nw=i>=12?3:i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):k===1?.8:.62;const p=ptAt(h,t);
-  const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+D*.6:14+r()*10,a:0});}}
- // island-ish green (hole 7): water wraps the front and one side of the green
- Object.assign(h,ELEV[i]||ELEV[0]);h.boss=!!BOSSES[i];h.segL=[];h.totL=0;for(let k=0;k<3;k++){const l=Math.hypot(path[k+1][0]-path[k][0],path[k+1][1]-path[k][1]);h.segL.push(l);h.totL+=l;}
+ Object.assign(h,(CUR().elev||ELEV)[i]||ELEV[0]);h.boss=!!bosses()[i];h.segL=[];h.totL=0;for(let k=0;k<3;k++){const l=Math.hypot(path[k+1][0]-path[k][0],path[k+1][1]-path[k][1]);h.segL.push(l);h.totL+=l;}
  h.tierA=r()*Math.PI;
- if(h.island){h.water.push({x:gx-side*(gr+6),z:-L+gr*.4,rx:9,rz:gr+12,a:0});}
- h.Eg=elevBase(h,gx,-L);for(const w of h.water){{const need=gr+4+Math.max(w.rx,w.rz)*1.2;let dx=w.x-gx,dz=w.z+L;const d=Math.hypot(dx,dz)||1;if(d<need){if(d<.5){dx=0;dz=1;}w.x=gx+dx/d*need;w.z=-L+dz/d*need;}}// ponds never overlap green+fringe
+ if(CUR().theme==='beach')genBeachHazards(h,r,side);
+ else{
+  if(i>=2){const nw=i>=12?3:i>=6?2:1;for(let k=0;k<nw;k++){const t=k===0?(par===3?.55:.4+r()*.25):k===1?.8:.62;const p=ptAt(h,t);
+   const cross=(i>=4&&k===0)||par===3;h.water.push({x:p[0]+(cross?0:(r()<.5?-1:1)*(fw*.7+8)),z:p[1],rx:cross?fw*.9+8:10+r()*8,rz:cross?7+D*.6:14+r()*10,a:0});}}
+  if(h.island){h.water.push({x:gx-side*(gr+6),z:-L+gr*.4,rx:9,rz:gr+12,a:0});}
+ }
+ h.Eg=elevBase(h,gx,-L);for(const w of h.water){{const need=(h.island||h.peninsula)?(gr+1.6):gr+4+Math.max(w.rx,w.rz)*1.2;let dx=w.x-gx,dz=w.z+L;const d=Math.hypot(dx,dz)||1;if(d<need){if(d<.5){dx=0;dz=1;}w.x=gx+dx/d*need;w.z=-L+dz/d*need;}}// ponds never overlap the putting surface
  w.y=elevBase(h,w.x,w.z);w.ph=r()*6.28;w.ph2=r()*6.28;w.ph3=r()*6.28;}
  // tokens
- for(let k=0;k<N_COINS;k++){const p=ptAt(h,.2+k*.15);h.tokens.push({x:p[0]+(r()-.5)*fw*.7,z:p[1],got:false});}
+ for(let k=0;k<N_COINS;k++){const p=ptAt(h,.2+k*.15);const tk={x:p[0]+(r()-.5)*fw*.7,z:p[1],got:false};
+  for(let n=0;n<8;n++){const inW=(h.ocean&&typeof h.ocean==='object'&&oceanSD(h,tk.x,tk.z)>-2)||h.water.some(w=>waterQ(w,tk.x,tk.z)<1.15);
+   if(!inW)break;const nrm=pathPerp(h,clamp(.2+k*.15,0,1));tk.x-=nrm[0]*(h.ocean&&h.ocean.side||1)*3;tk.z-=nrm[1]*(h.ocean&&h.ocean.side||1)*3;}
+  h.tokens.push(tk);}
  return h;}
 // distance to the hole's centre line and progress along it (0 = tee, 1 = green)
 function pathInfo(h,x,z){let best=1e18,bt=0,cum=0;const P=h.path;for(let k=0;k<P.length-1;k++){const ax=P[k][0],az=P[k][1],bx=P[k+1][0],bz=P[k+1][1];
- const dx=bx-ax,dz=bz-az;const t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);const ex=ax+dx*t-x,ez=az+dz*t-z;const d2=ex*ex+ez*ez;if(d2<best){best=d2;bt=(cum+t*h.segL[k])/h.totL;}cum+=h.segL[k];}
+ const dx=bx-ax,dz=bz-az;const t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);const ex=ax+dx*t-x,ez=az+dz*t-z;const d2=ex*ex+ez*ez;if(d2<best){best=d2;bt=(cum+t*h.segL[k])/h.totL;const plen=Math.hypot(dx,dz)||1;h._sg=((x-(ax+dx*t))*(dz/plen)+(z-(az+dz*t))*(-dx/plen));}cum+=h.segL[k];}
  // behind the tee / beyond the green: keep the end values
- if(bt<=0&&z>0)bt=0;return{d:Math.sqrt(best),t:bt};}
+ if(bt<=0&&z>0)bt=0;return{d:Math.sqrt(best),t:bt,s:h._sg||0};}
 function profAt(h,t){const P=h.prof;if(t<=P[0][0])return P[0][1];for(let k=1;k<P.length;k++)if(t<=P[k][0]){const u=(t-P[k-1][0])/(P[k][0]-P[k-1][0]);return lerp(P[k-1][1],P[k][1],u*u*(3-2*u));}return P[P.length-1][1];}
+function pathPerp(h,t){const p0=ptAt(h,Math.max(0,t-.02)),p1=ptAt(h,Math.min(1,t+.02));const dx=p1[0]-p0[0],dz=p1[1]-p0[1],L=Math.hypot(dx,dz)||1;return[dz/L,-dx/L];}
+function oceanSD(h,x,z){if(!h.ocean||typeof h.ocean!=='object')return -999;const pi=pathInfo(h,x,z);const shore=h.ocean.offset+(h.ocean.wob||12)*Math.sin((pi.t||0)*8+(h.ocean.ph||0));return (pi.s||0)*h.ocean.side-shore;}
+function genBeachHazards(h,r,side){const i=h.i,fw=h.fw,gr=h.gr,L=h.L,gx=h.gx,par=h.par,D=h.d;
+ const oside=(i%2)?side:-side;h.ocean={side:oside,offset:fw/2+18+Math.min(D,8)*1.1,wob:10+D*.7,ph:r()*6.28};
+ const lagTs=[];if(typeof h.lagoon==='number')lagTs.push(h.lagoon);if(typeof h.lagoon2==='number')lagTs.push(h.lagoon2);
+ if(!lagTs.length){if(i>=1)lagTs.push(par===3?.52:.4+r()*.16);if(i>=5)lagTs.push(.74);if(i>=12)lagTs.push(.58);}
+ for(const t of lagTs){const p=ptAt(h,t);const cross=i>=3||par===3;const bail=i<6;
+  h.water.push({x:p[0]+(cross?(bail?(r()<.5?-1:1)*fw*.25:0):(oside*-1)*(fw*.7+10)),z:p[1],rx:cross?(fw*(bail?.5:.85)+6+D*.4):10+r()*10,rz:cross?(6+D*.45):(12+r()*10),a:(r()-.5)*.3});}
+ if(h.island){h.water.push({x:gx,z:-L-gr-2,rx:gr+10,rz:8,a:0});h.water.push({x:gx+oside*(gr+8),z:-L,rx:10,rz:gr+8,a:0});h.water.push({x:gx-oside*(gr+8),z:-L,rx:10,rz:gr+8,a:0});h.water.push({x:gx,z:-L+gr+6,rx:gr+8,rz:7,a:0});}
+ else if(h.peninsula){h.water.push({x:gx,z:-L-gr-3,rx:gr+12,rz:9,a:0});h.water.push({x:gx+oside*(gr+7),z:-L,rx:9,rz:gr+10,a:0});}
+ const wantWaste=h.waste||i>=2;h.waste=[];
+ if(wantWaste){const nw=1+Math.min(3,Math.floor(i/4));for(let k=0;k<nw;k++){const t=.25+r()*.55,p=ptAt(h,t),off=(fw/2+6+r()*16)*((k%2)?1:-1);
+  const w={x:p[0]+off,z:p[1]+(r()-.5)*16,rx:8+r()*10,rz:5+r()*8,a:r()*3};
+  const need=gr+6+Math.max(w.rx,w.rz);let dx=w.x-gx,dz=w.z+L,d=Math.hypot(dx,dz)||1;if(d<need){w.x=gx+dx/d*need;w.z=-L+dz/d*need;}h.waste.push(w);}}
+ h.pier=!!h.pier;}
 // big-scale course elevation: designed profile along the hole + ravine + rolling mounds on the fairway
 function elevBase(h,x,z,pi){pi=pi||pathInfo(h,x,z);let y=profAt(h,pi.t);
  if(h.rav){const [tv,dep,w]=h.rav;const k=(pi.t-tv)/w;y-=dep*Math.exp(-k*k*2.2)*sstep(h.fw/2+70,h.fw/2+30,pi.d);}
@@ -440,6 +516,9 @@ function elevBase(h,x,z,pi){pi=pi||pathInfo(h,x,z);let y=profAt(h,pi.t);
  {const shW=6+(h.d||0)*.7,shC=h.fw/2+3.5,u=(pi.d-shC)/shW,sh=Math.exp(-u*u);
   const shFade=sstep(.05,.16,pi.t)*sstep(.95,.82,pi.t);
   y+=sh*shFade*(1.15+(h.d||0)*.25)*(.65+.55*vnoise(x*.038+h.seed,z*.038));}
+ if(h.ocean&&typeof h.ocean==='object'){const sd=oceanSD(h,x,z);
+  const dune=sstep(-8,-26,sd)*sstep(-95,-42,sd)*sstep(.08,.2,pi.t)*sstep(.92,.8,pi.t);
+  y+=dune*(1.25+(h.d||0)*.28)*(.5+fbm(x*.02+h.seed,z*.02));}
  return y;}
 function inRavine(h,x,z){if(!h.rav)return false;const pi=pathInfo(h,x,z);return Math.abs(pi.t-h.rav[0])<h.rav[2]*.75&&pi.d<h.fw/2+40;}
 function ptAt(h,t){const P=h.path;const seg=Math.min(2,Math.floor(t*3));const u=t*3-seg;return[lerp(P[seg][0],P[seg+1][0],u),lerp(P[seg][1],P[seg+1][1],u)];}
@@ -452,11 +531,14 @@ function waterEdge(w,th,k=1){const wob=1+.09*Math.sin(2*th+(w.ph||0))+.07*Math.s
 function ell(e,x,z){const c=Math.cos(e.a),s=Math.sin(e.a);const dx=x-e.x,dz=z-e.z;const u=(dx*c-dz*s)/e.rx,v=(dx*s+dz*c)/e.rz;return u*u+v*v;}
 function surfInfo(h,x,z){if(G.forceSurf)return G.forceSurf;
  if(h.island){const dg0=Math.hypot(x-h.gx,z-h.gz);if(dg0<h.gr)return'green';if(dg0<h.gr+2.5)return'fringe';}
+ if(h.ocean&&typeof h.ocean==='object'&&oceanSD(h,x,z)>0)return'water';
  for(const w of h.water)if(waterQ(w,x,z)<1)return'water';
  for(const b of h.bunkers)if(ell(b,x,z)<1)return'sand';
+ if(h.waste)for(const b of h.waste)if(ell(b,x,z)<1)return'sand';
  const dg=Math.hypot(x-h.gx,z-h.gz);if(dg<h.gr)return'green';if(dg<h.gr+2.5)return'fringe';
  if(Math.abs(x)<4&&z>-3&&z<5)return'tee';
  const d=distPath(h,x,z);const half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed));if(d<half&&z<-12&&!inRavine(h,x,z))return'fairway';
+ if(h.ocean&&typeof h.ocean==='object'){const sd=oceanSD(h,x,z);if(sd>-14&&sd<=0&&d>half+1)return'sand';}
  return'rough';}
 function hgtBase(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.cos(z*.018+h.seed*2)+.8*Math.sin(z*.041+x*.012)+.4*Math.sin(x*.07-z*.05)+.35*Math.sin(x*.015-z*.022+h.seed*4)*Math.cos(z*.019+h.seed));
  const dt=Math.hypot(x,z-1);y*=.22+.78*sstep(8,32,dt);
@@ -470,6 +552,7 @@ function hgtBase(x,z){const h=H;let y=h.amp*(1.4*Math.sin(x*.025+h.seed)*Math.co
  y+=Math.min(26,Math.max(0,d-h.fw/2-22)*.16)+(d>h.fw/2+22?(2.2+(h.d||0)*.15)*fbm(x*.016,z*.016):0);
  if(h.boss){const db=Math.hypot(x-h.gx,z-(h.gz-2.5));y=lerp(y,h.Eg+.3,sstep(38,23,db));}// flat boss arena
  for(const b of h.bunkers){y-=.55*sstep(1.15,.55,ell(b,x,z));}
+ if(h.waste)for(const b of h.waste){y-=.28*sstep(1.12,.6,ell(b,x,z));}
  return y;}
 // water basins: smooth banks carved into the terrain. Water level (w.wl) is set below the lowest bank around the lake,
 // the shoreline (terrain == level) is exactly the q=1 outline, so visible water == water detection.
@@ -481,11 +564,19 @@ function hgt(x,z){let y=hgtBase(x,z);const h=H;if(!h.water.length)return y;
   const bank=Math.max(w.wl-WDEPTH,w.wl+(q-1)*BANK);
   if(q<1)y=Math.min(y,lerp(bank,w.wl-WDEPTH,sstep(.75,.2,q)*.4));
   else{const k=sstep(1.5,1.0,q);y=Math.max(lerp(y,Math.min(y,bank+.25),k),w.wl+.04+(q-1)*.6*k);}}
+ if(h.ocean&&h.ocean.wl!=null){const sd=oceanSD(h,x,z);
+  if(sd>-28&&!(h.island&&Math.hypot(x-h.gx,z-h.gz)<h.gr+3)){const wl=h.ocean.wl,k=sstep(-24,0,sd);
+   if(sd>=0)y=Math.min(y,wl-WDEPTH-Math.min(8,sd*.05));
+   else y=lerp(y,Math.min(y,wl+(sd/24)*BANK*1.15),k);
+   if(sd>-1&&sd<1.6)y=Math.min(y,wl+.04+Math.max(0,sd)*.3);}}
  return y;}
 function waterLevels(h){for(const w of h.water){w.wl=null;let mn=1e9;for(let k=0;k<160;k++){const th=k/160*Math.PI*2;for(const kk of [1,1.15,1.3,1.5]){const [x,z]=waterEdge(w,th,kk);
   if(h.island&&Math.hypot(x-h.gx,z-h.gz)<h.gr+3)continue;mn=Math.min(mn,hgtBase(x,z));}}w.wl=mn-.45;}
  // overlapping ponds form one lake: share the lowest level so there is no step in the surface
- for(let it=0;it<3;it++)for(const a of h.water)for(const b of h.water){if(a===b||a.wl==null||b.wl==null)continue;let ov=false;for(let k=0;k<48&&!ov;k++){const e=waterEdge(a,k/48*6.2832,.98);if(waterQ(b,e[0],e[1])<1)ov=true;}if(ov){const m=Math.min(a.wl,b.wl);a.wl=b.wl=m;}}}
+ for(let it=0;it<3;it++)for(const a of h.water)for(const b of h.water){if(a===b||a.wl==null||b.wl==null)continue;let ov=false;for(let k=0;k<48&&!ov;k++){const e=waterEdge(a,k/48*6.2832,.98);if(waterQ(b,e[0],e[1])<1)ov=true;}if(ov){const m=Math.min(a.wl,b.wl);a.wl=b.wl=m;}}
+ if(h.ocean&&typeof h.ocean==='object'){let mn=1e9;for(let tt=0;tt<=1.001;tt+=.02){const p=ptAt(h,tt),n=pathPerp(h,tt),off=h.ocean.offset,s=h.ocean.side;
+  for(const k of[.85,1,1.12]){const x=p[0]+n[0]*s*off*k,z=p[1]+n[1]*s*off*k;mn=Math.min(mn,hgtBase(x,z));}}
+  h.ocean.wl=mn-.5;}}
 const MINPOW=.05;const livePw=d=>clamp(Math.round(d*100)/100,MINPOW,MAXPOW);const WATER_Y=-.35;const CURVE=10.8,MPH=.44704,WINDK=.6,MAXPOW=1.1;
 const HX=150; // texture region half width
 let groundMat;
@@ -493,6 +584,7 @@ let groundMat;
 const KEEP=new Set();function disposeTree(o){o.traverse(c=>{if(c.geometry&&!KEEP.has(c.geometry))c.geometry.dispose();const ms=c.material?(Array.isArray(c.material)?c.material:[c.material]):[];
  for(const m of ms){if(KEEP.has(m))continue;for(const k in m){const v=m[k];if(v&&v.isTexture&&!KEEP.has(v))v.dispose();}m.dispose();}});}
 function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(wNorm);KEEP.add(DOT);
+ const th=CUR().theme;if(G.theme!==th)applyTheme(th);
  while(holeGroup.children.length){const o=holeGroup.children.pop();disposeTree(o);}
  H=genHole(i);const h=H;waterLevels(h);const zmin=-h.L-90,zmax=60,Wd=HX*2,Ld=zmax-zmin;h.zmin=zmin;h.zmax=zmax;
  // paint texture
@@ -507,13 +599,15 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
   const d=distPath(h,x,z),half=h.fw/2*(1+.15*Math.sin(z*.05+h.seed)),dg=Math.hypot(x-h.gx,z-h.gz);
   let qW=9;for(const w of h.water)qW=Math.min(qW,waterQ(w,x,z));
   let eS=9;for(const bb of h.bunkers)eS=Math.min(eS,Math.sqrt(Math.max(0,ell(bb,x,z))));
+  if(h.waste)for(const bb of h.waste)eS=Math.min(eS,Math.sqrt(Math.max(0,ell(bb,x,z))));
   const mowF=.5+.22*Math.sin((x*Math.cos(ang)*.6+z)*.7)+.1*Math.sin((x*.4-z)*.33+h.seed)+.08*n,
   mowG=.5+.16*Math.sin((x+z*.3)*2.1)+.1*n;
   const grTex=h.gr*(1+.05*Math.sin(Math.atan2(z-h.gz,x-h.gx)*2+h.seed*3)+.03*Math.sin(Math.atan2(z-h.gz,x-h.gx)*5+h.seed));
-  const rR=48+n*30+m*18+(d<h.fw/2+6&&z<-10?8:0),gR=92+n*42+m*25+(d<h.fw/2+6&&z<-10?12:0),bR=30+n*14;
-  const rF=88+mowF*16+n*14,gF=152+mowF*20+n*16,bF=55+n*6;
-  const rN=86+mowG*10+n*8,gN=176+mowG*14+n*8,bN=70+n*4;
-  const rI=78+n*12,gI=150+n*14,bI=56;
+  const beach=CUR().theme==='beach';
+  const rR=beach?140+n*36+m*22:48+n*30+m*18+(d<h.fw/2+6&&z<-10?8:0),gR=beach?148+n*28+m*16:92+n*42+m*25+(d<h.fw/2+6&&z<-10?12:0),bR=beach?78+n*16:30+n*14;
+  const rF=beach?110+mowF*14+n*12:88+mowF*16+n*14,gF=beach?166+mowF*16+n*12:152+mowF*20+n*16,bF=beach?72+n*6:55+n*6;
+  const rN=beach?78+mowG*10+n*8:86+mowG*10+n*8,gN=beach?186+mowG*12+n*8:176+mowG*14+n*8,bN=beach?88+n*4:70+n*4;
+  const rI=beach?86+n*12:78+n*12,gI=beach?158+n*14:150+n*14,bI=beach?70:56;
   const rS=228-n*25+n2*14,gS=208-n*25+n2*12,bS=165-n*25+n2*10;
   const k2=sstep(.98,.6,qW),rB=lerp(150,30,k2)+n*10,gB=lerp(135,62,k2)+n*10,bB=lerp(95,60,k2)+n*6;
   let r=rR,g=gR,b=bR;
@@ -526,9 +620,14 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
    r=lerp(r,rS,inn);g=lerp(g,gS,inn);b=lerp(b,bS,inn);}
   if(qW<1.18){const wet=sstep(1.18,1,qW);r=lerp(r,112,wet*.65);g=lerp(g,110,wet*.55);b=lerp(b,72,wet*.55);
    const wk=sstep(1.02,.7,qW);r=lerp(r,rB,wk);g=lerp(g,gB,wk);b=lerp(b,bB,wk);}
+  if(beach&&h.ocean&&typeof h.ocean==='object'){const sd=oceanSD(h,x,z);
+   if(sd>-16&&sd<22){const sand=sstep(-16,-2,sd)*sstep(8,-.2,sd);r=lerp(r,226-n*16,sand);g=lerp(g,205-n*18,sand);b=lerp(b,155-n*14,sand);
+    const wet=sstep(-2.2,1.2,sd)*sstep(3.2,.2,sd);r=lerp(r,186,wet*.7);g=lerp(g,168,wet*.7);b=lerp(b,130,wet*.7);
+    const foam=sstep(-.4,0,sd)*sstep(3.8,.4,sd)*( .55+.45*Math.sin(sd*6+x*.2+n*8));r=lerp(r,255,foam);g=lerp(g,255,foam);b=lerp(b,250,foam);}
+   if(sd>0){const sea=sstep(0,1.2,sd);r=lerp(r,lerp(40,18,sstep(1,8,sd)),sea);g=lerp(g,lerp(110,70,sstep(1,8,sd)),sea);b=lerp(b,lerp(130,100,sstep(1,8,sd)),sea);}}
   {const sh=shadeAt(x,z);r*=sh;g*=sh;b*=sh;}
   const v=n2*8-4;const edge=Math.min(k,TW-1-k,j,TH-1-j);const ef=sstep(0,30,edge);
-  if(ef<1&&fwW<.25&&gnW<.25&&qW>1.05){r=lerp(60,r,ef);g=lerp(112,g,ef);b=lerp(38,b,ef);}
+  if(ef<1&&fwW<.25&&gnW<.25&&qW>1.05){r=lerp(beach?196:60,r,ef);g=lerp(beach?178:112,g,ef);b=lerp(beach?120:38,b,ef);}
   const q=(j*TW+k)*4;D[q]=r+v;D[q+1]=g+v;D[q+2]=b+v;D[q+3]=255;}}
  cx.putImageData(im,0,0);h.canvas=cv;
  const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
@@ -551,13 +650,14 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
  groundMat=mkMat();groundMat.polygonOffset=true;groundMat.polygonOffsetFactor=-1;groundMat.polygonOffsetUnits=-1;
  const ground=new THREE.Mesh(mkTerrain(playW,zmax+50,zmin-40,G.gfxLow?2.4:1.55,true),groundMat);ground.receiveShadow=true;ground.renderOrder=1;holeGroup.add(ground);
  const farM=mkMat();const farMesh=new THREE.Mesh(mkTerrain(700,MZ0,MZ1,G.gfxLow?5:3.6,false),farM);farMesh.receiveShadow=!G.gfxLow;holeGroup.add(farMesh);
- const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=Math.min(21.5,hmin-4);holeGroup.add(outer);
+ const outer=new THREE.Mesh(new THREE.PlaneGeometry(6000,6000),new THREE.MeshLambertMaterial({color:CUR().theme==='beach'?0x1a5a6e:0x3d6a28}));outer.rotation.x=-Math.PI/2;outer.position.y=Math.min(21.5,hmin-4);holeGroup.add(outer);
  // water
  for(const w of h.water){const sh=new THREE.Shape();for(let k=0;k<=160;k++){const [ex,ez]=waterEdge(w,k/160*Math.PI*2,1.012);const px=ex-w.x,pz=-(ez-w.z);k?sh.lineTo(px,pz):sh.moveTo(px,pz);}
   const wg=new THREE.ShapeGeometry(sh,4);wg.rotateX(-Math.PI/2);
   const wn=wNorm.clone();wn.needsUpdate=true;wn.repeat.set(1/6,1/6);
   const wm=G.gfxLow?new THREE.MeshStandardMaterial({color:0x1d4f66,roughness:.12,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4}):new THREE.MeshPhysicalMaterial({color:0x1d4f66,roughness:.06,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.92,envMapIntensity:1.4,clearcoat:1});
   const m=new THREE.Mesh(wg,wm);m.position.set(w.x,w.wl,w.z);m.receiveShadow=true;m.userData.water=wn;holeGroup.add(m);}
+ if(h.ocean&&h.ocean.wl!=null)buildOcean(h);
  // trees
  buildTrees(h);
  // flag & cup
@@ -577,9 +677,9 @@ function buildHole(i){KEEP.add(bumpTex);if(typeof wNorm!=='undefined')KEEP.add(w
 // so with gusts (≤ +25%) it never passes WIND_CAP (21 mph). Direction: each hole turns 60-300° from the previous one.
 const WIND_CAP=21;
 function windMphFor(i,wr){const base=lerp(3.5,16.8,i/(NHOLES-1));return clamp(base+(wr()-.5)*3,2,16.8);}
-const WIND_DIRS=(()=>{const r=rng(4242),a=[r()*Math.PI*2];for(let k=1;k<NHOLES;k++)a.push((a[k-1]+(Math.PI/3)+r()*(Math.PI*4/3))%(Math.PI*2));return a;})();
-function windDirFor(i){return WIND_DIRS[i%NHOLES];}
-function buildTrees(h){const r=rng(300+h.i);const trees=[];
+const WIND_DIRS_FOR={};function windDirs(){const id=CUR().id;if(!WIND_DIRS_FOR[id]){const r=rng(CUR().windSeed||4242),a=[r()*Math.PI*2];for(let k=1;k<NHOLES;k++)a.push((a[k-1]+(Math.PI/3)+r()*(Math.PI*4/3))%(Math.PI*2));WIND_DIRS_FOR[id]=a;}return WIND_DIRS_FOR[id];}
+function windDirFor(i){return windDirs()[i%NHOLES];}
+function buildTrees(h){if(CUR().theme==='beach')return buildPalms(h);const r=rng(300+h.i);const trees=[];
  const ok=(x,z)=>{const s=surfInfo(h,x,z);if(s!=='rough')return false;if(Math.hypot(x-h.gx,z-h.gz)<h.gr+8)return false;if(Math.hypot(x,z)<12)return false;
   for(const w of h.water)if(waterQ(w,x,z)<1.6)return false;return true;};
  // near-fairway trees (closer when harder)
@@ -609,6 +709,77 @@ mvPosition=modelViewMatrix*mvPosition;gl_Position=projectionMatrix*mvPosition;`)
   if(pine){M.compose(P.set(x,y+tall*.2,z),Q,S.set(tall*.24,tall*.85,tall*.24));pines.setMatrixAt(np,M);pines.setColorAt(np,C.setHSL(.3+r()*.05,.45,.15+r()*.08));np++;}
   else{for(let b=0;b<3;b++){const s=tall*(.22+r()*.1);M.compose(P.set(x+(r()-.5)*tall*.25,y+tall*(.55+b*.12),z+(r()-.5)*tall*.25),Q,LO?S.set(s*1.35,s*1.25,s*1.35):S.set(s,s*.85,s));C.setHSL(.22+r()*.08,.5,.2+r()*.1);if(LO&&b!==1)continue;blobs.setMatrixAt(nbl,M);blobs.setColorAt(nbl,C);nbl++;}}});
  pines.count=np;blobs.count=nbl;[pines,blobs,trunks].forEach(m=>{m.castShadow=!LO;m.receiveShadow=!LO;if(m.instanceColor)m.instanceColor.needsUpdate=true;holeGroup.add(m);});}
+
+function foamTex(){const cv=document.createElement('canvas');cv.width=256;cv.height=64;const x=cv.getContext('2d');
+ for(let i=0;i<80;i++){const cx=Math.random()*256,cy=20+Math.random()*28,rd=6+Math.random()*18;
+  const g=x.createRadialGradient(cx,cy,0,cx,cy,rd);g.addColorStop(0,'rgba(255,255,255,.85)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,256,64);}
+ const tex=new THREE.CanvasTexture(cv);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;return tex;}
+function buildOcean(h){const LO=G.gfxLow,side=h.ocean.side,wl=h.ocean.wl;
+ const NZ=LO?20:36,NU=LO?8:16;const geo=new THREE.PlaneGeometry(1,1,NU,NZ);geo.rotateX(-Math.PI/2);
+ const pos=geo.attributes.position;for(let k=0;k<pos.count;k++){const u=pos.getX(k)+.5,v=pos.getZ(k)+.5; // 0..1
+  const t=v,p=ptAt(h,clamp(t,0,1)),n=pathPerp(h,clamp(t,0,1));
+  const z0=h.zmax+80,z1=h.zmin-200,z=lerp(z0,z1,v);
+  // shoreline at this z ≈ path x + side*offset. Use a nearby path t from z≈path z
+  const tt=clamp((-z)/(h.L||1),0,1);const pp=ptAt(h,tt),nn=pathPerp(h,tt);
+  const shore=h.ocean.offset+(h.ocean.wob||12)*Math.sin(tt*8+(h.ocean.ph||0));
+  const x=pp[0]+nn[0]*side*(shore+u*980),zz=pp[1]+nn[1]*side*(shore+u*980)*.15+lerp(h.zmax+40,h.zmin-180,v);
+  pos.setXYZ(k,x,Math.sin(u*9+v*14)*.08,zz);}
+ geo.computeVertexNormals();
+ const wn=wNorm.clone();wn.needsUpdate=true;wn.repeat.set(12,8);
+ const col=0x0e6a86;const wm=LO?new THREE.MeshStandardMaterial({color:col,roughness:.1,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.45,.45),transparent:true,opacity:.94,envMapIntensity:1.5}):new THREE.MeshPhysicalMaterial({color:col,roughness:.06,metalness:0,normalMap:wn,normalScale:new THREE.Vector2(.5,.5),transparent:true,opacity:.94,envMapIntensity:1.6,clearcoat:.8});
+ const ocean=new THREE.Mesh(geo,wm);ocean.position.y=wl;ocean.receiveShadow=true;ocean.userData.water=wn;holeGroup.add(ocean);
+ // foam strip along the shore
+ const fg=new THREE.PlaneGeometry(1,1,2,NZ);fg.rotateX(-Math.PI/2);const fp=fg.attributes.position;
+ for(let k=0;k<fp.count;k++){const u=fp.getX(k)+.5,v=fp.getZ(k)+.5;const tt=clamp(v,0,1);const pp=ptAt(h,tt),nn=pathPerp(h,tt);
+  const shore=h.ocean.offset+(h.ocean.wob||12)*Math.sin(tt*8+(h.ocean.ph||0));
+  const x=pp[0]+nn[0]*side*(shore-2+u*16),zz=pp[1]+nn[1]*side*(shore-2+u*16)*.12+lerp(h.zmax+40,h.zmin-180,v);
+  fp.setXYZ(k,x,0,zz);}
+ const ft=foamTex();ft.repeat.set(14,1);const fm=new THREE.MeshBasicMaterial({map:ft,transparent:true,opacity:.7,depthWrite:false,side:THREE.DoubleSide});
+ const foam=new THREE.Mesh(fg,fm);foam.position.y=wl+.04;foam.userData.foam=ft;holeGroup.add(foam);
+ if(h.pier)buildPier(h);
+ buildRocks(h);}
+function buildPier(h){const t=h.i===17?.72:.55;const p=ptAt(h,t),n=pathPerp(h,t),side=h.ocean.side,shore=h.ocean.offset;
+ const bx=p[0]+n[0]*side*(shore-4),bz=p[1]+n[1]*side*(shore-4);
+ const wood=new THREE.MeshStandardMaterial({color:0x8a6230,roughness:.9});const post=new THREE.CylinderGeometry(.16,.2,3.2,6);const plank=new THREE.BoxGeometry(2.2,.12,1.15);
+ const g=new THREE.Group();for(let i=0;i<9;i++){const x=bx+n[0]*side*(i*1.15),z=bz+n[1]*side*(i*1.15),y=h.ocean.wl;
+  const pl=new THREE.Mesh(plank,wood);pl.position.set(x,y+1.15,z);pl.lookAt(x+n[0]*side,y+1.15,z+n[1]*side);g.add(pl);
+  if(i%2===0)for(const s of[-.8,.8]){const po=new THREE.Mesh(post,wood);const px=x+(-n[1])*s,pz=z+(n[0])*s;po.position.set(px,y-.2,pz);g.add(po);}}
+ g.traverse(o=>{if(o.isMesh){o.castShadow=!G.gfxLow;o.receiveShadow=!G.gfxLow;}});holeGroup.add(g);}
+function buildRocks(h){const r=rng(910+h.i),n=G.gfxLow?28:70;const g=new THREE.IcosahedronGeometry(1,0);const im=new THREE.InstancedMesh(g,new THREE.MeshStandardMaterial({color:0x8a8680,roughness:.95}),n);
+ const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),P=new THREE.Vector3(),C=new THREE.Color();let c=0;
+ for(let k=0;k<n*5&&c<n;k++){const t=.08+r()*.85,p=ptAt(h,t),sd=8+r()*28,os=h.ocean?h.ocean.side:1;const nrm=pathPerp(h,t);
+  const inland=r()<.35;const x=p[0]+nrm[0]*os*(inland?-(h.fw/2+8+r()*18):(h.ocean?h.ocean.offset-2+r()*10:30)),z=p[1]+nrm[1]*os*(inland?-(h.fw/2+8):(h.ocean?h.ocean.offset-2:30))+(r()-.5)*10;
+  if(Math.hypot(x-h.gx,z-h.gz)<h.gr+8||Math.hypot(x,z)<16)continue;
+  const y=hgt(x,z);if(h.ocean&&y<h.ocean.wl-.2)continue;
+  const s=.4+r()*1.4;M.compose(P.set(x,y-s*.15,z),Q.setFromEuler(new THREE.Euler(r()*1,r()*6,r()*1)),S.set(s*(.8+r()*.5),s*(.5+r()*.5),s*(.8+r()*.5)));im.setMatrixAt(c,M);im.setColorAt(c,C.setHSL(.08,r()*.08,.28+r()*.18));c++;}
+ im.count=c;im.castShadow=!G.gfxLow;im.receiveShadow=!G.gfxLow;if(im.instanceColor)im.instanceColor.needsUpdate=true;holeGroup.add(im);}
+function buildPalms(h){const r=rng(300+h.i);const trees=[];
+ const ok=(x,z)=>{const s=surfInfo(h,x,z);if(s==='water'||s==='green'||s==='fairway'||s==='tee')return false;if(Math.hypot(x-h.gx,z-h.gz)<h.gr+10)return false;if(Math.hypot(x,z)<14)return false;
+  for(const w of h.water)if(waterQ(w,x,z)<1.5)return false;return true;};
+ const near=Math.round(10+h.d*4);for(let k=0;k<near*4&&trees.length<near;k++){const t=.12+r()*.8;const p=ptAt(h,t);const off=(h.fw/2+6+r()*Math.max(8,24-h.d))*(r()<.5?-1:1);
+  const x=p[0]+off,z=p[1]+(r()-.5)*18;if(ok(x,z))trees.push([x,z]);}
+ const cap=G.gfxLow?140:260;for(let k=0;k<1600&&trees.length<cap;k++){const x=(r()-.5)*620,z=h.zmax+160-r()*(h.zmax+160-h.zmin+220);
+  if(distPath(h,x,z)>h.fw/2+28+r()*20&&ok(x,z)&&Math.hypot(x,z)>22&&Math.hypot(x-h.gx,z-h.gz)>h.gr+16)trees.push([x,z]);}
+ const n=trees.length,LO=G.gfxLow;
+ const trunkG=new THREE.CylinderGeometry(.2,.42,1,LO?5:7);trunkG.translate(0,.5,0);
+ const frondG=new THREE.PlaneGeometry(3.4,1.15,3,1);frondG.translate(1.35,0,0);
+ const tm=new THREE.MeshStandardMaterial({color:0x8a6230,roughness:1});
+ const fm=new THREE.MeshStandardMaterial({color:0x2f8a3a,roughness:.85,side:THREE.DoubleSide});
+ fm.onBeforeCompile=sh=>{sh.uniforms.uTime=WIND_U.uTime;sh.uniforms.uWind=WIND_U.uWind;
+  sh.vertexShader='uniform float uTime;uniform vec2 uWind;\n'+sh.vertexShader.replace('#include <project_vertex>',`vec4 mvPosition=vec4(transformed,1.0);
+#ifdef USE_INSTANCING
+mvPosition=instanceMatrix*mvPosition;
+#endif
+float hF=max(0.0,transformed.x);float ph=mvPosition.x*.07+mvPosition.z*.05;float gust=.65+.35*sin(uTime*1.9+ph)+.15*sin(uTime*4.4+ph*3.);
+mvPosition.xz+=uWind*hF*gust*.05;mvPosition=modelViewMatrix*mvPosition;gl_Position=projectionMatrix*mvPosition;`);};
+ const trunks=new THREE.InstancedMesh(trunkG,tm,n),fronds=new THREE.InstancedMesh(frondG,fm,n*(LO?6:8));
+ const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),S=new THREE.Vector3(),P=new THREE.Vector3(),C=new THREE.Color();let nf=0;h.trees=[];
+ trees.forEach(([x,z],k)=>{const y=hgt(x,z)-.15;const tall=6+r()*7;h.trees.push({x,z,h:tall,r:tall*.16});
+  const yaw=r()*6;M.compose(P.set(x,y,z),Q.setFromAxisAngle(new THREE.Vector3(0,1,0),yaw),S.set(1.15,tall,1.15));trunks.setMatrixAt(k,M);trunks.setColorAt(k,C.setHSL(.08,.45,.28+r()*.1));
+  const nfN=LO?6:8;for(let b=0;b<nfN;b++){const a=yaw+b/nfN*Math.PI*2+r()*.15;const tilt=.85+r()*.25;
+   Q.setFromEuler(new THREE.Euler(-tilt,a,0.15*(r()-.5),'YXZ'));M.compose(P.set(x,y+tall*.96,z),Q,S.set(1.15+r()*.35,1,1));fronds.setMatrixAt(nf,M);fronds.setColorAt(nf,C.setHSL(.30+r()*.07,.7,.32+r()*.12));nf++;}});
+ trunks.count=n;fronds.count=nf;[trunks,fronds].forEach(m=>{m.castShadow=!LO;m.receiveShadow=!LO;if(m.instanceColor)m.instanceColor.needsUpdate=true;holeGroup.add(m);});
+}
 
 // ===== balls, club, effects =====
 const ballG=new THREE.SphereGeometry(.13,20,14);
@@ -652,6 +823,33 @@ function buildBoss(b){const g=new THREE.Group();const M=c=>new THREE.MeshStandar
   for(let k=0;k<5;k++){const sp=new THREE.Mesh(new THREE.ConeGeometry(.2,.55,6),M(0xffd23a));sp.position.set(0,3.1-k*.45,-1.2-k*.15);sp.rotation.x=-.6;g.add(sp);}
   for(let k=0;k<6;k++){const t=new THREE.Mesh(new THREE.SphereGeometry(.45-k*.06,12,10),M(b.col));t.position.set(Math.sin(k*.6)*.6,.6,-1.8-k*.6);g.add(t);}
   const snout=new THREE.Mesh(new THREE.BoxGeometry(.9,.55,.8),M(b.col));snout.position.set(0,2.25,1.7);g.add(snout);}
+ const st=b.style||'';
+ if(st==='crab'){body.scale.set(1.45,.75,1.15);body.position.y=1.15;belly.position.set(0,1,.7);
+  for(const s of[-1,1]){const claw=new THREE.Mesh(new THREE.SphereGeometry(.7,16,12),M(b.col));claw.scale.set(1.4,.55,1);claw.position.set(s*2.1,.9,1.3);g.add(claw);
+   const pincer=new THREE.Mesh(new THREE.ConeGeometry(.22,.85,8),M(0x7a2a10));pincer.rotation.x=Math.PI/2;pincer.position.set(s*2.15,.9,2.05);g.add(pincer);
+   const stalk=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.55,6),M(b.col));stalk.position.set(s*.4,2.2,.9);g.add(stalk);} }
+ if(st==='shark'){body.scale.set(1.1,.8,1.8);belly.visible=false;
+  const sn=new THREE.Mesh(new THREE.ConeGeometry(.7,1.8,10),M(b.col));sn.rotation.x=Math.PI/2;sn.position.set(0,1.6,2.2);g.add(sn);
+  const fin=new THREE.Mesh(new THREE.ConeGeometry(.7,1.6,6),M(b.col));fin.position.set(0,3.3,0);g.add(fin);
+  for(const s of[-1,1]){const f=new THREE.Mesh(new THREE.ConeGeometry(.45,1.3,6),M(b.col));f.position.set(s*1.8,1.2,.2);f.rotation.z=s*1.1;g.add(f);}
+  const tail=new THREE.Mesh(new THREE.ConeGeometry(.8,1.5,6),M(b.col));tail.position.set(0,1.6,-2.4);tail.rotation.x=-Math.PI/2;g.add(tail);}
+ if(st==='pirate'){const hat=new THREE.Mesh(new THREE.CylinderGeometry(.15,1.15,.45,16),M(0x111111));hat.position.y=3.85;g.add(hat);
+  const brim=new THREE.Mesh(new THREE.CylinderGeometry(1.35,1.35,.08,20),M(0x111111));brim.position.y=3.62;g.add(brim);
+  const hook=new THREE.Mesh(new THREE.TorusGeometry(.28,.07,8,16,Math.PI*1.4),new THREE.MeshStandardMaterial({color:0xcccccc,metalness:1,roughness:.2}));hook.position.set(1.9,1.2,.3);hook.rotation.z=.6;g.add(hook);
+  const sash=new THREE.Mesh(new THREE.TorusGeometry(1.15,.12,8,20),M(0xaa2020));sash.position.y=1.5;sash.rotation.x=1.2;g.add(sash);}
+ if(st==='jelly'){body.scale.set(1.3,.7,1.3);body.position.y=2.4;belly.scale.set(1.2,.5,1.2);belly.position.set(0,2.1,0);
+  body.material=new THREE.MeshStandardMaterial({color:b.col,roughness:.25,transparent:true,opacity:.72,emissive:b.col,emissiveIntensity:.2});
+  for(let k=0;k<8;k++){const a=k/8*Math.PI*2;const ten=new THREE.Mesh(new THREE.CapsuleGeometry(.08,2.2,4,6),new THREE.MeshStandardMaterial({color:0xe8c0ff,roughness:.4,transparent:true,opacity:.8}));ten.position.set(Math.cos(a)*1.0,.4,Math.sin(a)*1.0);g.add(ten);} }
+ if(st==='mermaid'){body.scale.set(.9,1.05,.9);belly.position.set(0,1.7,.6);
+  const tail=new THREE.Mesh(new THREE.ConeGeometry(.7,2.2,8),M(0x1d8a6a));tail.position.set(0,.2,-1.3);tail.rotation.x=-1.1;g.add(tail);
+  const fluke=new THREE.Mesh(new THREE.BoxGeometry(1.8,.12,.7),M(0x1d8a6a));fluke.position.set(0,-.3,-2.3);g.add(fluke);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.55,12,8),M(0x1a3a8a));hair.position.set(0,3.35,.1);hair.scale.set(1,1.2,1);g.add(hair);
+  const shell=new THREE.Mesh(new THREE.SphereGeometry(.35,12,8),M(0xf2d0d8));shell.scale.set(1.6,.4,1);shell.position.set(0,2.15,.85);g.add(shell);}
+ if(st==='serpent'){body.scale.set(1.05,.85,1.6);belly.visible=false;
+  for(let k=0;k<8;k++){const seg=new THREE.Mesh(new THREE.SphereGeometry(1.1-k*.08,16,12),M(b.col));seg.position.set(Math.sin(k*.7)*.7,.8,-1.2-k*.85);g.add(seg);}
+  const head=new THREE.Mesh(new THREE.SphereGeometry(1.15,16,12),M(b.col));head.scale.set(1,.85,1.3);head.position.set(0,2.1,1.5);g.add(head);
+  for(const s of[-1,1]){const f=new THREE.Mesh(new THREE.ConeGeometry(.4,1.2,6),M(0x0a4a40));f.position.set(s*1.5,2.4,.2);f.rotation.z=s*1.0;g.add(f);}
+  const jaw=new THREE.Mesh(new THREE.ConeGeometry(.45,1.1,8),M(0xaa4040));jaw.rotation.x=Math.PI/2;jaw.position.set(0,1.9,2.6);g.add(jaw);}
  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 
 
@@ -691,12 +889,12 @@ G.honorFor=honorFor;
 function startHole(i,hon){G.hole=i;G.holeT0=clock.elapsedTime;buildHole(i);ball=null;G.swing=null;trailPts=[];G.snapCam=true;
  G.players.forEach((p,k)=>{p.pos.set(k?1.2:-1.2,0,0);p.pos.y=hgt(p.pos.x,0)+.13;p.last.copy(p.pos);p.strokes=0;p.done=false;p.aim=Math.atan2(H.path[1][0],-H.path[1][1]);p.ball.position.copy(p.pos);p.ball.visible=true;});
  G.traj=0;G.honor=hon!=null&&G.players[hon]?hon:honorFor(i);G.turn=G.honor;G.boss=null;if(bossMesh){scene.remove(bossMesh);disposeTree(bossMesh);bossMesh=null;}
- const b=BOSSES[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
+ const b=bosses()[i];if(b){G.boss={...b,hpMax:b.hp,x:H.gx,z:H.gz-2.5};
   // every player has their OWN boss health on this hole; G.boss.hp always means the current (turn) player's boss
   G.players.forEach(p=>p.bhp=b.hp);Object.defineProperty(G.boss,'hp',{get(){const q=P();return q?q.bhp:0;},set(v){const q=P();if(q)q.bhp=v;},enumerable:true});bossMesh=buildBoss(b);bossMesh.position.set(G.boss.x,hgt(G.boss.x,G.boss.z),G.boss.z);bossMesh.rotation.y=0;scene.add(bossMesh);
   $('bossbar').style.display='block';$('bossname').textContent=b.ic+' '+b.name;updBoss();showBossIntro();}
  else $('bossbar').style.display='none';
- G.mode='aim';autoClub();updUI();say(`Hole ${i+1} · Par ${H.par}${G.players.length>1?`<br><span style="font-size:.5em">🏌️ ${esc(P().name)} has the honor</span>`:''}`,2600);}
+ G.mode='aim';autoClub();updUI();say(`Hole ${i+1} · ${CUR().name} · Par ${H.par}${G.players.length>1?`<br><span style="font-size:.5em">🏌️ ${esc(P().name)} has the honor</span>`:''}`,2600);}
 function updBoss(){const b=G.boss;if(!b)return;$('bossfill').style.width=(100*b.hp/b.hpMax)+'%';const two=G.players.length>1;$('bossname').textContent=b.ic+' '+b.name+(two?` — ${P().name}'s fight`:'')+(b.hp<=0?' ✅ beaten!':'');}
 function showBossIntro(){const b=G.boss;const el=k=>ELEMS[k].ic+' '+ELEMS[k].name;
  overlay(`<h1>${b.ic} BOSS: ${b.name}!</h1><p style="font-size:24px">The boss is guarding the cup! Hit shots near it (or right at it!) to do damage. Beat it, then sink the putt.${G.players.length>1?'<br><b>Each player fights their own boss</b> — your win only unlocks <i>your</i> cup, and only the winner gets the prize!':''}</p>
@@ -723,7 +921,7 @@ window.setTraj=t=>{if(!myTurn()||G.mode!=='aim')return;G.traj=t;updTraj();};
 function updTraj(){const p=P();const box=$('trajBox');if(!box)return;const putt=!p||p.club===4;box.style.display=putt?'none':'';
  box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.t===(G.traj||0)));}
 function updUI(){updTraj();if(G.boss&&P())updBoss();const p=P();if(!p||!H)return;$('hint').innerHTML=G.online&&!myTurn()?`👀 Watching <b>${esc(p.name)}</b>'s turn…`:'Drag ⬇️ then flick ⬆️ on the course to swing!';{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
- $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; Par ${H.par}<br>${G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':''}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m ${elevTxt(p)}<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
+ $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; ${CUR().ic} ${CUR().name}<br>Par ${H.par}<br>${G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':''}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m ${elevTxt(p)}<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
  $('tokens').textContent='🪙 '+pr.tokens;
  
  const cl=$('clubs');cl.innerHTML='';CLUBS.forEach((c,ci)=>{const e=eff(pr,ci);const d=document.createElement('div');d.className='club'+(ci===p.club?' sel':'')+(e.el?' e-'+e.el:'');
@@ -959,21 +1157,23 @@ function endShot(){const p=P();if(G.boss&&G.boss.hp>0&&!p.done&&Math.hypot(p.pos
 const ROUNDS={front:{a:0,b:9,name:'Front 9'},back:{a:9,b:18,name:'Back 9'},full:{a:0,b:18,name:'Full 18'}};
 const RD=()=>ROUNDS[G.round]||ROUNDS.full;
 window.pickRound=k=>{if(!ROUNDS[k])return;G.round=save.round=k;persist();document.querySelectorAll('#roundSel button').forEach(b=>b.classList.toggle('on',b.dataset.r===k));};
+window.pickCourse=id=>{if(!COURSES[id])return;G.course=save.course=id;persist();document.querySelectorAll('#courseSel button').forEach(b=>b.classList.toggle('on',b.dataset.c===id));};
+function courseSel(){const cur=COURSES[G.course]?G.course:(COURSES[save.course]?save.course:'pines');G.course=cur;return`<div id="courseSel"><b>Course:</b> ${Object.values(COURSES).map(c=>`<button class="sm${c.id===cur?' on':''}" data-c="${c.id}" onclick="pickCourse('${c.id}')">${c.ic} ${c.name}<br><small>${c.short}</small></button>`).join('')}</div>`;}
 function roundSel(){const cur=save.round||'full';return`<div id="roundSel"><b>Round:</b> ${Object.entries(ROUNDS).map(([k,r])=>`<button class="sm${k===cur?' on':''}" data-r="${k}" onclick="pickRound('${k}')">${r.name}<br><small>${k==='front'?'holes 1-9':k==='back'?'holes 10-18 · harder':'holes 1-18'}</small></button>`).join('')}</div>`;}
 function finishHole(){G.players.forEach(p=>{p.scores[G.hole]=p.strokes;});G.mode='card';persist();
- if(!G.online||G.online.host){save.hole=G.hole+1;save.round=G.round;persist();}showCard(true);}
-function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1>`;
+ if(!G.online||G.online.host){save.hole=G.hole+1;save.round=G.round;save.course=G.course;save.progress=save.progress||{};save.progress[G.course]=G.hole+1;persist();}showCard(true);}
+function showCard(end){const pl=G.players;let t=`<h1>${end?'Hole '+(G.hole+1)+' complete!':'Scorecard'}</h1><p style="font-size:18px;margin:0">${CUR().ic} ${CUR().name}</p>`;
  const sum=(a,b,f)=>{let n=0,any=false;for(let k=a;k<b;k++){const v=f(k);if(v!=null){n+=v;any=true;}}return any?n:'';};
- const half=(a,b,lab,last)=>{let h=`<table class="sc"><tr><th>Hole</th>`;for(let i=a;i<b;i++)h+=`<th${i===G.hole?' style="background:#ffe14d33"':''}>${i+1}${BOSSES[i]?BOSSES[i].ic:''}</th>`;h+=`<th>${lab}</th>${last?'<th>Total</th>':''}</tr><tr><td>Par</td>`;
+ const half=(a,b,lab,last)=>{let h=`<table class="sc"><tr><th>Hole</th>`;for(let i=a;i<b;i++)h+=`<th${i===G.hole?' style="background:#ffe14d33"':''}>${i+1}${bosses()[i]?bosses()[i].ic:''}</th>`;h+=`<th>${lab}</th>${last?'<th>Total</th>':''}</tr><tr><td>Par</td>`;
   for(let i=a;i<b;i++)h+=`<td>${PARS[i]}</td>`;h+=`<td>${sum(a,b,k=>PARS[k])}</td>${last?`<td>${sum(0,NHOLES,k=>PARS[k])}</td>`:''}</tr>`;
   pl.forEach(p=>{h+=`<tr><td>${esc(p.name)}</td>`;for(let i=a;i<b;i++){const s=p.scores[i];if(s==null){h+='<td></td>';continue;}const c=s<PARS[i]?'#ffe14d':s>PARS[i]?'#fbb':'#fff';h+=`<td style="color:${c}">${s}</td>`;}
    h+=`<td><b>${sum(a,b,k=>p.scores[k])}</b></td>${last?`<td><b>${sum(0,NHOLES,k=>p.scores[k])}</b></td>`:''}</tr>`;});return h+'</table>';};
  {const r=RD();if(r.a===0&&r.b===NHOLES)t+=half(0,9,'Out',false)+half(9,NHOLES,'In',true).replace('<table class="sc">','<table class="sc" style="margin-top:6px">');else t+=`<p style="margin:2px">${r.name}</p>`+half(r.a,r.b,r.a?'In':'Out',false);}
  if(G.boss)t+=`<p>${G.boss.ic} <b>${G.boss.name}</b> — each player fights their own: ${pl.map(p=>`${esc(p.name)} ${p.bhp<=0?'✅ beaten':'❤️ '+p.bhp+'/'+G.boss.hpMax+' HP'}`).join(' · ')}</p>`;if(end){pl.forEach(p=>t+=`<p>${p.name} earned <b>${p.lastEarn||0} 🪙</b> <small>(bogey ${HOLE_REWARD(1)} · par ${HOLE_REWARD(0)} · birdie ${HOLE_REWARD(-1)} · eagle+ ${HOLE_REWARD(-2)})</small> · total ${p.prof.tokens} 🪙</p>`);
   const last=G.hole>=RD().b-1;const canNext=!G.online||G.online.host;
-  t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 ${RD().name} complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
+  t+=`<button class="big" onclick="openShop()">🛒 Upgrade Shop</button><button class="big" onclick="toMenu()">🏠 Start Screen</button>`+(last?`<h2>🏆 ${RD().name} · ${CUR().name} complete! You're a Tee Hero!</h2>${canNext?'<button class="big" onclick="nextHole(0)">Play Again</button>':''}`:canNext?`<button class="big" onclick="nextHole()">Next Hole ➡️</button>`:'<p>Waiting for host to start the next hole…</p>');}
  else t+='<button class="big" onclick="closeOv()">Close</button>';overlay(t);}
-window.nextHole=(h)=>{const first=h===0;const n=first?RD().a:G.hole+1;if(first)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n,hon:G.honor,rd:G.round,first:first?1:0});};
+window.nextHole=(h)=>{const first=h===0;const n=first?RD().a:G.hole+1;if(first)G.players.forEach(p=>p.scores=[]);closeOv();startHole(n);if(G.online)net({t:'hole',n,hon:G.honor,rd:G.round,cs:G.course,first:first?1:0});};
 
 // ===== shop =====
 let shopP=0,shopC=0;
@@ -1028,14 +1228,14 @@ function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;co
  handleNet(m);}
 function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
  if(m.t==='hello'){tokSent=null;const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
-  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor,rd:G.round});net(mkSync(0));}
-  else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor,rd:G.round,first:1});}}}
+  if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor,rd:G.round,cs:G.course});net(mkSync(0));}
+  else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor,rd:G.round,cs:G.course,first:1});}}}
  else if(m.t==='tok'){const q=G.players[m.i];if(q&&m.i!==G.localIdx&&typeof m.v==='number'){q.prof.tokens=m.v;if(H)tokTick(P());}}
  else if(m.t==='prof'){const p=G.players[G.online.host?1:0];p.prof=migrate(m.prof);updUI();}
  else if(m.t==='shot'){performShot(m.shot);}
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
  else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
- else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.rd&&ROUNDS[m.rd])G.round=m.rd;if((m.first||(m.n===RD().a&&m.rd))&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n,m.hon);}}
+ else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.cs&&COURSES[m.cs])G.course=m.cs;if(m.rd&&ROUNDS[m.rd])G.round=m.rd;if((m.first||(m.n===RD().a&&m.rd))&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n,m.hon);}}
 function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
 function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
  overlay(`<h1>🔌 Your friend disconnected</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
@@ -1043,7 +1243,7 @@ function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpp
  G.players=[makePlayer(name,0xffffff),makePlayer('Friend',0xff5ab4,true)];
  if(LOOP){G.__onLoopConn=c=>setupPeer(c);G.online.code=code;G.online.loop=loopConn(code,true);
   overlay(`<h1>🌐 Online Room ${code}</h1><p id="pst">Loopback test mode — waiting…</p>`);return;}
- const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code+'&rd='+(G.round||'full');
+ const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code+'&rd='+(G.round||'full')+'&cs='+(G.course||'pines');
  overlay(`<h1>🌐 Online Room ${code}</h1><p>Send this link to your friend:</p><p><input class="nm" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p>${navigator.share?`<button class="big" onclick="navigator.share({title:'Tiny Tee Heroes',text:'Play golf with me! ⛳',url:'${link}'}).catch(()=>{})">📤 Share link</button>`:''}<button class="big" onclick="copyLink('${link}',this)">📋 Copy link</button></p><p id="pst">Connecting to matchmaker…</p>`);
  peer.on('open',()=>{const e=$('pst');if(e)e.textContent='Waiting for your friend to join… ⏳';});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Online error: '+err.type+'. Try local mode.';});
  peer.on('connection',c=>{setupPeer(c);});}
@@ -1128,17 +1328,27 @@ function arenaSim(dt){const A=G.arena,B=G.boss;A.clock+=dt;
   const chase=sstep(7,10,bd),back=1-sstep(3.2,4.2,bd),circ=Math.max(0,1-chase-back);
   bv.addScaledVector(bt,2.8*chase-1.5*back+.5*circ).addScaledVector(tang,2.2*circ).multiplyScalar(spd);A.mode2=chase>.5?'chase':back>.5?'back':'circle';
   A.bvel.lerp(bv,1-Math.pow(.01,dt));A.bpos.addScaledVector(A.bvel,dt);
-  if(A.st<=0){const r=Math.random();A.state=bd<6?(r<.55?'stomp':r<.8?'throw':'charge'):(r<.5?'charge':r<.85?'throw':'stomp');if(A.state==='stomp'&&bd>7)A.state='charge';
-   A.st=A.state==='stomp'?1.1:A.state==='charge'?.9:1.0;A.chHit=false;teleStart(A);}}
+  if(A.st<=0){const r=Math.random(),st=B.style||'';
+   if(st==='shark')A.state=r<.55?'charge':r<.8?'stomp':'throw';
+   else if(st==='pirate')A.state=r<.55?'throw':r<.8?'charge':'stomp';
+   else if(st==='crab')A.state=r<.5?'pinch':r<.8?'stomp':'charge';
+   else if(st==='jelly')A.state=r<.5?'pulse':r<.8?'throw':'stomp';
+   else if(st==='mermaid')A.state=r<.45?'throw':r<.75?'pulse':'stomp';
+   else if(st==='serpent')A.state=r<.4?'stomp':r<.7?'charge':'throw';
+   else A.state=bd<6?(r<.55?'stomp':r<.8?'throw':'charge'):(r<.5?'charge':r<.85?'throw':'stomp');
+   if(A.state==='stomp'&&bd>7&&st!=='serpent')A.state='charge';
+   A.st=A.state==='stomp'||A.state==='pulse'||A.state==='pinch'?1.15:A.state==='charge'?.9:1.0;A.chHit=false;teleStart(A);}}
  else{A.bvel.multiplyScalar(Math.pow(.001,dt));A.bpos.addScaledVector(A.bvel,dt);}
  if(A.state==='stomp'){const k=1-A.st/1.1;A.tele.scale.setScalar(.2+k*4.8);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),0xffffff,40);if(bd<5){arenaHurt(18);if(G.arena!==A)return;A.kb=bt.clone().multiplyScalar(9);}teleEnd(A);}}
  else if(A.state==='charge'){if(!A.cdir)A.cdir=bt.clone();A.tele.position.copy(A.bpos).addScaledVector(A.cdir,6.5);A.tele.position.y=A.bpos.y+.06;A.tele.rotation.y=Math.atan2(A.cdir.x,A.cdir.z);
   if(A.st<=0){A.dash=(A.dash||0)+dt;A.bpos.addScaledVector(A.cdir,16*dt);
    if(!A.chHit&&bd<SEP+.3){A.chHit=true;arenaHurt(20);if(G.arena!==A)return;const side=new THREE.Vector3(-A.cdir.z,0,A.cdir.x);if(side.dot(bt)<0)side.negate();A.kb=A.cdir.clone().multiplyScalar(6).addScaledVector(side,7);A.dash=.75;}
    if(A.dash>=.75){A.dash=0;A.cdir=null;teleEnd(A);}}}
- else if(A.state==='throw'){if(A.st<=0){const sr=new THREE.Vector3(-bt.z,0,bt.x);for(let k=-1;k<=1;k++){const tgt=A.pos.clone().addScaledVector(sr,k*2.2);const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:B.col,emissive:0x331111}));
+ else if(A.state==='throw'){if(A.st<=0){const sr=new THREE.Vector3(-bt.z,0,bt.x);const nP=B.style==='pirate'?5:3;for(let k=-(nP-1)/2;k<=(nP-1)/2;k++){const tgt=A.pos.clone().addScaledVector(sr,k*2.0);const m=new THREE.Mesh(PROJ_G,new THREE.MeshStandardMaterial({color:B.style==='pirate'?0x222222:B.col,emissive:0x331111}));
    m.castShadow=true;arenaGroup.add(m);const mk=new THREE.Mesh(RING_G,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.7,side:THREE.DoubleSide}));mk.rotation.x=-Math.PI/2;mk.position.set(tgt.x,hgt(tgt.x,tgt.z)+.08,tgt.z);arenaGroup.add(mk);
    A.proj.push({m,mk,from:A.bpos.clone().setY(A.bpos.y+2.5),to:tgt,t:0});}teleEnd(A);}}
+ else if(A.state==='pulse'){const k=1-A.st/1.15;if(A.tele)A.tele.scale.setScalar(.3+k*7.2);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),B.col,50);if(bd<7.2){arenaHurt(16);if(G.arena!==A)return;A.kb=bt.clone().multiplyScalar(11);}teleEnd(A);}}
+ else if(A.state==='pinch'){const k=1-A.st/1.15;if(A.tele)A.tele.scale.setScalar(.3+k*3.4);if(A.st<=0){splash(A.bpos.clone().setY(A.bpos.y+.3),0xff8844,30);const side=new THREE.Vector3(-bt.z,0,bt.x);if(bd<5.2||Math.abs(side.dot(new THREE.Vector3(A.pos.x-A.bpos.x,0,A.pos.z-A.bpos.z)))<3&&bd<6.5){arenaHurt(17);if(G.arena!==A)return;A.kb=bt.clone().multiplyScalar(8).addScaledVector(side,6);}teleEnd(A);}}
  {const bo=new THREE.Vector3().subVectors(A.bpos,A.c).setY(0);if(bo.length()>ARENA_R-1)A.bpos.copy(A.c).addScaledVector(bo.normalize(),ARENA_R-1);}
  // resolve overlap once, after everything moved (smooth push, no teleports)
  {const ox=A.pos.x-A.bpos.x,oz=A.pos.z-A.bpos.z;const d=Math.hypot(ox,oz);if(d<SEP){const nx=d>1e-3?ox/d:Math.sin(A.face+Math.PI),nz=d>1e-3?oz/d:Math.cos(A.face+Math.PI);A.pos.x=A.bpos.x+nx*SEP;A.pos.z=A.bpos.z+nz*SEP;
@@ -1156,7 +1366,7 @@ function arenaRender(a,dt,t){const A=G.arena;const P0=_rp.copy(A.prevP).lerp(A.p
  else{const tb=A.block?1:0;A.blk=(A.blk||0)+(tb-(A.blk||0))*Math.min(1,dt*18);const sp=A.vel?A.vel.length()/6:0;A.runPh=(A.runPh||0)+dt*12*sp;const run=Math.sin(A.runPh)*.25*Math.min(1,sp);
   u.arms.rotation.set(lerp(-.6+Math.sin(t*4)*.08+run,-1.4,A.blk),0,0);u.torso.rotation.set(lerp(.1+Math.abs(run)*.3,0,A.blk),0,0);}
  if(A.dodge>0)golfer.rotateZ(Math.sin(A.dodge*20)*.5);if(A.hurt>0)golfer.rotateX(-.3*A.hurt/.3);
- if(bossMesh){bossMesh.position.copy(Bp);let hop;if(A.state==='stomp'){const k=1-Math.max(0,A.st)/1.1;hop=Math.sin(Math.min(1,k/.85)*Math.PI)*1.6;}else hop=Math.abs(Math.sin(A.bob||0))*.3;
+ if(bossMesh){bossMesh.position.copy(Bp);let hop;if(A.state==='stomp'||A.state==='pulse'||A.state==='pinch'){const k=1-Math.max(0,A.st)/1.15;hop=Math.sin(Math.min(1,k/.85)*Math.PI)*1.6;}else hop=Math.abs(Math.sin(A.bob||0))*.3;
   A.hopR=A.hopR==null?hop:A.hopR+(hop-A.hopR)*Math.min(1,dt*20);bossMesh.position.y=Bp.y+A.hopR;
   const by=A.prevBYaw!=null&&A.bYaw!=null?A.prevBYaw+angDiff(A.prevBYaw,A.bYaw)*a:(A.bYaw||0);bossMesh.rotation.y=by;}
  arenaCamera(dt,t,P0,Bp);
@@ -1184,9 +1394,11 @@ function arenaCamera(dt,t,P0,Bp,AA){const A=AA||G.arena;if(!A)return;P0=P0||A.po
  camPos.set(tx,Math.max(focus.y+Hh,hgt(tx,tz)+1.5),tz);camLook.copy(focus);camera.position.copy(camPos);
  if(A.hurt>0){const s=.12*A.hurt/.3;camera.position.x+=Math.sin(t*47)*s;camera.position.y+=Math.cos(t*39)*s*.6;}
  camera.lookAt(camLook);A.bossOnScreen=true;}
-function teleStart(A){let m;if(A.state==='stomp'){m=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.copy(A.bpos).setY(A.bpos.y+.07);}
- else if(A.state==='charge'){const g=new THREE.PlaneGeometry(2.4,13);g.rotateX(-Math.PI/2);m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
- if(m){arenaGroup.add(m);A.tele=m;}if(A.state==='stomp')float(G.boss.ic+' STOMP incoming!');}
+function teleStart(A){let m;const st=A.state,B=G.boss;if(st==='stomp'||st==='pulse'||st==='pinch'){m=new THREE.Mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.copy(A.bpos).setY(A.bpos.y+.07);}
+ else if(st==='charge'){const g=new THREE.PlaneGeometry(2.4,13);g.rotateX(-Math.PI/2);m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff2222,transparent:true,opacity:.35,depthWrite:false}));}
+ if(m){arenaGroup.add(m);A.tele=m;}
+ const msg={stomp:'STOMP incoming!',pulse:(B&&B.style==='jelly'?'STING PULSE!':B&&B.style==='mermaid'?'WHIRLPOOL!':'PULSE incoming!'),pinch:'PINCH incoming!',charge:B&&B.style==='shark'?'SHARK RUSH!':'CHARGE incoming!',throw:B&&B.style==='pirate'?'CANNONBALLS!':'Look out!'};
+ if(msg[st])float((B?B.ic+' ':'')+msg[st]);}
 function teleEnd(A){if(A.tele)arenaGroup.remove(A.tele);A.tele=null;A.state='idle';A.st=1.2+Math.random()*1.3;}
 function arenaCleanup(){const A=G.arena;while(arenaGroup.children.length){const o=arenaGroup.children[0];arenaGroup.remove(o);disposeTree(o);}G.arena=null;$('aCheer').style.display='none';$('specBan').style.display='none';
  if(bossMesh)bossMesh.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setRGB(0,0,0);});
@@ -1297,7 +1509,8 @@ function loopConn(code,host){// test relay across separate browser profiles (win
  if(!host){const ping=()=>{if(!c.open){bc.postMessage({_hs:'join'});setTimeout(ping,300);}};ping();}return c;}
 
 // ===== menu =====
-const room=new URLSearchParams(location.search).get('room'),urlRd=new URLSearchParams(location.search).get('rd');
+const room=new URLSearchParams(location.search).get('room'),urlRd=new URLSearchParams(location.search).get('rd'),urlCs=new URLSearchParams(location.search).get('cs');
+if(urlCs&&COURSES[urlCs])G.course=urlCs;
 const RESET_Q=new URLSearchParams(location.search).get('reset')==='1';
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 // invite-link join screen: pick one of this browser's saved players (their own clubs/levels/tokens) or make a new one
@@ -1305,7 +1518,7 @@ function joinScreen(){let rj=null;try{rj=JSON.parse(sessionStorage.getItem('tth.
  const names=Object.keys(save.profiles||{});if(rj&&rj.room===room&&names.includes(rj.name)){names.splice(names.indexOf(rj.name),1);names.unshift(rj.name);}
  const lvl=pr=>{migrate(pr);let u=0;for(const k in pr.lv)for(const st of['power','acc','spin'])u+=pr.lv[k][st]||0;return(u/(CLUBS.length*3)).toFixed(1);};
  const cards=names.map(n=>{const pr=save.profiles[n];const re=rj&&rj.room===room&&rj.name===n;return`<div class="savecard"><b style="font-size:22px">🧑 ${esc(n)}</b> <small>avg club level ${lvl(pr)}</small><br><small>${profSummary(pr)}</small><br><button class="big" data-n="${esc(n)}" onclick="joinAs(this.dataset.n)">${re?'🔁 Rejoin':'▶️ Continue'} as ${esc(n)}</button><button class="big fresh" data-n="${esc(n)}" onclick="joinFreshAsk(this.dataset.n)">🧹 Start fresh</button></div>`;}).join('');
- overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">Your friend invited you to room <b>${esc(room)}</b>!${ROUNDS[urlRd]?`<br>⛳ Round: <b>${ROUNDS[urlRd].name}</b>`:''}</p>${names.length?`<h3>Play as one of your saved players</h3><div id="joinList" style="max-height:44vh;overflow:auto">${cards}</div>`:''}
+ overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">Your friend invited you to room <b>${esc(room)}</b>!${COURSES[urlCs]||COURSES[G.course]?`<br>${(COURSES[urlCs]||CUR()).ic} Course: <b>${(COURSES[urlCs]||CUR()).name}</b>`:''}${ROUNDS[urlRd]?`<br>⛳ Round: <b>${ROUNDS[urlRd].name}</b>`:''}</p>${names.length?`<h3>Play as one of your saved players</h3><div id="joinList" style="max-height:44vh;overflow:auto">${cards}</div>`:''}
  <h3>${names.length?'…or a new player':'Who is playing?'}</h3><input class="nm" id="n1" placeholder="Your name" maxlength="14"><br><button class="big" onclick="joinNew()">🆕 Join as new player 🌐</button>`);}
 // "New player" must never silently load an old save: a free name starts at level 0 with 🪙 20; a taken name asks first
 window.joinNew=()=>{let n=($('n1')&&$('n1').value.trim()||'').slice(0,14);
@@ -1335,15 +1548,17 @@ window.askFresh=i=>{const n=menuNames()[i-1];if(!n||!save.profiles[n])return;con
  <p style="font-size:20px">You'll start again with <b>🪙 20</b> tokens and brand-new clubs.</p>
  <button class="big" id="freshYes" onclick="doFresh(${i})">🧹 Yes, start fresh!</button><button class="big" id="freshNo" style="background:#7d7" onclick="menu()">🙅 No, keep my stuff!</button>`);G.freshName=n;};
 window.doFresh=i=>{const n=G.freshName;if(!n)return;delete save.profiles[n];delete save.hole;persist();G.freshName=null;menu();say(`🧹 ${n} is starting fresh! 🪙 20`,2200);};
-function menu(){G.mode='menu';const last=save.lastNames||['Player 1','Player 2'];
+function courseProgress(id){const pr=(save.progress&&save.progress[id]);if(pr!=null)return pr;if(id===(save.course||'pines')&&save.hole!=null)return save.hole;return null;}
+function contHint(){const id=COURSES[save.course]?save.course:'pines';const h=courseProgress(id);const C=COURSES[id]||COURSES.pines;return h?` · ${C.ic} ${C.name} hole ${Math.min(h,NHOLES-1)+1}`:'';}
+function menu(){G.mode='menu';if(COURSES[save.course])G.course=save.course;const last=save.lastNames||['Player 1','Player 2'];
  if(room){joinScreen();return;}
  const nSaved=Object.keys(save.profiles).length;
- overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">18 holes · 6 bosses · upgrade your clubs with tokens!</p>
- <div class="startrow"><button class="big" id="btnContinue" onclick="continueGame()">▶️ Continue<br><small>${nSaved?`keep your stuff${save.hole?' · hole '+(Math.min(save.hole,NHOLES-1)+1):''}`:'no saved game yet'}</small></button><button class="big" id="btnNewGame" style="background:#ff8a7a" onclick="askNewGame()">🆕 New Game<br><small>fresh start, 🪙 20</small></button></div>
+ overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">2 courses · 18 holes · 6 bosses each · upgrade your clubs with tokens!</p>
+ <div class="startrow"><button class="big" id="btnContinue" onclick="continueGame()">▶️ Continue<br><small>${nSaved?`keep your stuff${contHint()}`:'no saved game yet'}</small></button><button class="big" id="btnNewGame" style="background:#ff8a7a" onclick="askNewGame()">🆕 New Game<br><small>fresh start, 🪙 20</small></button></div>
  <input class="nm" id="n1" value="${esc(last[0])}" oninput="updSaveInfo()"><input class="nm" id="n2" value="${esc(last[1])}" placeholder="Player 2 (optional)" oninput="updSaveInfo()"><div id="saveInfo"></div>
- ${roundSel()}<button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
+ ${courseSel()}${roundSel()}<button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
  <button class="sm" onclick="openSound(1)">🔊 Sound &amp; 📜 Credits</button>
- <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${save.hole?`<p>Continue from hole ${Math.min(save.hole,NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);updSaveInfo();}
+ <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${courseProgress(G.course)?`<p>Continue ${CUR().ic} ${CUR().name} from hole ${Math.min(courseProgress(G.course),NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);updSaveInfo();}
 window.updSaveInfo=updSaveInfo;
 window.continueGame=()=>{const [a,b]=menuNames();const m=save.lastMode===2&&b?2:1;go(m,save.hole?1:0);};
 window.askNewGame=()=>{const [a,b]=menuNames();save.lastNames=[a,b||'Player 2'];persist();const n=Object.keys(save.profiles).length;
@@ -1357,7 +1572,7 @@ window.doNewGame=()=>{save.profiles={};delete save.hole;persist();G.keep={};
 window.toMenu=()=>{if(G.arena)arenaCleanup();ball=null;G.swing=null;gs=null;G.afterOv=null;if(G.players)G.players.forEach(p=>{if(p.ball)scene.remove(p.ball);});G.players=[];
  if(G.online){try{G.online.conn&&G.online.conn.close();G.online.peer&&G.online.peer.destroy();}catch(e){}G.online=null;}menu();};
 window.go=(m,cont)=>{if(m===1||m===2)save.lastMode=m;const n1=($('n1').value.trim()||'Player 1').slice(0,14),n2=$('n2')?($('n2').value.trim()||'Player 2').slice(0,14):'';save.lastNames=[n1,n2||'Player 2'];persist();
- G.round=ROUNDS[save.round]?save.round:'full';{const r=RD();var start=cont&&save.hole!=null&&save.hole>=r.a&&save.hole<r.b?save.hole:r.a;}
+ if(COURSES[save.course])G.course=save.course;G.round=ROUNDS[save.round]?save.round:'full';{const r=RD();const prog=courseProgress(G.course);var start=cont&&prog!=null&&prog>=r.a&&prog<r.b?prog:r.a;}
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
  else if(m==='host')hostOnline(n1);else if(m==='join')joinOnline(n1,room);};
@@ -1508,7 +1723,7 @@ function tickInner(){if(G.__boom){G.__boom=0;throw new Error('test boom');}const
   // flag, coins, water
   if(H.cloth){const a=H.cloth.geometry.attributes.position,b0=H.clothBase;const mph=G.windV.length()/MPH;for(let k=0;k<a.count;k++){const x=b0[k*3],y=b0[k*3+1];a.setZ(k,Math.sin(x*4-t*(3+mph*.45)+y*2)*(.03+mph*.014)*x);a.setY(k,y-(1-Math.min(1,mph/10))*x*.35);}a.needsUpdate=true;H.cloth.rotation.y=Math.atan2(-G.windV.y,G.windV.x);}
   for(const tk of H.tokens)if(tk.mesh){tk.mesh.rotation.y=t*2;tk.mesh.position.y=tk.y+Math.sin(t*2+tk.x)*.2;}
-  holeGroup.children.forEach(o=>{if(o.userData.water){o.userData.water.offset.set(t*.02,t*.013);}});
+  holeGroup.children.forEach(o=>{if(o.userData.water){o.userData.water.offset.set(t*.02,t*.013);}if(o.userData.foam){o.userData.foam.offset.set(t*.06,0);}});
   if(bossMesh&&!G.arena){bossMesh.position.y=hgt(G.boss.x,G.boss.z)+Math.abs(Math.sin(t*2.5))*.4;if(p)bossMesh.rotation.y=Math.atan2(p.pos.x-G.boss.x,p.pos.z-G.boss.z);
    if(bossFlash>0){bossFlash-=dt;bossMesh.scale.setScalar(1+bossFlash*.3);}if(bossMesh.userData.dying){bossMesh.scale.multiplyScalar(1-dt*2);if(bossMesh.scale.x<.05){bossMesh.userData.dying=0;bossMesh.visible=false;}}
    else if(G.boss.hp>0){if(!bossMesh.visible){bossMesh.visible=true;bossMesh.scale.setScalar(1);}}else bossMesh.visible=false;}
