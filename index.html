@@ -5,11 +5,11 @@
 <style>
 *{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:"Trebuchet MS","Comic Sans MS",Arial,sans-serif;color:#fff;user-select:none}
 canvas#c{display:block;width:100%;height:100%}
-.panel{position:absolute;background:rgba(10,40,20,.72);border:3px solid rgba(255,255,255,.5);border-radius:18px;padding:10px 16px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-#info{top:12px;left:12px;font-size:20px;line-height:1.35}#info b{color:#ffe14d;font-size:26px}
-#right{top:12px;right:12px;text-align:center;padding:8px}
-#mini{display:block;border-radius:10px;background:#2a5}
-#tokens{font-size:24px;margin:4px 0;color:#ffd84a;font-weight:bold}
+.panel{position:absolute;background:rgba(8,32,16,.52);border:2px solid rgba(255,255,255,.4);border-radius:12px;padding:6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.28)}
+#info{top:8px;left:8px;font-size:14px;line-height:1.25;max-width:min(20vw,260px)}#info b{color:#ffe14d;font-size:16px}
+#right{top:8px;right:8px;text-align:center;padding:5px;width:clamp(148px,17vw,220px);box-sizing:border-box}
+#mini{display:none;border-radius:8px;background:#2a5;width:100%;height:auto;max-height:clamp(88px,16vh,150px)}
+#tokens{font-size:15px;margin:3px 0 4px;color:#ffd84a;font-weight:bold}
 #wind{font-size:18px}#warrow{display:inline-block;font-size:30px;transition:transform .3s}
 #clubs{bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px}
 .club{width:96px;height:96px;border-radius:14px;background:linear-gradient(#3b7,#185);border:3px solid #fff8;cursor:pointer;text-align:center;font-size:15px;font-weight:bold;position:relative;padding-top:4px}
@@ -70,13 +70,13 @@ table.sc{border-collapse:collapse;margin:10px auto;font-size:20px}table.sc td,ta
 .elem .ic{font-size:38px}input.nm{font-size:22px;padding:8px;border-radius:10px;border:3px solid #fff;width:220px;margin:6px}
 .aimb{position:absolute;bottom:20px;width:70px;height:70px;border-radius:50%;font-size:30px;border:4px solid #fff;background:#3b7;color:#fff;cursor:pointer}
 .ab{width:70px;height:70px;border-radius:16px;font-size:24px;font-weight:bold;border:4px solid #fff;background:#3b7;color:#fff;cursor:pointer;touch-action:none}
-#turn{position:absolute;top:185px;left:12px;font-size:22px;display:none}
+#turn{position:absolute;top:185px;left:8px;font-size:13px;line-height:1.25;padding:4px 8px;display:none;max-width:min(22vw,260px)}
 @media (max-width:700px){.card{padding:14px 12px;font-size:16px}.shophead{top:-14px;margin:-14px -12px 8px;padding:8px 50px}.shophead h1{font-size:24px}
  .statrow{flex-wrap:wrap;justify-content:center;gap:6px}.statrow .nm{width:auto}.bar5 i{width:11px}.elem{width:42%}}
 
 #joyZone,#rotHint{display:none}
 html.touch.inArena #ppct,html.touch.inArena #rbtns{display:none!important}
-#rbtns{display:inline}
+#rbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;justify-items:center}
 .gfxrow button.sm.on{background:#7d7}
 /* ===== touch devices (phones/tablets) — desktop never gets html.touch ===== */
 html.touch,html.touch body{position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;-webkit-text-size-adjust:100%}
@@ -184,12 +184,103 @@ html.touch #abtns{right:calc(14px + env(safe-area-inset-right))!important;bottom
 .hbar i{display:block;height:8px;border-radius:4px;background:linear-gradient(#ff5,#fa0);width:0}
 html.touch .heroGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));max-height:58vh;gap:8px}
 html.touch .heroCard{padding:8px}
+
+/* ===== compact HUD: keep the course visible; .hudWide remembers the expanded view ===== */
+#windp{top:8px;left:50%;transform:translateX(-50%);padding:2px 6px 4px;text-align:center;z-index:5}
+#windLab{font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;opacity:.9}
+#wcomp{display:block;width:76px;height:76px;margin:0 auto}
+#windNote{display:none;font-size:11px;font-weight:bold;color:#bff;margin-top:1px}
+#bossbar{top:clamp(100px,16vh,170px);width:min(380px,46vw);font-size:16px}
+#bossbar .bar{height:16px}
+.hudToggle{display:block;width:100%;margin:0 0 4px;padding:2px 6px;border:2px solid #fff8;border-radius:8px;background:#0005;color:#ffe14d;font:900 12px "Trebuchet MS",Arial,sans-serif;cursor:pointer;line-height:1.2;text-shadow:1px 1px 2px #000}
+.hudToggle:hover,.hudToggle:focus{background:#0007;border-color:#ffe14d}
+#info{display:flex;flex-direction:column;align-items:stretch;z-index:5}
+#infoBody{padding:0 2px 1px}
+.hudTop{font-weight:900}
+.hudTop b{font-size:1.15em}
+.hudSub{opacity:.85;font-weight:700}
+.hudStat{font-size:.95em}
+.hudMore{display:none;margin-top:4px;padding-top:4px;border-top:1px solid #fff4;font-size:12px;line-height:1.3;opacity:.95}
+#rbtns button.sm{margin:0;padding:0;width:40px;height:36px;font-size:18px;min-width:0;border-width:2px;border-radius:8px}
+#rbtns .lbl{display:none}
+#pendSpeed{opacity:.95}
+#hint{max-width:240px;font-size:13px}
+/* expanded */
+html.hudWide #info{max-width:min(26vw,320px);font-size:15px;padding:8px 10px}
+html.hudWide #info b{font-size:18px}
+html.hudWide .hudMore{display:block}
+html.hudWide #right{width:clamp(180px,20vw,260px);padding:8px}
+html.hudWide #mini{display:block;max-height:clamp(130px,24vh,210px)}
+html.hudWide #rbtns{grid-template-columns:repeat(2,1fr);gap:5px}
+html.hudWide #rbtns button.sm{width:auto;height:auto;min-width:72px;padding:4px 6px;font-size:13px}
+html.hudWide #rbtns .lbl{display:inline}
+html.hudWide #tokens{font-size:18px}
+html.hudWide #wcomp{width:100px;height:100px}
+html.hudWide #windLab{font-size:12px}
+html.hudWide #hint{visibility:visible}
+html:not(.hudWide) #hint{visibility:hidden}
+html:not(.hudWide) #pendSpeed{font-size:11px}
+/* slightly slimmer bottom controls on short desktop screens */
+@media (max-height:800px) and (min-width:700px){
+  #power{height:160px;bottom:92px}
+  #powerLab{bottom:70px}
+  #pendSpeed{bottom:36px}
+  #swingBtn{width:100px;height:100px;bottom:92px;font-size:18px}
+  #ppct{bottom:260px;font-size:16px}
+  #carry{bottom:118px;font-size:16px;padding:4px 12px}
+  #spinBox{padding:4px 6px!important}
+  #spinBall{width:72px;height:72px}
+  #spinBox>div:first-child, #spinLab{font-size:12px!important}
+  #trajBox button{font-size:12px;padding:4px 5px;min-height:28px}
+}
+/* touch compact overrides (beat earlier html.touch rules) */
+html.touch #info{top:calc(6px + env(safe-area-inset-top));left:calc(6px + env(safe-area-inset-left));font-size:12px;padding:4px 6px;max-width:min(42vw,200px);border-radius:10px}
+html.touch #info b{font-size:14px}
+html.touch #right{top:calc(6px + env(safe-area-inset-top));right:calc(6px + env(safe-area-inset-right));width:clamp(96px,26vw,140px);padding:4px}
+html.touch #mini{display:none;width:100%;height:auto;max-height:88px;margin:0 auto}
+html.touch #tokens{font-size:13px;margin:2px 0}
+html.touch #rbtns{grid-template-columns:repeat(3,1fr);gap:3px}
+html.touch #rbtns button.sm{width:36px;height:36px;min-width:36px;min-height:36px;padding:0;font-size:16px}
+html.touch #windp{top:calc(6px + env(safe-area-inset-top))!important;left:50%!important;transform:translateX(-50%)!important;padding:2px 4px!important}
+html.touch #wcomp{width:64px;height:64px}
+html.touch #windLab{font-size:10px}
+html.touch #windNote{font-size:10px!important}
+html.touch .hudToggle{font-size:11px;padding:3px 4px;min-height:28px}
+html.touch #turn{font-size:12px;left:calc(6px + env(safe-area-inset-left));max-width:46vw;padding:3px 6px}
+html.touch.hudWide #info{max-width:min(52vw,240px);font-size:13px}
+html.touch.hudWide #right{width:clamp(120px,32vw,170px)}
+html.touch.hudWide #mini{display:block;max-height:120px}
+html.touch.hudWide #rbtns button.sm{width:auto;min-width:52px;height:auto;min-height:36px;font-size:12px;padding:2px 4px}
+html.touch.hudWide #wcomp{width:80px;height:80px}
+@media (orientation:portrait) and (max-width:540px){
+  html.touch #info{max-width:42vw}
+  html.touch #windp{top:calc(6px + env(safe-area-inset-top))!important;left:50%!important;transform:translateX(-50%)!important}
+  html.touch #right{width:100px}
+  html.touch #mini{display:none}
+  html.touch.hudWide #mini{display:block;max-height:72px}
+  html.touch #turn{top:auto}
+  html.touch #spinBox{padding:2px 4px!important}
+  html.touch #spinBall{width:52px;height:52px}
+}
+@media (orientation:landscape) and (max-height:500px){
+  html.touch #info{max-width:28vw;font-size:11px}
+  html.touch #mini{display:none}
+  html.touch.hudWide #mini{display:block;max-height:70px}
+  html.touch #right{width:clamp(110px,22vw,150px);min-width:0;max-width:28vw}
+  html.touch #rbtns{grid-template-columns:repeat(3,1fr)}
+  html.touch.hudWide #right{width:auto;max-width:36vw;min-width:168px}
+  html.touch.hudWide #rbtns{grid-template-columns:repeat(6,1fr)}
+  html.touch #wcomp{width:52px;height:52px}
+  html.touch #windLab{font-size:9px}
+  html.touch #pendUI{top:calc(4px + env(safe-area-inset-top));width:min(70vw,420px)}
+}
+
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="info" class="panel"></div>
+<div id="info" class="panel"><button type="button" class="hudToggle" id="hudToggleL" onclick="toggleHud()" title="Show more hole info" aria-label="Show more or less on-screen info">▼ More</button><div id="infoBody"></div></div>
 <div id="turn" class="panel"></div>
-<div id="windp" class="panel" style="top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;text-align:center"><div style="font-size:14px;font-weight:bold">💨 WIND</div><canvas id="wcomp" width="160" height="160"></canvas><div id="windNote" style="display:none;font-size:15px;font-weight:bold;color:#bff">⛳ No wind on putts!</div></div>
-<div id="right" class="panel"><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><div id="rbtns"><button class="sm" id="shopBtn" style="margin-top:6px" aria-label="Shop">🛒<span class="lbl"> Shop</span></button> <button class="sm" id="heroBtn" aria-label="Heroes" onclick="openHeroes()">🦸<span class="lbl"> Heroes</span></button> <button class="sm" id="cardBtn" aria-label="Scorecard">📋<span class="lbl"> Card</span></button> <button class="sm" id="flyBtn" title="Fly over this hole" aria-label="Flyover" onclick="flyStart()">🚁<span class="lbl"> Flyover</span></button> <button class="sm" id="sndBtn" title="Sound, graphics &amp; credits" aria-label="Settings" onclick="openSound()">🔊</button> <button class="sm" id="homeBtn" title="Start screen" aria-label="Start screen">🏠</button></div></div>
+<div id="windp" class="panel"><div id="windLab">💨 Wind</div><canvas id="wcomp" width="160" height="160"></canvas><div id="windNote">⛳ No wind on putts!</div></div>
+<div id="right" class="panel"><button type="button" class="hudToggle" id="hudToggleR" onclick="toggleHud()" title="Show more map and buttons" aria-label="Show more or less on-screen info">▼ More</button><canvas id="mini" width="170" height="240"></canvas><div id="tokens">🪙 0</div><div id="rbtns"><button class="sm" id="shopBtn" aria-label="Shop">🛒<span class="lbl"> Shop</span></button><button class="sm" id="heroBtn" aria-label="Heroes" onclick="openHeroes()">🦸<span class="lbl"> Heroes</span></button><button class="sm" id="cardBtn" aria-label="Scorecard">📋<span class="lbl"> Card</span></button><button class="sm" id="flyBtn" title="Fly over this hole" aria-label="Flyover" onclick="flyStart()">🚁<span class="lbl"> Flyover</span></button><button class="sm" id="sndBtn" title="Sound, graphics &amp; credits" aria-label="Settings" onclick="openSound()">🔊</button><button class="sm" id="homeBtn" title="Start screen" aria-label="Start screen">🏠</button></div></div>
 <div id="bossbar"><div id="bossname"></div><div class="bar"><div id="bossfill"></div></div></div>
 <div id="clubs" class="panel"></div>
 <div id="power" title="Pull back on the course to set power"><div id="pover"></div><div id="pfill"></div><div id="pmark"></div></div><div id="powerLab">POWER</div><div id="ppct"></div><div id="pendSpeed">Needle 1.00×</div>
@@ -328,7 +419,7 @@ function bosses(){return (CUR&&CUR().bosses)||BOSSES_PINES;}
 const NHOLES=18, PARS=[3,4,4,4,5,4,3,5,5, 4,3,4,5,4,3,4,4,4];// out 37 · in 35 · par 72
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
 const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_VALUE=2, N_COINS=5;
-const BUILD='0348801422',PROTO=1;
+const BUILD='407ab1783f',PROTO=1;
 const PUBLIC_ORIGIN='https://jkokesh.github.io/tiny-tee-heroes/';
 const ICE_SERVERS=[
  {urls:'stun:stun.l.google.com:19302'},
@@ -450,6 +541,9 @@ const owns=(pr,cid,el)=>!!(pr.owned&&pr.owned[cid]&&pr.owned[cid].includes(el));
 const ownedAll=pr=>{const o=[];CLUBS.forEach(c=>(pr.owned&&pr.owned[c.id]||[]).forEach(el=>o.push([c,el])));return o;};
 function getProfile(name){if(save.profiles[name])migrate(save.profiles[name]);if(!save.profiles[name])save.profiles[name]=newProfile(name);return save.profiles[name];}
 function persist(){localStorage.setItem(LS,JSON.stringify(save));}
+function applyHud(){const wide=!!save.hudWide;document.documentElement.classList.toggle('hudWide',wide);document.querySelectorAll('.hudToggle').forEach(b=>{b.textContent=wide?'▲ Less':'▼ More';b.title=wide?'Hide extra info for a bigger view of the course':'Show more hole and map info';});}
+window.toggleHud=()=>{save.hudWide=!save.hudWide;persist();applyHud();if(typeof updUI==='function'&&typeof P==='function'&&P())updUI();};
+window.applyHud=applyHud;
 function eff(prof,ci){const c=CLUBS[ci],l=prof.lv[c.id],el0=prof.equip[c.id]||null,el=el0&&owns(prof,c.id,el0)?el0:null;
  // progression: 10 levels per stat. Power starts at 40% (+6%/level), spin at 7% (+9.3%/level; backspin bite uses BITE table) → both 100% at level 10.
  // Accuracy: "miss" (1-acc) starts at 2× the club's base miss and shrinks evenly to 0.2× at level 10.
@@ -1095,7 +1189,12 @@ window.setTraj=t=>{if(!myTurn()||G.mode!=='aim')return;G.traj=t;updTraj();};
 function updTraj(){const p=P();const box=$('trajBox');if(!box)return;const putt=!p||p.club===4;box.style.display=putt?'none':'';
  box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.t===(G.traj||0)));}
 function updUI(){updTraj();if(G.boss&&P())updBoss();const p=P();if(!p||!H)return;$('hint').innerHTML=G.online&&!myTurn()?`👀 Watching <b>${esc(p.name)}</b>'s turn…`:(!G.powLocked?'Pull back on the course to set power, then hold SWING!':(p.club===4?'Hold HIT / SWING and release on PERFECT! (PULL · PERFECT · PUSH)':'Hold SWING and release on PERFECT! (HOOK · PERFECT · SLICE)'));{const putt=p.club===4;$('windp').classList.toggle('nowind',putt);$('windNote').style.display=putt?'block':'none';}const pr=p.prof;const d=Math.hypot(p.pos.x-H.gx,p.pos.z-H.gz);
- $('info').innerHTML=`<b>Hole ${G.hole+1}</b> / ${NHOLES} &nbsp; ${CUR().ic} ${CUR().name}<br>Par ${H.par}<br>${'🦸 <b>'+esc(heroOf(p.prof).name)+'</b> · '+(G.players.length>1?'🎯 <b style="font-size:20px">'+p.name+'</b><br>':('🎯 <b>'+esc(p.name)+'</b><br>'))}Strokes: ${p.strokes}<br>To pin: ${d.toFixed(0)} m ${elevTxt(p)}<br>Lie: ${lieName(surfInfo(H,p.pos.x,p.pos.z))}`;
+ const body=$('infoBody')||$('info');
+ const lie=lieName(surfInfo(H,p.pos.x,p.pos.z));
+ const more=`<div class="hudMore">🦸 <b>${esc(heroOf(p.prof).name)}</b> · 🎯 <b>${esc(p.name)}</b><br>${CUR().ic} ${esc(CUR().name)}${elevTxt(p)?'<br>'+elevTxt(p):''}<br>Lie: ${lie}</div>`;
+ body.innerHTML=`<div class="hudTop"><b>Hole ${G.hole+1}</b><span class="hudSub">/${NHOLES}</span> · Par ${H.par} ${CUR().ic}</div><div class="hudStat">Stroke ${p.strokes} · ${d.toFixed(0)} m · ${lie}</div>${more}`;
+ applyHud();
+ {const tb=$('turn'),ib=$('info');if(tb&&ib&&tb.style.display!=='none')tb.style.top=(ib.offsetTop+ib.offsetHeight+6)+'px';}
  $('tokens').textContent='🪙 '+pr.tokens;
  
  const cl=$('clubs');cl.innerHTML='';CLUBS.forEach((c,ci)=>{const e=eff(pr,ci);const d=document.createElement('div');d.className='club'+(ci===p.club?' sel':'')+(e.el?' e-'+e.el:'');
@@ -1211,7 +1310,7 @@ function bindSwing(el){if(!el)return;el.addEventListener('pointerdown',e=>{e.pre
 bindSwing($('swingBtn'));
 const _cSw=$('cancelSwing');if(_cSw)_cSw.onclick=e=>{e.preventDefault();cancelPendulum();};
 if(TOUCH&&$('swingBtn'))$('swingBtn').innerHTML='🏌️<br>HIT';
-updPendSpeedHint();
+updPendSpeedHint();try{applyHud();}catch(e){}
 function sendShot(shot){showPendUI(false);pend=null;const btn=$('swingBtn');if(btn)btn.classList.remove('held');performShot(shot);if(G.online){net({t:'shot',shot});G.pendSync=true;}}
 function performShot(s){G.swing={t:0,from:G.backAng||-2,shot:s,fired:false};G.mode='swinging';G.backAng=0;}
 function drawGesture(){if(!pull){if(gc._drawn){gc._drawn=false;gx.clearRect(0,0,gc.width,gc.height);gc.style.visibility='hidden';}return;}
