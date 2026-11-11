@@ -287,6 +287,25 @@ function bosses(){return (CUR&&CUR().bosses)||BOSSES_PINES;}
 const NHOLES=18, PARS=[3,4,4,4,5,4,3,5,5, 4,3,4,5,4,3,4,4,4];// out 37 · in 35 · par 72
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
 const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_VALUE=2, N_COINS=5;
+const BUILD='bcbcd4382a',PROTO=1;
+const PUBLIC_ORIGIN='https://jkokesh.github.io/tiny-tee-heroes/';
+const ICE_SERVERS=[
+ {urls:'stun:stun.l.google.com:19302'},
+ {urls:'stun:stun.cloudflare.com:3478'},
+ {urls:'stun:freeturn.net:3478'},
+ {urls:'turn:freeturn.net:3478',username:'free',credential:'free'},
+ {urls:'turns:freeturn.net:5349',username:'free',credential:'free'},
+ {urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'}
+];
+function wantRelay(){try{return new URLSearchParams(location.search).get('relay')==='1'||!!G.forceRelay;}catch(e){return!!G.forceRelay;}}
+function peerOpts(){return{debug:0,config:{iceServers:ICE_SERVERS,iceTransportPolicy:wantRelay()?'relay':'all'}};}
+function inviteURL(code){return PUBLIC_ORIGIN+'?room='+encodeURIComponent(code)+'&rd='+(G.round||'full')+'&cs='+(G.course||'pines');}
+function parseInvite(s){s=String(s||'').trim();if(!s)return null;let room,rd,cs;
+ try{const u=new URL(s);room=u.searchParams.get('room')||u.searchParams.get('code');rd=u.searchParams.get('rd');cs=u.searchParams.get('cs');}
+ catch(e){const m=s.match(/[?&]room=([A-Za-z0-9]+)/i)||s.match(/\broom[:\s]+([A-Za-z0-9]+)/i);if(m)room=m[1];const m2=s.match(/[?&]rd=([A-Za-z]+)/i);if(m2)rd=m2[1];const m3=s.match(/[?&]cs=([A-Za-z]+)/i);if(m3)cs=m3[1];}
+ if(!room){const code=s.replace(/\s+/g,'').replace(/^#/,'');if(/^[A-Za-z0-9]{4,8}$/.test(code))room=code;}
+ if(!room)return null;return{room:String(room).toUpperCase(),rd,cs};}
+window.parseInvite=parseInvite;window.inviteURL=inviteURL;
 
 // ===== profiles =====
 const LS='tinyTeeHeroes.v1';
@@ -1227,7 +1246,9 @@ function onNet(m){const now=performance.now();if(m.st!=null){const o=G.netOff;co
  if(NETQ_T[m.t]&&(G.netQ.length||netBusy())){G.netQ.push(m);return;}
  handleNet(m);}
 function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec)return;
- if(m.t==='hello'){tokSent=null;const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net({t:'hello',name:G.players[0].name,prof:G.players[0].prof});
+ if(m.t==='verMismatch'){showVerMismatch(m);return;}
+ if(m.t==='hello'){if(versionsClash(m)){if(G.online&&G.online.conn&&G.online.conn.open)net({t:'verMismatch',build:BUILD,proto:PROTO});showVerMismatch(m);return;}
+  tokSent=null;const p=G.players[G.online.host?1:0];p.name=m.name;p.prof=migrate(m.prof);if(G.online.host){net(helloPayload(G.players[0].name,G.players[0].prof));
   if(G.online.started&&H){if(G.online.lost){G.online.lost=false;closeOv();say(`🔁 ${esc(p.name)} is back!`,1500);}net({t:'hole',n:G.hole,rejoin:1,hon:G.honor,rd:G.round,cs:G.course});net(mkSync(0));}
   else{G.online.started=true;closeOv();startHole(G.hole);net({t:'hole',n:G.hole,hon:G.honor,rd:G.round,cs:G.course,first:1});}}}
  else if(m.t==='tok'){const q=G.players[m.i];if(q&&m.i!==G.localIdx&&typeof m.v==='number'){q.prof.tokens=m.v;if(H)tokTick(P());}}
@@ -1236,22 +1257,25 @@ function handleNet(m){if(m.t==='sync')return applySync(m);if(m.t==='as'&&!G.spec
  else if(m.t==='arenaEnd'){arenaRemoteEnd(m);}
  else if(m.t==='arenaStart'){specStart(m);}else if(m.t==='as'){specState(m);}else if(m.t==='cheer'){applyCheer(m.name);}
  else if(m.t==='hole'){if(G.ovOpen)$('ov').style.display='none',G.ovOpen=false;if(m.cs&&COURSES[m.cs])G.course=m.cs;if(m.rd&&ROUNDS[m.rd])G.round=m.rd;if((m.first||(m.n===RD().a&&m.rd))&&!m.rejoin)G.players.forEach(p=>p.scores=[]);startHole(m.n,m.hon);}}
-function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net({t:'hello',name:G.players[1].name,prof:G.players[1].prof});});conn.on('close',onDisconnect);}
+function helloPayload(name,prof){return{t:'hello',name,prof,build:BUILD,proto:PROTO};}
+function versionsClash(m){if(!m||(m.build==null&&m.proto==null))return true;if(m.proto!=null&&m.proto!==PROTO)return true;if(m.build!=null&&m.build!==BUILD)return true;return false;}
+function showVerMismatch(m){const theirs=m&&(m.build||'older');overlay(`<h1>🔄 Please update your game</h1><p style="font-size:22px">You and your friend are on different versions, so online play could get out of sync.</p><p>Your game: <b>${BUILD}</b><br>Friend's game: <b>${esc(theirs)}</b></p><p>Update both to the latest Tiny Tee Heroes (web or the newest Windows download) and try again.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
+function setupPeer(conn){G.online.conn=conn;conn.on('data',onNet);conn.on('open',()=>{if(!G.online.host)net(helloPayload(G.players[1].name,G.players[1].prof));});conn.on('close',onDisconnect);}
 function onDisconnect(){if(!G.online)return;G.online.lost=true;if(G.spec)specEnd();
  overlay(`<h1>🔌 Your friend disconnected</h1><p style="font-size:22px">Your 🪙 tokens and upgrades are saved.</p><button class="big" onclick="toMenu()">🏠 Start Screen</button>`);}
 function hostOnline(name){const code=Math.random().toString(36).slice(2,7).toUpperCase();G.hole=RD().a;G.online={host:true,code};G.localIdx=0;
  G.players=[makePlayer(name,0xffffff),makePlayer('Friend',0xff5ab4,true)];
  if(LOOP){G.__onLoopConn=c=>setupPeer(c);G.online.code=code;G.online.loop=loopConn(code,true);
   overlay(`<h1>🌐 Online Room ${code}</h1><p id="pst">Loopback test mode — waiting…</p>`);return;}
- const peer=new Peer('tinytee-'+code);G.online.peer=peer;const link=location.origin+location.pathname+'?room='+code+'&rd='+(G.round||'full')+'&cs='+(G.course||'pines');
- overlay(`<h1>🌐 Online Room ${code}</h1><p>Send this link to your friend:</p><p><input class="nm" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p>${navigator.share?`<button class="big" onclick="navigator.share({title:'Tiny Tee Heroes',text:'Play golf with me! ⛳',url:'${link}'}).catch(()=>{})">📤 Share link</button>`:''}<button class="big" onclick="copyLink('${link}',this)">📋 Copy link</button></p><p id="pst">Connecting to matchmaker…</p>`);
+ const peer=new Peer('tinytee-'+code,peerOpts());G.online.peer=peer;const link=inviteURL(code);
+ overlay(`<h1>🌐 Play Online</h1><p style="font-size:20px;margin:4px 0">Room code</p><p id="roomCode" style="font-size:44px;font-weight:900;letter-spacing:.12em;margin:2px 0 10px;color:#ffe14d">${code}</p><p>Send this invite to your friend. They can open it in a <b>web browser</b> or paste the link or room code into the <b>Tiny Tee Heroes</b> desktop app.</p><p><input class="nm" id="inviteLink" style="width:90%" value="${link}" readonly onclick="this.select()"></p><p>${navigator.share?`<button class="big" onclick="navigator.share({title:'Tiny Tee Heroes',text:'Play golf with me! ⛳',url:'${link}'}).catch(()=>{})">📤 Share</button>`:''}<button class="big" id="copyInvite" onclick="copyLink('${link}',this)">📋 Copy Invite</button></p><p id="pst">Connecting to matchmaker…</p>${wantRelay()?'<p style="font-size:14px">Relay-only test mode is on.</p>':''}`);
  peer.on('open',()=>{const e=$('pst');if(e)e.textContent='Waiting for your friend to join… ⏳';});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Online error: '+err.type+'. Try local mode.';});
  peer.on('connection',c=>{setupPeer(c);});}
 window.copyLink=(l,b)=>{const ok=()=>{b.textContent='✅ Copied!';};(navigator.clipboard?navigator.clipboard.writeText(l).then(ok):Promise.reject()).catch(()=>{const i=document.querySelector('#ovc input.nm');if(i){i.select();try{document.execCommand('copy');ok();}catch(e){}}});};
 function joinOnline(name,code){G.online={host:false,code};G.localIdx=1;G.players=[makePlayer('Host',0xffffff,true),makePlayer(name,0xff5ab4)];
  if(LOOP){overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Loopback test mode</p>`);setupPeer(loopConn(code,false));return;}
- const peer=new Peer();G.online.peer=peer;overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Connecting…</p>`);
- peer.on('open',()=>{setupPeer(peer.connect('tinytee-'+code,{reliable:true}));setTimeout(()=>{if(!(G.online.conn&&G.online.conn.open)){const e=$('pst');if(e)e.innerHTML='Still connecting… Some school/work Wi-Fi blocks direct play. Try a home network, or play 2 Players on one screen. <br><button class="big" onclick="location.href=location.pathname">Back to menu</button>';}},20000);});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Could not join: '+err.type;});}
+ const peer=new Peer(peerOpts());G.online.peer=peer;overlay(`<h1>🌐 Joining room ${code}…</h1><p id="pst">Connecting…</p>${wantRelay()?'<p style="font-size:14px">Relay-only test mode is on.</p>':''}`);
+ peer.on('open',()=>{setupPeer(peer.connect('tinytee-'+code,{reliable:true}));setTimeout(()=>{if(!(G.online.conn&&G.online.conn.open)){const e=$('pst');if(e)e.innerHTML='Still connecting… If you are on strict school/work Wi-Fi, wait a few seconds more and try again, or play 2 Players on one screen.<br><button class="big" onclick="toMenu()">Back to menu</button>';}},wantRelay()?35000:25000);});peer.on('error',err=>{const e=$('pst');if(e)e.textContent='Could not join: '+err.type;});}
 
 
 // ===== boss melee arena =====
@@ -1556,7 +1580,8 @@ function menu(){G.mode='menu';if(COURSES[save.course])G.course=save.course;const
  overlay(`<h1>⛳ Tiny Tee Heroes</h1><p style="font-size:22px">2 courses · 18 holes · 6 bosses each · upgrade your clubs with tokens!</p>
  <div class="startrow"><button class="big" id="btnContinue" onclick="continueGame()">▶️ Continue<br><small>${nSaved?`keep your stuff${contHint()}`:'no saved game yet'}</small></button><button class="big" id="btnNewGame" style="background:#ff8a7a" onclick="askNewGame()">🆕 New Game<br><small>fresh start, 🪙 20</small></button></div>
  <input class="nm" id="n1" value="${esc(last[0])}" oninput="updSaveInfo()"><input class="nm" id="n2" value="${esc(last[1])}" placeholder="Player 2 (optional)" oninput="updSaveInfo()"><div id="saveInfo"></div>
- ${courseSel()}${roundSel()}<button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Play Online with a Friend</button>
+ ${courseSel()}${roundSel()}<button class="big" onclick="go(1)">🏌️ 1 Player</button><button class="big" onclick="go(2)">👫 2 Players (same screen)</button><button class="big" onclick="go('host')">🌐 Host Online</button>
+ <div id="joinBox"><p style="margin:10px 0 4px"><b>Or join a friend:</b></p><input class="nm" id="joinIn" placeholder="Paste invite link or room code" maxlength="200" style="width:min(90%,440px)"><br><button class="big" id="btnJoin" onclick="goJoin()">🔗 Join with code / link</button></div>
  <button class="sm" onclick="openSound(1)">🔊 Sound &amp; 📜 Credits</button>
  <p style="font-size:17px">Controls: ⬅️➡️ or drag to aim · 1-5 pick club · drag DOWN on the course, then flick UP to swing (mouse or finger)!</p>${courseProgress(G.course)?`<p>Continue ${CUR().ic} ${CUR().name} from hole ${Math.min(courseProgress(G.course),NHOLES-1)+1}? <button class="sm" onclick="go(1,1)">Continue</button></p>`:''}`);updSaveInfo();}
 window.updSaveInfo=updSaveInfo;
@@ -1576,6 +1601,9 @@ window.go=(m,cont)=>{if(m===1||m===2)save.lastMode=m;const n1=($('n1').value.tri
  if(m===1){G.players=[makePlayer(n1,0xffffff)];closeOv();startHole(start);}
  else if(m===2){G.players=[makePlayer(n1,0xffffff),makePlayer(n2||'Player 2',0xff5ab4)];closeOv();startHole(start);}
  else if(m==='host')hostOnline(n1);else if(m==='join')joinOnline(n1,room);};
+window.goJoin=()=>{const n1=(($('n1')&&$('n1').value.trim())||'Player 1').slice(0,14);const inv=parseInvite($('joinIn')&&$('joinIn').value);
+ if(!inv){say('Paste the invite link or the room code first!',2200);return;}save.lastNames=[n1, (save.lastNames||[])[1]||'Player 2'];
+ if(inv.cs&&COURSES[inv.cs]){G.course=save.course=inv.cs;}if(inv.rd&&ROUNDS[inv.rd]){G.round=save.round=inv.rd;}persist();joinOnline(n1,inv.room);};
 G.dbg=()=>({gv:golfer.visible,gp:golfer.position.toArray().map(v=>+v.toFixed(1)),cam:camera.position.toArray().map(v=>+v.toFixed(1)),ap:G.arena&&G.arena.pos.toArray().map(v=>+v.toFixed(1)),bp:G.arena&&G.arena.bpos.toArray().map(v=>+v.toFixed(1)),arms:golfer.userData.arms.children.length});window.__eff=eff;window.__surf=(x,z)=>surfInfo(H,x,z);window.__sim=(p,s)=>simulateShot(p,s,new THREE.Vector2());window.__simW=(p,s,w)=>simulateShot(p,s,new THREE.Vector2(w[0],w[1]));G.updUI=updUI;window.__pred=predictLanding;G.doShotFull=(sh)=>{window.__apex=0;const sy0=P().pos.y;doShot(sh);let n=0;window.__lastLand=null;while(ball&&n<20000){const wasAir=ball.air;stepBall(1/120);n++;if(ball){window.__apex=Math.max(window.__apex||0,P().pos.y-sy0);}if(ball&&wasAir&&!window.__lastLand&&ball.landed)window.__lastLand=P().pos.clone();}};window.__land=()=>window.__lastLand;G.doShot=(c,pw)=>{const p=P();doShot({aim:0,power:pw,club:c,dev:0,e:eff(p.prof,c),spin:p.spin});};G.arenaStep=(n,dt)=>{for(let k=0;k<n&&G.arena;k++)arenaTick(dt,k*dt);};G.sim=()=>{let n=0;while(ball&&n<20000){stepBall(1/120);n++;}return n;};G.startHole=startHole;G.makePlayer=makePlayer;
 
 
@@ -1774,7 +1802,23 @@ addEventListener('resize',rotHint);addEventListener('orientationchange',()=>setT
 // installable app: service worker (network-first for the page so new deploys always load; cached audio for fast reloads)
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')&&!QS.has('nosw')){
  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
-G.H=()=>H;G.TOUCH=TOUCH;G.MOBILE=MOBILE;G.gfx=()=>({pref:gfxPref,low:gfxLow(),dpr:renderer.getPixelRatio()});G.renderer=renderer;
+G.H=()=>H;G.BUILD=BUILD;G.PROTO=PROTO;G.PUBLIC_ORIGIN=PUBLIC_ORIGIN;G.TOUCH=TOUCH;G.MOBILE=MOBILE;
+G.iceInfo=async()=>{const c=G.online&&G.online.conn,pc=c&&c.peerConnection;if(!pc)return{ok:false};
+ const cfg=pc.getConfiguration?pc.getConfiguration():{};
+ const out={ok:true,ice:pc.iceConnectionState,gather:pc.iceGatheringState,conn:pc.connectionState,policy:cfg.iceTransportPolicy||null,pairs:[]};
+ const st=await pc.getStats();const map={};
+ for(const s of st.values())map[s.id]=s;
+ for(const s of st.values()){
+  if(s.type==='candidate-pair'&&(s.state==='succeeded'||s.nominated||s.state==='in-progress')){
+   const L=map[s.localCandidateId],R=map[s.remoteCandidateId];
+   out.pairs.push({nominated:!!s.nominated,state:s.state,bytes:(s.bytesSent||0)+(s.bytesReceived||0),
+    local:L&&{typ:L.candidateType,prot:L.protocol},
+    remote:R&&{typ:R.candidateType,prot:R.protocol}});
+  }
+ }
+ out.relay=out.pairs.some(p=>p.nominated&&((p.local&&p.local.typ==='relay')||(p.remote&&p.remote.typ==='relay')));
+ return out;};
+G.gfx=()=>({pref:gfxPref,low:gfxLow(),dpr:renderer.getPixelRatio()});G.renderer=renderer;
 G.gsState=()=>gs&&{id:gs.id,x0:gs.x0,y0:gs.y0,phase:gs.phase,n:gs.pts.length};
 G.gsRange=()=>GS();
 G.updWind=updWind;
