@@ -287,18 +287,28 @@ function bosses(){return (CUR&&CUR().bosses)||BOSSES_PINES;}
 const NHOLES=18, PARS=[3,4,4,4,5,4,3,5,5, 4,3,4,5,4,3,4,4,4];// out 37 · in 35 · par 72
 const ELCOSTS={fire:25,spikes:35,ice:45,bubble:55,lightning:70,magnet:90};const ELCOST=k=>ELCOSTS[k];
 const HOLE_REWARD=d=>d>=2?0:d===1?4:d===0?11:d===-1?21:42, BOSS_BONUS=32, COIN_VALUE=2, N_COINS=5;
-const BUILD='bcbcd4382a',PROTO=1;
+const BUILD='fdfc1a5d46',PROTO=1;
 const PUBLIC_ORIGIN='https://jkokesh.github.io/tiny-tee-heroes/';
 const ICE_SERVERS=[
  {urls:'stun:stun.l.google.com:19302'},
  {urls:'stun:stun.cloudflare.com:3478'},
+ {urls:'stun:stun.relay.metered.ca:80'},
  {urls:'stun:freeturn.net:3478'},
  {urls:'turn:freeturn.net:3478',username:'free',credential:'free'},
- {urls:'turns:freeturn.net:5349',username:'free',credential:'free'},
- {urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'}
+ {urls:'turn:freeturn.net:3478?transport=tcp',username:'free',credential:'free'},
+ {urls:'turns:freeturn.net:5349?transport=tcp',username:'free',credential:'free'},
+ {urls:'turns:freeturn.tel:5349?transport=tcp',username:'free',credential:'free'},
+ {urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},
+ {urls:'turn:us-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},
+ {urls:'turn:eu-0.turn.peerjs.com:3478?transport=tcp',username:'peerjs',credential:'peerjsp'},
+ {urls:'turn:us-0.turn.peerjs.com:3478?transport=tcp',username:'peerjs',credential:'peerjsp'},
+ {urls:['turn:turn.evan-brass.net','turn:turn.evan-brass.net?transport=tcp','turns:turn.evan-brass.net:443?transport=tcp'],username:'user',credential:'password'}
 ];
 function wantRelay(){try{return new URLSearchParams(location.search).get('relay')==='1'||!!G.forceRelay;}catch(e){return!!G.forceRelay;}}
-function peerOpts(){return{debug:0,config:{iceServers:ICE_SERVERS,iceTransportPolicy:wantRelay()?'relay':'all'}};}
+function iceServers(){const list=ICE_SERVERS.slice();
+ try{const t=new URLSearchParams(location.search).get('turn');if(t){const[urls,username,credential]=t.split('|');if(urls)list.push({urls,username:username||'',credential:credential||''});}}catch(e){}
+ return list;}
+function peerOpts(){return{debug:0,config:{iceServers:iceServers(),iceTransportPolicy:wantRelay()?'relay':'all'}};}
 function inviteURL(code){return PUBLIC_ORIGIN+'?room='+encodeURIComponent(code)+'&rd='+(G.round||'full')+'&cs='+(G.course||'pines');}
 function parseInvite(s){s=String(s||'').trim();if(!s)return null;let room,rd,cs;
  try{const u=new URL(s);room=u.searchParams.get('room')||u.searchParams.get('code');rd=u.searchParams.get('rd');cs=u.searchParams.get('cs');}
